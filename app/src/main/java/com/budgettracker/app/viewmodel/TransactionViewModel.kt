@@ -120,7 +120,14 @@ class TransactionViewModel(
     fun deleteTransaction(id: String)     = viewModelScope.launch { repo.delete(id) }
 
     fun exportCsv(uri: Uri) = viewModelScope.launch { repo.exportCsv(uri) }
-    fun importCsv(uri: Uri) = viewModelScope.launch { repo.importCsv(uri) }
+
+    private val _importErrorEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val importErrorEvent: SharedFlow<Unit> = _importErrorEvent.asSharedFlow()
+
+    fun importCsv(uri: Uri) = viewModelScope.launch {
+        val failed = repo.importCsv(uri)
+        if (failed > 0) _importErrorEvent.tryEmit(Unit)
+    }
 
     // ── Categories ────────────────────────────────────────────────────────────
 

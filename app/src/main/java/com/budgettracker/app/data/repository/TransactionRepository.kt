@@ -42,9 +42,11 @@ class TransactionRepository(private val csvManager: CsvManager) {
         csvManager.exportTo(uri)
     }
 
-    suspend fun importCsv(uri: Uri) = withContext(Dispatchers.IO) {
-        val imported = csvManager.importFrom(uri)
-        _transactions.value = imported.sortedByDescending { it.date }
-        csvManager.writeAll(imported)
+    /** Returns the number of rows that failed to parse (0 = clean import). */
+    suspend fun importCsv(uri: Uri): Int = withContext(Dispatchers.IO) {
+        val result = csvManager.importFrom(uri)
+        _transactions.value = result.transactions.sortedByDescending { it.date }
+        csvManager.writeAll(result.transactions)
+        result.failedLines.size
     }
 }

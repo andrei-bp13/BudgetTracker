@@ -3,8 +3,23 @@ package com.budgettracker.app.data.csv
 import com.budgettracker.app.data.model.PaymentType
 import com.budgettracker.app.data.model.Transaction
 import com.budgettracker.app.data.model.TransactionType
+import java.io.BufferedReader
 import java.time.LocalDate
 import java.util.UUID
+
+data class ParseResult(val transactions: List<Transaction>, val failedLines: List<String>)
+
+fun parseCsvContent(reader: BufferedReader): ParseResult {
+    val transactions = mutableListOf<Transaction>()
+    val failedLines  = mutableListOf<String>()
+    reader.readLine() // skip header
+    reader.forEachLine { line ->
+        if (line.isBlank()) return@forEachLine
+        val txn = parseCsvLine(line)
+        if (txn != null) transactions.add(txn) else failedLines.add(line)
+    }
+    return ParseResult(transactions, failedLines)
+}
 
 const val CSV_HEADER = "id,title,amount,type,category,date,note,payment_type"
 

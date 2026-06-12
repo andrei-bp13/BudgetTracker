@@ -49,6 +49,16 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
     var editingTransaction  by remember { mutableStateOf<com.budgettracker.app.data.model.Transaction?>(null) }
     val scope               = rememberCoroutineScope()
     val currencySymbol      by viewModel.currencySymbol.collectAsState()
+    val snackbarHostState   = remember { SnackbarHostState() }
+
+    LaunchedEffect(Unit) {
+        viewModel.importErrorEvent.collect {
+            snackbarHostState.showSnackbar(
+                message  = "Some rows couldn't be imported — error log saved to Downloads",
+                duration = SnackbarDuration.Long
+            )
+        }
+    }
 
     // Track current route at the top level — used for both topBar visibility and bottomBar selection
     val currentEntry by navController.currentBackStackEntryAsState()
@@ -70,6 +80,7 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
             }
         ) {
             Scaffold(
+                snackbarHost = { SnackbarHost(snackbarHostState) },
                 topBar = {
                     // Only show the global top bar for the three top-level tabs;
                     // sub-screens (DrillDown, CategoryDetail, etc.) carry their own TopAppBar.
