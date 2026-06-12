@@ -14,9 +14,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.foundation.Canvas
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.budgettracker.app.data.model.AllCurrencies
 import com.budgettracker.app.ui.theme.AccentColors
 import com.budgettracker.app.viewmodel.TransactionViewModel
@@ -34,7 +39,9 @@ fun SettingsDrawer(
     val granularColoring by viewModel.granularColoring.collectAsState()
     val currencyCode     by viewModel.currencyCode.collectAsState()
     val aiMode           by viewModel.aiMode.collectAsState()
+    val customAccentHex  by viewModel.customAccentHex.collectAsState()
     var showCurrencyPicker by remember { mutableStateOf(false) }
+    var showColorPicker    by remember { mutableStateOf(false) }
 
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("text/csv")
@@ -97,7 +104,7 @@ fun SettingsDrawer(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        // 10 color swatches in a 5×2 grid
+        // 10 color swatches in a 5×2 grid (slot 9 = custom rainbow picker)
         Column(
             modifier = Modifier.padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -105,13 +112,20 @@ fun SettingsDrawer(
             listOf(0..4, 5..9).forEach { range ->
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     range.forEach { i ->
-                        val accent = AccentColors[i]
-                        ColorSwatch(
-                            color    = accent.seed,
-                            name     = accent.name,
-                            selected = accentIndex == i,
-                            onClick  = { viewModel.setAccentIndex(i) }
-                        )
+                        if (i == 9) {
+                            RainbowColorSwatch(
+                                selected = accentIndex == 9,
+                                onClick  = { showColorPicker = true }
+                            )
+                        } else {
+                            val accent = AccentColors[i]
+                            ColorSwatch(
+                                color    = accent.seed,
+                                name     = accent.name,
+                                selected = accentIndex == i,
+                                onClick  = { viewModel.setAccentIndex(i) }
+                            )
+                        }
                     }
                 }
             }
@@ -235,6 +249,18 @@ fun SettingsDrawer(
             onDismiss    = { showCurrencyPicker = false }
         )
     }
+
+    if (showColorPicker) {
+        RgbColorPickerDialog(
+            initialHex = customAccentHex,
+            onConfirm  = { hex ->
+                viewModel.setCustomAccentHex(hex)
+                viewModel.setAccentIndex(9)
+                showColorPicker = false
+            },
+            onDismiss  = { showColorPicker = false }
+        )
+    }
 }
 
 @Composable
@@ -289,6 +315,132 @@ private fun ColorSwatch(color: Color, name: String, selected: Boolean, onClick: 
             )
         }
     }
+}
+
+@Composable
+private fun RainbowColorSwatch(selected: Boolean, onClick: () -> Unit) {
+    val borderColor = MaterialTheme.colorScheme.onSurface
+    Box(
+        modifier = Modifier
+            .size(36.dp)
+            .clip(CircleShape)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        // Hue sweep + white radial center
+        Canvas(modifier = Modifier.matchParentSize()) {
+            val sweepBrush = Brush.sweepGradient(
+                colors = listOf(
+                    Color(0xFFFF0000), Color(0xFFFFFF00), Color(0xFF00FF00),
+                    Color(0xFF00FFFF), Color(0xFF0000FF), Color(0xFFFF00FF), Color(0xFFFF0000)
+                )
+            )
+            drawCircle(brush = sweepBrush)
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color.White, Color.Transparent),
+                    radius = size.minDimension / 2f
+                )
+            )
+            if (selected) {
+                drawCircle(
+                    color  = borderColor,
+                    style  = Stroke(width = 3.dp.toPx()),
+                    radius = size.minDimension / 2f - 1.5.dp.toPx()
+                )
+            }
+        }
+        // Pencil icon
+        Icon(
+            imageVector        = Icons.Rounded.Edit,
+            contentDescription = "Custom color",
+            tint               = Color.Black,
+            modifier           = Modifier.size(14.dp)
+        )
+    }
+}
+
+@Composable
+private fun RgbColorPickerDialog(
+    initialHex: String,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val initColor = runCatching {
+        Color(0xFF000000L or initialHex.toLong(16))
+    }.getOrElse { Color(0xFF2196F3) }
+
+    var r by remember { mutableFloatStateOf(initColor.red   * 255f) }
+    var g by remember { mutableFloatStateOf(initColor.green * 255f) }
+    var b by remember { mutableFloatStateOf(initColor.blue  * 255f) }
+
+    val preview = Color(r / 255f, g / 255f, b / 255f)
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Custom Accent Color", style = MaterialTheme.typography.titleMedium) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                // Color preview
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp)
+                        .clip(MaterialTheme.shapes.medium)
+                        .background(preview)
+                )
+
+                // RGB sliders
+                listOf(
+                    Triple("R", r, Color(1f, 0f, 0f)) to { v: Float -> r = v },
+                    Triple("G", g, Color(0f, 0.7f, 0f)) to { v: Float -> g = v },
+                    Triple("B", b, Color(0f, 0.4f, 1f)) to { v: Float -> b = v }
+                ).forEach { (info, setter) ->
+                    val (label, value, tint) = info
+                    Row(
+                        verticalAlignment  = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            label,
+                            style  = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            color  = tint,
+                            modifier = Modifier.width(14.dp)
+                        )
+                        Slider(
+                            value         = value,
+                            onValueChange = setter,
+                            valueRange    = 0f..255f,
+                            modifier      = Modifier.weight(1f),
+                            colors        = SliderDefaults.colors(thumbColor = tint, activeTrackColor = tint)
+                        )
+                        Text(
+                            value.toInt().toString(),
+                            style    = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.width(28.dp)
+                        )
+                    }
+                }
+
+                // Hex preview
+                val hexStr = "%02X%02X%02X".format(r.toInt(), g.toInt(), b.toInt())
+                Text(
+                    "#$hexStr",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            FilledTonalButton(onClick = {
+                val hex = "%02X%02X%02X".format(r.toInt(), g.toInt(), b.toInt())
+                onConfirm(hex)
+            }) { Text("Apply") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        }
+    )
 }
 
 @Composable
