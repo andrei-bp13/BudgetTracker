@@ -2,6 +2,8 @@ package com.budgettracker.app.data.repository
 
 import android.net.Uri
 import com.budgettracker.app.data.csv.CsvManager
+import com.budgettracker.app.data.db.TransactionDao
+import com.budgettracker.app.data.db.toEntity
 import com.budgettracker.app.data.model.Transaction
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -9,7 +11,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 
-class TransactionRepository(private val csvManager: CsvManager) {
+class TransactionRepository(
+    private val csvManager: CsvManager,
+    private val dao: TransactionDao? = null
+) {
 
     private val _transactions = MutableStateFlow<List<Transaction>>(emptyList())
     val transactions: StateFlow<List<Transaction>> = _transactions.asStateFlow()
@@ -23,6 +28,7 @@ class TransactionRepository(private val csvManager: CsvManager) {
         val updated = (_transactions.value + transaction).sortedByDescending { it.date }
         _transactions.value = updated
         csvManager.writeAll(updated)
+        dao?.insert(transaction.toEntity())
     }
 
     suspend fun update(transaction: Transaction) = withContext(Dispatchers.IO) {
@@ -30,12 +36,14 @@ class TransactionRepository(private val csvManager: CsvManager) {
             .sortedByDescending { it.date }
         _transactions.value = updated
         csvManager.writeAll(updated)
+        dao?.insert(transaction.toEntity())
     }
 
     suspend fun delete(id: String) = withContext(Dispatchers.IO) {
         val updated = _transactions.value.filter { it.id != id }
         _transactions.value = updated
         csvManager.writeAll(updated)
+        dao?.deleteById(id)
     }
 
     suspend fun exportCsv(uri: Uri) = withContext(Dispatchers.IO) {
@@ -45,8 +53,13 @@ class TransactionRepository(private val csvManager: CsvManager) {
     /** Returns the number of rows that failed to parse (0 = clean import). */
     suspend fun importCsv(uri: Uri): Int = withContext(Dispatchers.IO) {
         val result = csvManager.importFrom(uri)
-        _transactions.value = result.transactions.sortedByDescending { it.date }
-        csvManager.writeAll(result.transactions)
+        val sorted = result.transactions.sortedByDescending { it.date }
+        _transactions.value = sorted
+        csvManager.writeAll(sorted)
+        dao?.let { d ->
+            d.deleteAll()
+            d.insertAll(sorted.map { it.toEntity() })
+        }
         result.failedLines.size
     }
 }
