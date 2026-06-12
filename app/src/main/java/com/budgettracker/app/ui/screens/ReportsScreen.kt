@@ -40,8 +40,6 @@ fun ReportsScreen(viewModel: TransactionViewModel) {
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text("Reports", style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black))
-
         // ── Expenses bar chart ────────────────────────────────────────────────
         Card(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
@@ -86,7 +84,7 @@ fun ReportsScreen(viewModel: TransactionViewModel) {
 
 @Composable
 private fun ExpenseBarChart(monthly: List<Pair<String, Double>>, currencySymbol: String) {
-    val barColor   = MaterialTheme.colorScheme.error
+    val barColor   = MaterialTheme.colorScheme.primary
     val gridColor  = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
     val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
     val textMeasurer = rememberTextMeasurer()
@@ -106,46 +104,38 @@ private fun ExpenseBarChart(monthly: List<Pair<String, Double>>, currencySymbol:
     val yLabelWidth = yLabels.maxOf { textMeasurer.measure(fmtLabel(it), labelStyle).size.width }.toFloat()
     val leftMargin = yLabelWidth + 6.dp.value * 3   // rough dp → px factor applied in Canvas
 
-    Canvas(modifier = Modifier.fillMaxWidth().height(160.dp)) {
-        val lm = yLabelWidth + 18f  // left margin in px
-        val chartW = size.width - lm
-        val chartH = size.height
+    Canvas(modifier = Modifier.fillMaxWidth().height(180.dp)) {
+        val lm        = yLabelWidth + 18f
+        val chartW    = size.width - lm
+        val xLabelH   = textMeasurer.measure("Jan", labelStyle).size.height.toFloat()
+        val chartH    = size.height - xLabelH - 6.dp.toPx()   // reserve bottom for x labels
 
         // Grid lines + Y labels at 100%, 66%, 33%
         listOf(1.0, 0.66, 0.33).forEach { frac ->
             val y = chartH * (1f - frac.toFloat())
             drawLine(gridColor, Offset(lm, y), Offset(size.width, y), strokeWidth = 0.5.dp.toPx())
-            val txt   = fmtLabel(maxVal * frac)
-            val meas  = textMeasurer.measure(txt, labelStyle)
+            val meas = textMeasurer.measure(fmtLabel(maxVal * frac), labelStyle)
             drawText(meas, topLeft = Offset(lm - meas.size.width - 4.dp.toPx(), y - meas.size.height / 2f))
         }
         // Baseline
         drawLine(gridColor, Offset(lm, chartH), Offset(size.width, chartH), strokeWidth = 0.5.dp.toPx())
 
-        // Bars
+        // Bars + X labels centered on each bar
         val groupW = chartW / monthly.size.coerceAtLeast(1)
         val barW   = groupW * 0.5f
 
-        monthly.forEachIndexed { i, (_, expense) ->
+        monthly.forEachIndexed { i, (label, expense) ->
             val cx = lm + groupW * i + groupW / 2f
             val bh = (expense / maxVal * chartH * animProg).toFloat().coerceAtLeast(2f)
             drawRoundRect(
-                color  = barColor,
-                topLeft = Offset(cx - barW / 2f, chartH - bh),
-                size   = Size(barW, bh),
+                color        = barColor,
+                topLeft      = Offset(cx - barW / 2f, chartH - bh),
+                size         = Size(barW, bh),
                 cornerRadius = CornerRadius(4.dp.toPx())
             )
-        }
-    }
-
-    // Month labels below chart
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(start = (yLabelWidth / 3f).dp),
-        horizontalArrangement = Arrangement.SpaceAround
-    ) {
-        monthly.forEach { (label, _) ->
-            Text(label.take(3), style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            // X-axis label centered below this bar
+            val meas = textMeasurer.measure(label.take(3), labelStyle)
+            drawText(meas, topLeft = Offset(cx - meas.size.width / 2f, chartH + 6.dp.toPx()))
         }
     }
 }
