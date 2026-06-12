@@ -16,6 +16,7 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.*
 import androidx.compose.runtime.CompositionLocalProvider
 import kotlinx.coroutines.launch
+import com.budgettracker.app.data.model.PaymentType
 import com.budgettracker.app.ui.screens.*
 import com.budgettracker.app.ui.theme.LocalCurrencySymbol
 import com.budgettracker.app.viewmodel.ChartBar
@@ -33,6 +34,9 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
     object DrillDown : Screen("drilldown/{title}/{startDate}/{endDate}", "Detail", Icons.Rounded.BarChart) {
         fun route(title: String, startDate: LocalDate, endDate: LocalDate) =
             "drilldown/${java.net.URLEncoder.encode(title, "UTF-8")}/$startDate/$endDate"
+    }
+    object PaymentTypeDetail : Screen("payment/{typeName}", "Payment", Icons.Rounded.Home) {
+        fun route(type: PaymentType) = "payment/${type.name}"
     }
 }
 
@@ -174,9 +178,10 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                 ) {
                     composable(Screen.Home.route) {
                         HomeScreen(
-                            viewModel        = viewModel,
-                            onAddTransaction = { showAddSheet = true },
-                            onCategoryClick  = { name -> navController.navigate(Screen.CategoryDetail.route(name)) }
+                            viewModel          = viewModel,
+                            onAddTransaction   = { showAddSheet = true },
+                            onCategoryClick    = { name -> navController.navigate(Screen.CategoryDetail.route(name)) },
+                            onPaymentTypeClick = { pt -> navController.navigate(Screen.PaymentTypeDetail.route(pt)) }
                         )
                     }
                     composable(Screen.CategoryDetail.route) { backStack ->
@@ -215,6 +220,15 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                     }
                     composable(Screen.Calendar.route) {
                         CalendarScreen(viewModel = viewModel)
+                    }
+                    composable(Screen.PaymentTypeDetail.route) { backStack ->
+                        val typeName = backStack.arguments?.getString("typeName") ?: "DEBIT"
+                        val paymentType = PaymentType.valueOf(typeName)
+                        PaymentTypeTransactionsScreen(
+                            paymentType = paymentType,
+                            viewModel   = viewModel,
+                            onBack      = { navController.popBackStack() }
+                        )
                     }
                     composable(Screen.Categories.route) {
                         CategoriesScreen(

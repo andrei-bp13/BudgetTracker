@@ -1,12 +1,15 @@
 package com.budgettracker.app.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.budgettracker.app.data.model.PaymentType
@@ -21,7 +24,8 @@ import java.util.Locale
 fun HomeScreen(
     viewModel: TransactionViewModel,
     onAddTransaction: () -> Unit,
-    onCategoryClick: (String) -> Unit = {}
+    onCategoryClick: (String) -> Unit = {},
+    onPaymentTypeClick: (PaymentType) -> Unit = {}
 ) {
     val thisMonth        by viewModel.thisMonthDailyExpenses.collectAsState()
     val lastMonth        by viewModel.lastMonthDailyExpenses.collectAsState()
@@ -85,7 +89,11 @@ fun HomeScreen(
                         val amount = byPaymentType[pt] ?: 0.0
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(3.dp)
+                            verticalArrangement = Arrangement.spacedBy(3.dp),
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { onPaymentTypeClick(pt) }
+                                .padding(horizontal = 12.dp, vertical = 8.dp)
                         ) {
                             PaymentTypeIcon(type = pt, tint = MaterialTheme.colorScheme.onSurfaceVariant, size = 18.dp)
                             Text(
