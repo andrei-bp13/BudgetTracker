@@ -35,27 +35,27 @@ val DefaultCategories: List<CategoryItem> = listOf(
     CategoryItem("cat_other_income", "Other Income",     "savings",         "#00695C"),
 )
 
+// 19 vivid colors — the 20th slot in EditCategorySheet is the custom RGB picker
 val CategoryColorOptions: List<Color> = listOf(
-    Color(0xFFEF5350), // Red
-    Color(0xFFFF7043), // Deep Orange
-    Color(0xFFFFB300), // Amber
-    Color(0xFFFDD835), // Yellow
-    Color(0xFF66BB6A), // Green
-    Color(0xFF26A69A), // Teal
-    Color(0xFF29B6F6), // Sky Blue
-    Color(0xFF1E88E5), // Blue
-    Color(0xFF5C6BC0), // Indigo
-    Color(0xFF7E57C2), // Deep Purple
-    Color(0xFFAB47BC), // Purple
-    Color(0xFFEC407A), // Pink
-    Color(0xFFF06292), // Light Pink
-    Color(0xFF00BCD4), // Cyan
-    Color(0xFF00E5FF), // Bright Cyan
-    Color(0xFF69F0AE), // Light Green
-    Color(0xFFFFCC02), // Gold
-    Color(0xFFFF6E40), // Coral
-    Color(0xFF607D8B), // Blue-Grey
-    Color(0xFF9E9E9E), // Grey
+    Color(0xFF4361EE), // vivid blue
+    Color(0xFF8338EC), // violet
+    Color(0xFFF72585), // hot pink
+    Color(0xFFE63946), // coral red
+    Color(0xFFFB8500), // orange
+    Color(0xFFFFB703), // golden amber
+    Color(0xFF06D6A0), // emerald
+    Color(0xFF118AB2), // teal blue
+    Color(0xFF4CC9F0), // sky blue
+    Color(0xFF3A86FF), // bright blue
+    Color(0xFFFF006E), // neon pink
+    Color(0xFFFFBE0B), // vivid yellow
+    Color(0xFF8AC926), // lime green
+    Color(0xFF1982C4), // cerulean
+    Color(0xFF6A4C93), // deep purple
+    Color(0xFFFF595E), // salmon
+    Color(0xFF26A96C), // forest green
+    Color(0xFF48CAE4), // light cyan
+    Color(0xFFF4A261), // sandy orange
 )
 
 fun colorToHex(color: Color): String {

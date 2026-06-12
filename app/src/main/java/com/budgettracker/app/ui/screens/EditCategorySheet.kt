@@ -19,6 +19,8 @@ import androidx.compose.ui.unit.dp
 import com.budgettracker.app.data.model.CategoryColorOptions
 import com.budgettracker.app.data.model.CategoryItem
 import com.budgettracker.app.data.model.colorToHex
+import com.budgettracker.app.ui.components.RainbowColorSwatch
+import com.budgettracker.app.ui.components.RgbColorPickerDialog
 import com.budgettracker.app.ui.icons.AppIcons
 import com.budgettracker.app.ui.icons.iconById
 
@@ -33,8 +35,9 @@ fun EditCategorySheet(
 ) {
     var name    by remember { mutableStateOf(category?.name    ?: "") }
     var iconId  by remember { mutableStateOf(category?.iconId  ?: "more_horiz") }
-    var colorHex by remember { mutableStateOf(category?.colorHex ?: "#757575") }
-    var showIconPicker by remember { mutableStateOf(false) }
+    var colorHex by remember { mutableStateOf(category?.colorHex ?: "#4361EE") }
+    var showIconPicker    by remember { mutableStateOf(false) }
+    var showColorPicker   by remember { mutableStateOf(false) }
 
     val selectedColor = runCatching {
         Color(android.graphics.Color.parseColor(colorHex))
@@ -124,7 +127,7 @@ fun EditCategorySheet(
                 }
             }
 
-            // Color grid
+            // Color grid (19 preset swatches + 1 custom RGB picker)
             Text("Color", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             LazyVerticalGrid(
                 columns = GridCells.Fixed(10),
@@ -134,7 +137,7 @@ fun EditCategorySheet(
             ) {
                 items(CategoryColorOptions) { color ->
                     val hex = colorToHex(color)
-                    val isSelected = hex == colorHex
+                    val isSelected = hex.equals(colorHex, ignoreCase = true)
                     Box(
                         modifier = Modifier
                             .size(28.dp)
@@ -145,6 +148,14 @@ fun EditCategorySheet(
                                 if (isSelected) Modifier.border(2.5.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
                                 else Modifier
                             )
+                    )
+                }
+                item {
+                    val isCustomSelected = CategoryColorOptions.none { colorToHex(it).equals(colorHex, ignoreCase = true) }
+                    RainbowColorSwatch(
+                        selected = isCustomSelected,
+                        onClick  = { showColorPicker = true },
+                        size     = 28.dp
                     )
                 }
             }
@@ -180,6 +191,14 @@ fun EditCategorySheet(
             accentColor   = accentColor,
             onSelect      = { icon -> iconId = icon.id; showIconPicker = false },
             onDismiss     = { showIconPicker = false }
+        )
+    }
+
+    if (showColorPicker) {
+        RgbColorPickerDialog(
+            initialHex = colorHex,
+            onConfirm  = { hex -> colorHex = hex; showColorPicker = false },
+            onDismiss  = { showColorPicker = false }
         )
     }
 }

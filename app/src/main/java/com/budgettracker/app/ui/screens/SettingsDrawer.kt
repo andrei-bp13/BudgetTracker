@@ -139,13 +139,21 @@ fun SettingsDrawer(
                 label       = "Global theming",
                 description = "All categories use the accent color",
                 checked     = globalColoring,
-                onChecked   = { viewModel.setGlobalColoring(it) }
+                onChecked   = { on ->
+                    viewModel.setGlobalColoring(on)
+                    if (on) viewModel.setGranularColoring(false)
+                    else    viewModel.setGranularColoring(true)
+                }
             )
             SettingsSwitch(
                 label       = "Granular coloring",
                 description = "Each category uses its own color",
                 checked     = granularColoring,
-                onChecked   = { viewModel.setGranularColoring(it) }
+                onChecked   = { on ->
+                    viewModel.setGranularColoring(on)
+                    if (on) viewModel.setGlobalColoring(false)
+                    else    viewModel.setGlobalColoring(true)
+                }
             )
         }
 
