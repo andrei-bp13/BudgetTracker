@@ -17,9 +17,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.Canvas
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -174,13 +177,43 @@ fun AddTransactionSheet(
                 }
             }
 
-            // ── Category grid (2 rows, horizontally scrollable) ───────────────
-            val gridState      = rememberLazyGridState()
-            val showRightFade  by remember { derivedStateOf { gridState.canScrollForward } }
-            val showLeftFade   by remember { derivedStateOf { gridState.canScrollBackward } }
-            val sheetBg        = MaterialTheme.colorScheme.surfaceContainerLow
+            // ── Category grid (2 rows, horizontally scrollable + scrollbar) ───
+            val gridState = rememberLazyGridState()
 
-            Box(modifier = Modifier.fillMaxWidth()) {
+            // Compute scrollbar thumb position and size from visible item indices
+            val thumbStartFraction by remember {
+                derivedStateOf {
+                    val info       = gridState.layoutInfo
+                    val totalItems = info.totalItemsCount
+                    if (totalItems == 0) return@derivedStateOf 0f
+                    val firstCol   = (info.visibleItemsInfo.firstOrNull()?.index ?: 0) / 2
+                    val totalCols  = (totalItems + 1) / 2
+                    val visCols    = ((info.visibleItemsInfo.lastOrNull()?.index ?: 0) / 2) - firstCol + 1
+                    val maxScroll  = (totalCols - visCols).coerceAtLeast(1)
+                    (firstCol.toFloat() / maxScroll) * (1f - visCols.toFloat() / totalCols)
+                }
+            }
+            val thumbWidthFraction by remember {
+                derivedStateOf {
+                    val info       = gridState.layoutInfo
+                    val totalItems = info.totalItemsCount
+                    if (totalItems == 0) return@derivedStateOf 1f
+                    val totalCols  = (totalItems + 1) / 2
+                    val firstCol   = (info.visibleItemsInfo.firstOrNull()?.index ?: 0) / 2
+                    val visCols    = ((info.visibleItemsInfo.lastOrNull()?.index ?: 0) / 2) - firstCol + 1
+                    (visCols.toFloat() / totalCols).coerceIn(0f, 1f)
+                }
+            }
+
+            val trackColor = MaterialTheme.colorScheme.surfaceVariant
+            val thumbColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+
+            // Grid clipped so partial items at edges are hidden
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(MaterialTheme.shapes.medium)
+            ) {
                 LazyHorizontalGrid(
                     rows                  = GridCells.Fixed(2),
                     state                 = gridState,
@@ -230,30 +263,29 @@ fun AddTransactionSheet(
                         }
                     }
                 }
+            }
 
-                // Left fade
-                if (showLeftFade) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.CenterStart)
-                            .width(24.dp)
-                            .height(152.dp)
-                            .background(
-                                Brush.horizontalGradient(listOf(sheetBg, Color.Transparent))
-                            )
-                    )
-                }
-
-                // Right fade
-                if (showRightFade) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.CenterEnd)
-                            .width(24.dp)
-                            .height(152.dp)
-                            .background(
-                                Brush.horizontalGradient(listOf(Color.Transparent, sheetBg))
-                            )
+            // Scrollbar — only shown when content overflows
+            if (thumbWidthFraction < 1f) {
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(3.dp)
+                        .padding(horizontal = 8.dp)
+                ) {
+                    val trackW  = size.width
+                    val trackH  = size.height
+                    val radius  = CornerRadius(trackH / 2)
+                    // Track
+                    drawRoundRect(color = trackColor, cornerRadius = radius)
+                    // Thumb
+                    val thumbW = trackW * thumbWidthFraction
+                    val thumbX = trackW * thumbStartFraction
+                    drawRoundRect(
+                        color        = thumbColor,
+                        topLeft      = Offset(thumbX, 0f),
+                        size         = Size(thumbW, trackH),
+                        cornerRadius = radius
                     )
                 }
             }
