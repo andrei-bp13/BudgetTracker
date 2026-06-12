@@ -19,6 +19,13 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.temporal.WeekFields
 
+data class ChartBar(
+    val label: String,
+    val value: Double,
+    val startDate: LocalDate,
+    val endDate: LocalDate
+)
+
 class TransactionViewModel(
     private val repo: TransactionRepository,
     private val prefs: PreferencesRepository,
@@ -71,9 +78,9 @@ class TransactionViewModel(
         .map { topCats(it, YearMonth.now()) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    // ── Reports: expense chart data (granularity-aware) ───────────────────────
+    // ── Reports: expense chart bars (granularity-aware, includes date ranges) ──
 
-    val expenseChartData: StateFlow<List<Pair<String, Double>>> =
+    val expenseChartBars: StateFlow<List<ChartBar>> =
         combine(transactions, chartGranularity) { txns, gran ->
             when (gran) {
                 "weekly"  -> weeklyExpenses(txns)
@@ -181,41 +188,51 @@ class TransactionViewModel(
     }
 
     // all 12 months of the current year
-    private fun monthlyExpensesThisYear(list: List<Transaction>): List<Pair<String, Double>> {
+    private fun monthlyExpensesThisYear(list: List<Transaction>): List<ChartBar> {
         val year = LocalDate.now().year
         return (1..12).map { m ->
             val ym    = YearMonth.of(year, m)
-            val label = ym.month.name.take(3)
-            label to monthTotal(list, ym, TransactionType.EXPENSE)
+            val start = ym.atDay(1)
+            val end   = ym.atEndOfMonth()
+            ChartBar(
+                label     = ym.month.name.take(3),
+                value     = monthTotal(list, ym, TransactionType.EXPENSE),
+                startDate = start,
+                endDate   = end
+            )
         }
     }
 
     // last 12 ISO calendar weeks
-    private fun weeklyExpenses(list: List<Transaction>): List<Pair<String, Double>> {
+    private fun weeklyExpenses(list: List<Transaction>): List<ChartBar> {
         val isoWeek   = WeekFields.ISO
         val today     = LocalDate.now()
         val weekStart = today.with(isoWeek.dayOfWeek(), 1)
         return (11 downTo 0).map { offset ->
-            val start  = weekStart.minusWeeks(offset.toLong())
-            val end    = start.plusDays(6)
-            val cwNum  = start.get(isoWeek.weekOfWeekBasedYear())
-            val label  = "CW$cwNum"
-            val total  = list.filter {
+            val start = weekStart.minusWeeks(offset.toLong())
+            val end   = start.plusDays(6)
+            val cwNum = start.get(isoWeek.weekOfWeekBasedYear())
+            val total = list.filter {
                 it.type == TransactionType.EXPENSE &&
                 !it.date.isBefore(start) && !it.date.isAfter(end)
             }.sumOf { it.amount }
-            label to total
+            ChartBar(label = "CW$cwNum", value = total, startDate = start, endDate = end)
         }
     }
 
     // one bar per year — span from earliest year in data to current
-    private fun yearlyExpenses(list: List<Transaction>): List<Pair<String, Double>> {
+    private fun yearlyExpenses(list: List<Transaction>): List<ChartBar> {
         val currentYear = LocalDate.now().year
         val firstYear   = list.minOfOrNull { it.date.year } ?: currentYear
         return (firstYear..currentYear).map { y ->
             val total = list.filter { it.type == TransactionType.EXPENSE && it.date.year == y }
                             .sumOf { it.amount }
-            "$y" to total
+            ChartBar(
+                label     = "$y",
+                value     = total,
+                startDate = LocalDate.of(y, 1, 1),
+                endDate   = LocalDate.of(y, 12, 31)
+            )
         }
     }
 

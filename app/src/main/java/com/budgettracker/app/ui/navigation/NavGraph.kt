@@ -18,7 +18,9 @@ import androidx.compose.runtime.CompositionLocalProvider
 import kotlinx.coroutines.launch
 import com.budgettracker.app.ui.screens.*
 import com.budgettracker.app.ui.theme.LocalCurrencySymbol
+import com.budgettracker.app.viewmodel.ChartBar
 import com.budgettracker.app.viewmodel.TransactionViewModel
+import java.time.LocalDate
 
 sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
     object Home         : Screen("home",       "Home",     Icons.Rounded.Home)
@@ -27,6 +29,10 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
     object Categories   : Screen("categories", "Categories", Icons.Rounded.Category)
     object CategoryDetail : Screen("category/{name}", "Category", Icons.Rounded.BarChart) {
         fun route(name: String) = "category/${java.net.URLEncoder.encode(name, "UTF-8")}"
+    }
+    object DrillDown : Screen("drilldown/{title}/{startDate}/{endDate}", "Detail", Icons.Rounded.BarChart) {
+        fun route(title: String, startDate: LocalDate, endDate: LocalDate) =
+            "drilldown/${java.net.URLEncoder.encode(title, "UTF-8")}/$startDate/$endDate"
     }
 }
 
@@ -183,7 +189,29 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                         )
                     }
                     composable(Screen.Reports.route) {
-                        ReportsScreen(viewModel = viewModel)
+                        ReportsScreen(
+                            viewModel  = viewModel,
+                            onBarClick = { bar ->
+                                navController.navigate(
+                                    Screen.DrillDown.route(bar.label, bar.startDate, bar.endDate)
+                                )
+                            }
+                        )
+                    }
+                    composable(Screen.DrillDown.route) { backStack ->
+                        val rawTitle = backStack.arguments?.getString("title") ?: ""
+                        val title    = java.net.URLDecoder.decode(rawTitle, "UTF-8")
+                        val start    = backStack.arguments?.getString("startDate")
+                            ?.let { LocalDate.parse(it) } ?: LocalDate.now()
+                        val end      = backStack.arguments?.getString("endDate")
+                            ?.let { LocalDate.parse(it) } ?: LocalDate.now()
+                        DrillDownScreen(
+                            title     = title,
+                            startDate = start,
+                            endDate   = end,
+                            viewModel = viewModel,
+                            onBack    = { navController.popBackStack() }
+                        )
                     }
                     composable(Screen.Calendar.route) {
                         CalendarScreen(viewModel = viewModel)
