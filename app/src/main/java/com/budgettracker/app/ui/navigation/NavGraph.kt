@@ -85,6 +85,23 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                                 Icon(Icons.Rounded.Menu, contentDescription = "Menu")
                             }
                         },
+                        actions = {
+                            IconButton(onClick = { /* TODO: account screen */ }) {
+                                Surface(
+                                    shape    = CircleShape,
+                                    color    = MaterialTheme.colorScheme.primaryContainer,
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Text(
+                                            "A",
+                                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black),
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                                        )
+                                    }
+                                }
+                            }
+                        },
                         colors = TopAppBarDefaults.topAppBarColors(
                             containerColor = MaterialTheme.colorScheme.surface
                         )
@@ -144,26 +161,12 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                             label    = { Text(Screen.Calendar.label) }
                         )
 
-                        // 5 — Account avatar
+                        // 5 — Recurring payments
                         NavigationBarItem(
                             selected = false,
-                            onClick  = { /* TODO: account screen */ },
-                            icon = {
-                                Surface(
-                                    shape    = CircleShape,
-                                    color    = MaterialTheme.colorScheme.primaryContainer,
-                                    modifier = Modifier.size(32.dp)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Text(
-                                            "A",
-                                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black),
-                                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                                        )
-                                    }
-                                }
-                            },
-                            label = { Text("Account") }
+                            onClick  = { /* TODO: recurring payments screen */ },
+                            icon     = { Icon(Icons.Rounded.Repeat, contentDescription = "Recurring") },
+                            label    = { Text("Recurring") }
                         )
                     }
                 }
