@@ -46,8 +46,8 @@ fun HomeScreen(
     val byPaymentType  by viewModel.thisMonthByPaymentType.collectAsState()
 
     val accent = MaterialTheme.colorScheme.primary
-    val resolveColor: (String) -> androidx.compose.ui.graphics.Color = { name ->
-        if (globalColoring) accent else viewModel.categoryFor(name)?.color ?: accent
+    val resolveColor: (String) -> androidx.compose.ui.graphics.Color = remember(globalColoring, accent) {
+        { name -> if (globalColoring) accent else viewModel.categoryFor(name)?.color ?: accent }
     }
 
     val currencySymbol = LocalCurrencySymbol.current
@@ -182,11 +182,12 @@ fun HomeScreen(
 
         // ── 2. Overlay (scrim + edit/delete buttons) positioned over the long-pressed row ──
         val activeTxn = overlayTransaction
-        if (activeTxn != null && homeBoxCoords != null) {
+        val coords    = homeBoxCoords
+        if (activeTxn != null && coords != null) {
             EditDeleteOverlay(
                 transaction = activeTxn,
                 bounds      = overlayBounds,
-                rootCoords  = homeBoxCoords!!,
+                rootCoords  = coords,
                 onEdit      = { t -> onEditTransaction(t) },
                 onDelete    = { t -> onDeleteTransaction(t) },
                 onDismiss   = { overlayTransaction = null }

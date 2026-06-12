@@ -47,7 +47,7 @@ fun AddTransactionSheet(
     onDismiss: () -> Unit,
     initialTransaction: Transaction? = null
 ) {
-    val allCategories   by viewModel.categories.collectAsState()
+    val baseCategories  by viewModel.expenseCategories.collectAsState()
     val allTransactions by viewModel.transactions.collectAsState()
     val currencySymbol  = LocalCurrencySymbol.current
     val isEditing       = initialTransaction != null
@@ -58,9 +58,6 @@ fun AddTransactionSheet(
     var paymentType    by remember { mutableStateOf(initialTransaction?.paymentType ?: PaymentType.DEBIT) }
     var selectedCat    by remember { mutableStateOf(initialTransaction?.category ?: "Food & Dining") }
     var sortByMostUsed by remember { mutableStateOf(false) }
-
-    val incomeNames    = setOf("Salary", "Freelance", "Investment", "Other Income")
-    val baseCategories = allCategories.filter { it.name !in incomeNames }
 
     val usageCount = remember(allTransactions) {
         allTransactions.groupingBy { it.category }.eachCount()
@@ -326,13 +323,14 @@ fun AddTransactionSheet(
             // ── Save button ───────────────────────────────────────────────────
             Button(
                 onClick = {
-                    val amt = amount.toDoubleOrNull() ?: return@Button
-                    if (title.isBlank()) return@Button
-                    if (isEditing && initialTransaction != null) {
+                    val titleVal  = title.trim()
+                    val amountVal = amount.toDoubleOrNull() ?: return@Button
+                    if (titleVal.isBlank()) return@Button
+                    if (initialTransaction != null) {
                         viewModel.updateTransaction(
                             initialTransaction.copy(
-                                title       = title.trim(),
-                                amount      = amt,
+                                title       = titleVal,
+                                amount      = amountVal,
                                 category    = selectedCat,
                                 note        = note.trim(),
                                 paymentType = paymentType
@@ -342,8 +340,8 @@ fun AddTransactionSheet(
                         viewModel.addTransaction(
                             Transaction(
                                 id          = UUID.randomUUID().toString(),
-                                title       = title.trim(),
-                                amount      = amt,
+                                title       = titleVal,
+                                amount      = amountVal,
                                 type        = TransactionType.EXPENSE,
                                 category    = selectedCat,
                                 date        = LocalDate.now(),

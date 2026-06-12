@@ -50,13 +50,20 @@ class CategoryRepository(private val context: Context) {
             else CategoryItem(f[0], f[1], f[2], f[3], f[4].toBooleanStrictOrNull() ?: true)
         }
 
+    /** Replaces or appends [item] in [currentList] and persists the result. */
+    suspend fun upsertCategory(currentList: List<CategoryItem>, item: CategoryItem) {
+        val idx = currentList.indexOfFirst { it.id == item.id }
+        val updated = if (idx >= 0) currentList.toMutableList().also { it[idx] = item }
+                      else currentList + item
+        save(updated)
+    }
+
     private fun mergeWithDefaults(saved: List<CategoryItem>): List<CategoryItem> {
-        val savedById = saved.associateBy { it.id }
-        // Start with defaults, replacing any that were edited
-        val merged = DefaultCategories.map { def -> savedById[def.id] ?: def }.toMutableList()
-        // Append pure custom categories (not in defaults)
+        val savedById  = saved.associateBy { it.id }
         val defaultIds = DefaultCategories.map { it.id }.toSet()
-        saved.filter { it.id !in defaultIds }.forEach { merged.add(it) }
-        return merged
+        return buildList {
+            DefaultCategories.forEach { def -> add(savedById[def.id] ?: def) }
+            saved.filter { it.id !in defaultIds }.forEach { add(it) }
+        }
     }
 }

@@ -232,11 +232,12 @@ fun CalendarScreen(
 
         // Overlay (scrim + edit/delete buttons) positioned over the long-pressed row
         val activeTxn = overlayTransaction
-        if (activeTxn != null && rootCoords != null) {
+        val coords    = rootCoords
+        if (activeTxn != null && coords != null) {
             EditDeleteOverlay(
                 transaction = activeTxn,
                 bounds      = overlayBounds,
-                rootCoords  = rootCoords!!,
+                rootCoords  = coords,
                 onEdit      = { t -> onEditTransaction(t) },
                 onDelete    = { t -> onDeleteTransaction(t) },
                 onDismiss   = { overlayTransaction = null }

@@ -207,3 +207,28 @@ fun yearlyExpenses(
 
 fun monthTotal(list: List<Transaction>, month: YearMonth, type: TransactionType): Double =
     list.filter { it.type == type && YearMonth.from(it.date) == month }.sumOf { it.amount }
+
+// ── Shared date-range and grouping helpers (single source of truth) ───────────
+
+/** Returns transactions whose date falls within [start]..[end] inclusive. */
+fun filterInDateRange(
+    transactions: List<Transaction>,
+    start: LocalDate,
+    end: LocalDate
+): List<Transaction> = transactions.filter { !it.date.isBefore(start) && !it.date.isAfter(end) }
+
+/** Returns only EXPENSE transactions in [start]..[end] inclusive. */
+fun filterExpensesByDateRange(
+    transactions: List<Transaction>,
+    start: LocalDate,
+    end: LocalDate
+): List<Transaction> = transactions.filter {
+    it.type == TransactionType.EXPENSE && !it.date.isBefore(start) && !it.date.isAfter(end)
+}
+
+/** Groups transactions by category and sums amounts, sorted descending by total. */
+fun computeCategoryTotals(transactions: List<Transaction>): List<Pair<String, Double>> =
+    transactions.groupBy { it.category }
+        .mapValues { (_, v) -> v.sumOf { it.amount } }
+        .entries.sortedByDescending { it.value }
+        .map { it.key to it.value }

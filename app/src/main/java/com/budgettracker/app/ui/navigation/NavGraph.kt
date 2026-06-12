@@ -240,8 +240,8 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                         )
                     }
                     composable(Screen.PaymentTypeDetail.route) { backStack ->
-                        val typeName = backStack.arguments?.getString("typeName") ?: "DEBIT"
-                        val paymentType = PaymentType.valueOf(typeName)
+                        val typeName    = backStack.arguments?.getString("typeName") ?: "DEBIT"
+                        val paymentType = runCatching { PaymentType.valueOf(typeName) }.getOrDefault(PaymentType.DEBIT)
                         PaymentTypeTransactionsScreen(
                             paymentType = paymentType,
                             viewModel   = viewModel,

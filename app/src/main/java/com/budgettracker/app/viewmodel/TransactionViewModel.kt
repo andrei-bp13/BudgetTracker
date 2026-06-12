@@ -26,8 +26,8 @@ import java.time.LocalDate
 import java.time.YearMonth
 
 data class ChartBar(
-    val label: String,      // short x-axis label
-    val title: String,      // full title used in drill-down screen
+    val label: String,
+    val title: String,
     val value: Double,
     val startDate: LocalDate,
     val endDate: LocalDate
@@ -39,37 +39,26 @@ class TransactionViewModel(
     private val catRepo: CategoryRepository
 ) : ViewModel() {
 
-    val transactions: StateFlow<List<Transaction>> = repo.transactions
+    private val prefsState = PreferencesState(prefs, viewModelScope)
 
-    val themeMode: StateFlow<String> = prefs.themeMode
-        .stateIn(viewModelScope, SharingStarted.Eagerly, "system")
+    // ── UI preferences (delegated) ────────────────────────────────────────────
+    val themeMode:        StateFlow<String>  = prefsState.themeMode
+    val accentIndex:      StateFlow<Int>     = prefsState.accentIndex
+    val customAccentHex:  StateFlow<String>  = prefsState.customAccentHex
+    val globalColoring:   StateFlow<Boolean> = prefsState.globalColoring
+    val granularColoring: StateFlow<Boolean> = prefsState.granularColoring
+    val currencyCode:     StateFlow<String>  = prefsState.currencyCode
+    val chartGranularity: StateFlow<String>  = prefsState.chartGranularity
+    val aiMode:           StateFlow<Boolean> = prefsState.aiMode
 
-    val accentIndex: StateFlow<Int> = prefs.accentColorIndex
-        .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
-
-    val globalColoring: StateFlow<Boolean> = prefs.globalColoring
-        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
-
-    val granularColoring: StateFlow<Boolean> = prefs.granularColoring
-        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
-
-    val currencyCode: StateFlow<String> = prefs.currencyCode
-        .stateIn(viewModelScope, SharingStarted.Eagerly, "USD")
-
-    val chartGranularity: StateFlow<String> = prefs.chartGranularity
-        .stateIn(viewModelScope, SharingStarted.Eagerly, "monthly")
-
-    val aiMode: StateFlow<Boolean> = prefs.aiMode
-        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
-
-    val customAccentHex: StateFlow<String> = prefs.customAccentHex
-        .stateIn(viewModelScope, SharingStarted.Eagerly, "2196F3")
-
-    val currencySymbol: StateFlow<String> = currencyCode
+    val currencySymbol: StateFlow<String> = prefsState.currencyCode
         .map { code -> AllCurrencies.firstOrNull { it.code == code }?.symbol ?: "$" }
+        .distinctUntilChanged()
         .stateIn(viewModelScope, SharingStarted.Eagerly, "$")
 
-    // ── Derived this-month / last-month data for the chart ───────────────────
+    // ── Transaction data ──────────────────────────────────────────────────────
+
+    val transactions: StateFlow<List<Transaction>> = repo.transactions
 
     val thisMonthDailyExpenses: StateFlow<List<Pair<Int, Double>>> = transactions
         .map { dailyExpenses(it, YearMonth.now()) }
@@ -79,20 +68,13 @@ class TransactionViewModel(
         .map { dailyExpenses(it, YearMonth.now().minusMonths(1)) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-
-    // ── Recent transactions (last 5 expenses) ────────────────────────────────
-
     val recentExpenses: StateFlow<List<Transaction>> = transactions
         .map { it.filter { t -> t.type == TransactionType.EXPENSE }.take(5) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    // ── Top categories this month ─────────────────────────────────────────────
-
     val topCategories: StateFlow<List<Pair<String, Double>>> = transactions
         .map { topCats(it, YearMonth.now()) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
-
-    // ── Reports: expense chart bars (granularity-aware, includes date ranges) ──
 
     val expenseChartBars: StateFlow<List<ChartBar>> =
         combine(transactions, chartGranularity) { txns, gran ->
@@ -104,7 +86,6 @@ class TransactionViewModel(
             }
         }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    // kept for backward-compat with anything still referencing it
     val monthlyTotals: StateFlow<List<Pair<String, Double>>> = transactions
         .map { monthlyExpensesLast6(it) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
@@ -112,8 +93,6 @@ class TransactionViewModel(
     val categoryTotalsThisMonth: StateFlow<List<Pair<String, Double>>> = transactions
         .map { topCats(it, YearMonth.now(), limit = 10) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
-
-    // ── Totals ────────────────────────────────────────────────────────────────
 
     val thisMonthExpense: StateFlow<Double> = transactions
         .map { monthTotal(it, YearMonth.now(), TransactionType.EXPENSE) }
@@ -136,41 +115,47 @@ class TransactionViewModel(
         viewModelScope.launch { repo.load() }
     }
 
-    fun addTransaction(t: Transaction) = viewModelScope.launch { repo.add(t) }
+    fun addTransaction(t: Transaction)    = viewModelScope.launch { repo.add(t) }
     fun updateTransaction(t: Transaction) = viewModelScope.launch { repo.update(t) }
-    fun deleteTransaction(id: String) = viewModelScope.launch { repo.delete(id) }
+    fun deleteTransaction(id: String)     = viewModelScope.launch { repo.delete(id) }
 
     fun exportCsv(uri: Uri) = viewModelScope.launch { repo.exportCsv(uri) }
     fun importCsv(uri: Uri) = viewModelScope.launch { repo.importCsv(uri) }
 
+    // ── Categories ────────────────────────────────────────────────────────────
+
+    private companion object {
+        val incomeNames = setOf("Salary", "Freelance", "Investment", "Other Income")
+    }
+
     val categories: StateFlow<List<CategoryItem>> = catRepo.categories
         .stateIn(viewModelScope, SharingStarted.Eagerly, DefaultCategories)
 
+    val expenseCategories: StateFlow<List<CategoryItem>> = categories
+        .map { list -> list.filter { it.name !in incomeNames } }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
     fun saveCategory(item: CategoryItem) = viewModelScope.launch {
-        val current = categories.value.toMutableList()
-        val idx = current.indexOfFirst { it.id == item.id }
-        if (idx >= 0) current[idx] = item else current.add(item)
-        catRepo.save(current)
+        catRepo.upsertCategory(categories.value, item)
     }
 
     fun deleteCategory(item: CategoryItem) = viewModelScope.launch {
-        val updated = categories.value.filter { it.id != item.id }
-        catRepo.save(updated)
+        catRepo.save(categories.value.filter { it.id != item.id })
     }
 
     fun categoryFor(name: String): CategoryItem? =
         categories.value.firstOrNull { it.name == name }
 
-    fun setThemeMode(mode: String)         = viewModelScope.launch { prefs.setThemeMode(mode) }
-    fun setAccentIndex(i: Int)             = viewModelScope.launch { prefs.setAccentColorIndex(i) }
-    fun setGlobalColoring(v: Boolean)      = viewModelScope.launch { prefs.setGlobalColoring(v) }
-    fun setGranularColoring(v: Boolean)    = viewModelScope.launch { prefs.setGranularColoring(v) }
-    fun setCurrencyCode(code: String)      = viewModelScope.launch { prefs.setCurrencyCode(code) }
-    fun setChartGranularity(value: String) = viewModelScope.launch { prefs.setChartGranularity(value) }
-    fun setAiMode(enabled: Boolean)         = viewModelScope.launch { prefs.setAiMode(enabled) }
-    fun setCustomAccentHex(hex: String)     = viewModelScope.launch { prefs.setCustomAccentHex(hex) }
+    // ── Preference setters (delegated) ────────────────────────────────────────
 
-    // helpers are now in com.budgettracker.app.util.BudgetCalculations
+    fun setThemeMode(mode: String)         = prefsState.setThemeMode(mode)
+    fun setAccentIndex(i: Int)             = prefsState.setAccentIndex(i)
+    fun setGlobalColoring(v: Boolean)      = prefsState.setGlobalColoring(v)
+    fun setGranularColoring(v: Boolean)    = prefsState.setGranularColoring(v)
+    fun setCurrencyCode(code: String)      = prefsState.setCurrencyCode(code)
+    fun setChartGranularity(value: String) = prefsState.setChartGranularity(value)
+    fun setAiMode(enabled: Boolean)        = prefsState.setAiMode(enabled)
+    fun setCustomAccentHex(hex: String)    = prefsState.setCustomAccentHex(hex)
 
     class Factory(
         private val repo: TransactionRepository,

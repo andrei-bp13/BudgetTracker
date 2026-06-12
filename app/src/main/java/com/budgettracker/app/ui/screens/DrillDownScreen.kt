@@ -25,8 +25,8 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.budgettracker.app.data.model.Transaction
-import com.budgettracker.app.data.model.TransactionType
 import com.budgettracker.app.ui.components.EditDeleteOverlay
+import com.budgettracker.app.util.filterExpensesByDateRange
 import com.budgettracker.app.ui.components.PaymentTypeIcon
 import com.budgettracker.app.ui.components.displayName
 import com.budgettracker.app.ui.icons.iconById
@@ -50,10 +50,7 @@ fun DrillDownScreen(
     val currencySymbol  = LocalCurrencySymbol.current
 
     val filtered = remember(allTransactions, startDate, endDate) {
-        allTransactions.filter {
-            it.type == TransactionType.EXPENSE &&
-            !it.date.isBefore(startDate) && !it.date.isAfter(endDate)
-        }
+        filterExpensesByDateRange(allTransactions, startDate, endDate)
     }
 
     val totalAmount = remember(filtered) { filtered.sumOf { it.amount } }
@@ -65,7 +62,7 @@ fun DrillDownScreen(
             .sortedByDescending { (_, txns) -> txns.sumOf { it.amount } }
     }
 
-    val expandedCategories = remember { mutableStateMapOf<String, Boolean>() }
+    val expandedCategories = remember(startDate, endDate) { mutableStateMapOf<String, Boolean>() }
     val dateFmt       = DateTimeFormatter.ofPattern("MMM d")
     val fallbackColor = MaterialTheme.colorScheme.primary
 
@@ -204,11 +201,12 @@ fun DrillDownScreen(
 
         // Overlay (scrim + edit/delete buttons) positioned over the long-pressed row
         val activeTxn = overlayTransaction
-        if (activeTxn != null && rootCoords != null) {
+        val coords    = rootCoords
+        if (activeTxn != null && coords != null) {
             EditDeleteOverlay(
                 transaction = activeTxn,
                 bounds      = overlayBounds,
-                rootCoords  = rootCoords!!,
+                rootCoords  = coords,
                 onEdit      = { t -> onEditTransaction(t) },
                 onDelete    = { t -> onDeleteTransaction(t) },
                 onDismiss   = { overlayTransaction = null }

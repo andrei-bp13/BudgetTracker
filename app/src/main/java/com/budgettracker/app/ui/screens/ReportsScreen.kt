@@ -38,10 +38,13 @@ import com.budgettracker.app.data.model.TransactionType
 import com.budgettracker.app.ui.theme.LocalCurrencySymbol
 import com.budgettracker.app.util.CatPeriod
 import com.budgettracker.app.util.catPeriods
+import com.budgettracker.app.util.computeCategoryTotals
 import com.budgettracker.app.util.computeMonthlyBars
 import com.budgettracker.app.util.computeWeeklyBars
 import com.budgettracker.app.util.computeYearlyBars
 import com.budgettracker.app.util.defaultCatPeriodIndex
+import com.budgettracker.app.util.filterExpensesByDateRange
+import com.budgettracker.app.util.filterInDateRange
 import com.budgettracker.app.viewmodel.ChartBar
 import com.budgettracker.app.viewmodel.TransactionViewModel
 import java.time.LocalDate
@@ -139,16 +142,9 @@ fun ReportsScreen(
     // All categories sorted — used for the detail sheet
     val catTotals = remember(allTransactions, selectedCatPeriod) {
         if (selectedCatPeriod == null) emptyList()
-        else allTransactions
-            .filter {
-                it.type == TransactionType.EXPENSE &&
-                !it.date.isBefore(selectedCatPeriod.startDate) &&
-                !it.date.isAfter(selectedCatPeriod.endDate)
-            }
-            .groupBy { it.category }
-            .mapValues { (_, v) -> v.sumOf { it.amount } }
-            .entries.sortedByDescending { it.value }
-            .map { it.key to it.value }
+        else computeCategoryTotals(
+            filterExpensesByDateRange(allTransactions, selectedCatPeriod.startDate, selectedCatPeriod.endDate)
+        )
     }
 
     // Top 6 shown; remainder folded into "Other" for chart + legend
@@ -214,30 +210,12 @@ fun ReportsScreen(
                                     tint     = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
-                            DropdownMenu(
-                                expanded         = showGranularityMenu,
-                                onDismissRequest = { showGranularityMenu = false }
-                            ) {
-                                granularityOptions.forEach { (key, label, sub) ->
-                                    DropdownMenuItem(
-                                        text = {
-                                            Column {
-                                                Text(label, style = MaterialTheme.typography.bodyMedium)
-                                                Text(sub, style = MaterialTheme.typography.labelSmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                            }
-                                        },
-                                        onClick = { viewModel.setChartGranularity(key); showGranularityMenu = false },
-                                        trailingIcon = {
-                                            if (granularity == key) Icon(
-                                                Icons.Outlined.Check, null,
-                                                tint     = MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                        }
-                                    )
-                                }
-                            }
+                            GranularityDropdownMenu(
+                                expanded    = showGranularityMenu,
+                                selectedKey = granularity,
+                                onDismiss   = { showGranularityMenu = false },
+                                onSelect    = { viewModel.setChartGranularity(it) }
+                            )
                         }
                     }
                 }
@@ -339,30 +317,12 @@ fun ReportsScreen(
                                     tint     = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
-                            DropdownMenu(
-                                expanded         = showCatGranMenu,
-                                onDismissRequest = { showCatGranMenu = false }
-                            ) {
-                                granularityOptions.forEach { (key, label, sub) ->
-                                    DropdownMenuItem(
-                                        text = {
-                                            Column {
-                                                Text(label, style = MaterialTheme.typography.bodyMedium)
-                                                Text(sub, style = MaterialTheme.typography.labelSmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                            }
-                                        },
-                                        onClick = { catGranularity = key; showCatGranMenu = false },
-                                        trailingIcon = {
-                                            if (catGranularity == key) Icon(
-                                                Icons.Outlined.Check, null,
-                                                tint     = MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                        }
-                                    )
-                                }
-                            }
+                            GranularityDropdownMenu(
+                                expanded    = showCatGranMenu,
+                                selectedKey = catGranularity,
+                                onDismiss   = { showCatGranMenu = false },
+                                onSelect    = { catGranularity = it }
+                            )
                         }
                     }
                 }
@@ -429,19 +389,52 @@ fun ReportsScreen(
     }
 
     // ── Category detail bottom sheet ──────────────────────────────────────────
-    if (catDetailCategory != null) {
-        val category = catDetailCategory!!
-        val period   = selectedCatPeriod
+    catDetailCategory?.let { category ->
         ModalBottomSheet(
             onDismissRequest = { catDetailCategory = null },
             sheetState       = catDetailSheetState
         ) {
             CategoryDetailSheet(
-                category       = category,
-                period         = period,
+                category        = category,
+                period          = selectedCatPeriod,
                 allTransactions = allTransactions,
-                viewModel      = viewModel,
-                currencySymbol = currencySymbol
+                viewModel       = viewModel,
+                currencySymbol  = currencySymbol
+            )
+        }
+    }
+}
+
+// ── Shared granularity dropdown ───────────────────────────────────────────────
+
+@Composable
+private fun GranularityDropdownMenu(
+    expanded: Boolean,
+    selectedKey: String,
+    onDismiss: () -> Unit,
+    onSelect: (String) -> Unit
+) {
+    DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
+        granularityOptions.forEach { (key, label, sub) ->
+            DropdownMenuItem(
+                text = {
+                    Column {
+                        Text(label, style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            sub,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
+                onClick = { onSelect(key); onDismiss() },
+                trailingIcon = {
+                    if (selectedKey == key) Icon(
+                        Icons.Outlined.Check, null,
+                        tint     = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
             )
         }
     }
@@ -648,10 +641,9 @@ private fun CategoryDetailSheet(
 ) {
     val catColor = viewModel.categoryFor(category)?.color ?: Color(0xFF9E9E9E)
     val txns = remember(allTransactions, category, period) {
-        allTransactions.filter {
-            it.category == category &&
-            (period == null || (!it.date.isBefore(period.startDate) && !it.date.isAfter(period.endDate)))
-        }.sortedByDescending { it.date }
+        val inRange = if (period == null) allTransactions
+                      else filterInDateRange(allTransactions, period.startDate, period.endDate)
+        inRange.filter { it.category == category }.sortedByDescending { it.date }
     }
     val total = txns.sumOf { it.amount }
     val dateFmt = DateTimeFormatter.ofPattern("d MMM")
