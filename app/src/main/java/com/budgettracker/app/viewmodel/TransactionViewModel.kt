@@ -17,10 +17,13 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.format.TextStyle
 import java.time.temporal.WeekFields
+import java.util.Locale
 
 data class ChartBar(
-    val label: String,
+    val label: String,      // short x-axis label
+    val title: String,      // full title used in drill-down screen
     val value: Double,
     val startDate: LocalDate,
     val endDate: LocalDate
@@ -194,8 +197,10 @@ class TransactionViewModel(
             val ym    = YearMonth.of(year, m)
             val start = ym.atDay(1)
             val end   = ym.atEndOfMonth()
+            val abbr  = ym.month.getDisplayName(TextStyle.SHORT, Locale.getDefault())
             ChartBar(
-                label     = ym.month.name.take(3),
+                label     = abbr,
+                title     = "${ym.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} $year",
                 value     = monthTotal(list, ym, TransactionType.EXPENSE),
                 startDate = start,
                 endDate   = end
@@ -203,21 +208,33 @@ class TransactionViewModel(
         }
     }
 
-    // last 12 ISO calendar weeks
+    // 7-day groups for the current month (last group may be shorter)
     private fun weeklyExpenses(list: List<Transaction>): List<ChartBar> {
-        val isoWeek   = WeekFields.ISO
-        val today     = LocalDate.now()
-        val weekStart = today.with(isoWeek.dayOfWeek(), 1)
-        return (11 downTo 0).map { offset ->
-            val start = weekStart.minusWeeks(offset.toLong())
-            val end   = start.plusDays(6)
-            val cwNum = start.get(isoWeek.weekOfWeekBasedYear())
-            val total = list.filter {
+        val today       = LocalDate.now()
+        val ym          = YearMonth.from(today)
+        val daysInMonth = ym.lengthOfMonth()
+        val monthAbbr   = ym.month.getDisplayName(TextStyle.SHORT, Locale.getDefault())
+        val bars        = mutableListOf<ChartBar>()
+        var day         = 1
+        while (day <= daysInMonth) {
+            val endDay = minOf(day + 6, daysInMonth)
+            val start  = ym.atDay(day)
+            val end    = ym.atDay(endDay)
+            val label  = if (day == endDay) "$day" else "$day-$endDay"
+            val total  = list.filter {
                 it.type == TransactionType.EXPENSE &&
                 !it.date.isBefore(start) && !it.date.isAfter(end)
             }.sumOf { it.amount }
-            ChartBar(label = "CW$cwNum", value = total, startDate = start, endDate = end)
+            bars.add(ChartBar(
+                label     = label,
+                title     = "$monthAbbr $label",
+                value     = total,
+                startDate = start,
+                endDate   = end
+            ))
+            day += 7
         }
+        return bars
     }
 
     // one bar per year — span from earliest year in data to current
@@ -229,6 +246,7 @@ class TransactionViewModel(
                             .sumOf { it.amount }
             ChartBar(
                 label     = "$y",
+                title     = "$y",
                 value     = total,
                 startDate = LocalDate.of(y, 1, 1),
                 endDate   = LocalDate.of(y, 12, 31)

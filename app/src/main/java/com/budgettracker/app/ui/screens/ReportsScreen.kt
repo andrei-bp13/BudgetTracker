@@ -35,7 +35,7 @@ import com.budgettracker.app.viewmodel.TransactionViewModel
 import java.time.LocalDate
 
 private val granularityOptions = listOf(
-    Triple("weekly",  "Weekly",  "Last 12 weeks"),
+    Triple("weekly",  "Weekly",  "This month in 7-day groups"),
     Triple("monthly", "Monthly", "All months this year"),
     Triple("yearly",  "Yearly",  "All years"),
 )
@@ -53,7 +53,7 @@ fun ReportsScreen(
     var showGranularityMenu by remember { mutableStateOf(false) }
 
     val chartTitle = when (granularity) {
-        "weekly"  -> "Expenses — Last 12 Weeks"
+        "weekly"  -> "Expenses — This Month by Week"
         "yearly"  -> "Expenses — By Year"
         else      -> "Expenses — This Year"
     }

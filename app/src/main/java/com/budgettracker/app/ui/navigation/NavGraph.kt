@@ -193,7 +193,7 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                             viewModel  = viewModel,
                             onBarClick = { bar ->
                                 navController.navigate(
-                                    Screen.DrillDown.route(bar.label, bar.startDate, bar.endDate)
+                                    Screen.DrillDown.route(bar.title, bar.startDate, bar.endDate)
                                 )
                             }
                         )
