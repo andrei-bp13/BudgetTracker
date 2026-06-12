@@ -4,12 +4,16 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -29,34 +33,133 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.budgettracker.app.data.model.Transaction
+import com.budgettracker.app.data.model.TransactionType
 import com.budgettracker.app.ui.theme.LocalCurrencySymbol
+import com.budgettracker.app.util.CatPeriod
+import com.budgettracker.app.util.catPeriods
+import com.budgettracker.app.util.computeMonthlyBars
+import com.budgettracker.app.util.computeWeeklyBars
+import com.budgettracker.app.util.computeYearlyBars
+import com.budgettracker.app.util.defaultCatPeriodIndex
 import com.budgettracker.app.viewmodel.ChartBar
 import com.budgettracker.app.viewmodel.TransactionViewModel
 import java.time.LocalDate
+import java.time.YearMonth
+import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle as JTextStyle
+import java.util.Locale
+
+// ── Granularity options ───────────────────────────────────────────────────────
 
 private val granularityOptions = listOf(
-    Triple("weekly",  "Weekly",  "This month in 7-day groups"),
-    Triple("monthly", "Monthly", "All months this year"),
+    Triple("weekly",  "Weekly",  "Selected month in 7-day groups"),
+    Triple("monthly", "Monthly", "All months of selected year"),
     Triple("yearly",  "Yearly",  "All years"),
 )
 
+// ── Screen ────────────────────────────────────────────────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReportsScreen(
     viewModel: TransactionViewModel,
     onBarClick: (ChartBar) -> Unit = {}
 ) {
-    val bars         by viewModel.expenseChartBars.collectAsState()
-    val granularity  by viewModel.chartGranularity.collectAsState()
-    val catTotals    by viewModel.categoryTotalsThisMonth.collectAsState()
-    val currencySymbol = LocalCurrencySymbol.current
+    val granularity     by viewModel.chartGranularity.collectAsState()
+    val allTransactions by viewModel.transactions.collectAsState()
+    val currencySymbol  = LocalCurrencySymbol.current
+    val today           = LocalDate.now()
 
+    // ── Expenses chart context ────────────────────────────────────────────────
+    var chartContextYear  by remember { mutableIntStateOf(today.year) }
+    var chartContextMonth by remember { mutableIntStateOf(today.monthValue) }
     var showGranularityMenu by remember { mutableStateOf(false) }
 
-    val chartTitle = when (granularity) {
-        "weekly"  -> "Expenses — This Month by Week"
-        "yearly"  -> "Expenses — By Year"
-        else      -> "Expenses — This Year"
+    val chartBars = remember(allTransactions, granularity, chartContextYear, chartContextMonth) {
+        when (granularity) {
+            "weekly"  -> computeWeeklyBars(allTransactions, chartContextYear, chartContextMonth)
+            "yearly"  -> computeYearlyBars(allTransactions)
+            else      -> computeMonthlyBars(allTransactions, chartContextYear)
+        }
     }
+
+    val availableChartYears = remember(allTransactions) {
+        (allTransactions.map { it.date.year } + today.year).toSortedSet().toList()
+    }
+
+    val chartTitle = when (granularity) {
+        "weekly"  -> {
+            val abbr = YearMonth.of(chartContextYear, chartContextMonth)
+                .month.getDisplayName(JTextStyle.SHORT, Locale.getDefault())
+            "Expenses — $abbr $chartContextYear by Week"
+        }
+        "yearly"  -> "Expenses — By Year"
+        else      -> "Expenses — $chartContextYear"
+    }
+
+    // When switching granularity, carry context forward
+    LaunchedEffect(granularity) {
+        // contextYear/Month already hold the last selection; no reset needed
+    }
+
+    val chartChipScrollState = rememberScrollState()
+    LaunchedEffect(granularity, chartContextYear, chartContextMonth) {
+        val idx = when (granularity) {
+            "monthly" -> availableChartYears.indexOf(chartContextYear).coerceAtLeast(0)
+            "weekly"  -> chartContextMonth - 1
+            else      -> 0
+        }
+        chartChipScrollState.animateScrollTo((idx * 58.dp.value).toInt())
+    }
+
+    // ── Category card context ─────────────────────────────────────────────────
+    var catGranularity  by remember { mutableStateOf("monthly") }
+    var showCatGranMenu by remember { mutableStateOf(false) }
+    var catContextYear  by remember { mutableIntStateOf(today.year) }
+    var catContextMonth by remember { mutableIntStateOf(today.monthValue) }
+
+    val catPeriods = remember(catGranularity, allTransactions, catContextYear, catContextMonth) {
+        catPeriods(catGranularity, allTransactions, catContextYear, catContextMonth)
+    }
+    var catPeriodIndex by remember { mutableIntStateOf(today.monthValue - 1) }
+    LaunchedEffect(catGranularity) {
+        catPeriodIndex = defaultCatPeriodIndex(catGranularity, catPeriods, catContextYear, catContextMonth)
+    }
+
+    val catChipScrollState = rememberScrollState()
+    LaunchedEffect(catPeriodIndex) {
+        catChipScrollState.animateScrollTo((catPeriodIndex * 58.dp.value).toInt())
+    }
+
+    val selectedCatPeriod = catPeriods.getOrNull(catPeriodIndex)
+    var catDetailCategory by remember { mutableStateOf<String?>(null) }
+    val catDetailSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    // All categories sorted — used for the detail sheet
+    val catTotals = remember(allTransactions, selectedCatPeriod) {
+        if (selectedCatPeriod == null) emptyList()
+        else allTransactions
+            .filter {
+                it.type == TransactionType.EXPENSE &&
+                !it.date.isBefore(selectedCatPeriod.startDate) &&
+                !it.date.isAfter(selectedCatPeriod.endDate)
+            }
+            .groupBy { it.category }
+            .mapValues { (_, v) -> v.sumOf { it.amount } }
+            .entries.sortedByDescending { it.value }
+            .map { it.key to it.value }
+    }
+
+    // Top 6 shown; remainder folded into "Other" for chart + legend
+    val catDisplay = remember(catTotals) {
+        val top = catTotals.take(6)
+        val otherAmount = catTotals.drop(6).sumOf { it.second }
+        if (otherAmount > 0.001) top + ("Other" to otherAmount) else top
+    }
+
+    val catTitle = selectedCatPeriod?.let { "Spending by Category — ${it.title}" }
+        ?: "Spending by Category"
 
     Column(
         modifier = Modifier
@@ -67,102 +170,255 @@ fun ReportsScreen(
     ) {
         // ── Expenses bar chart ────────────────────────────────────────────────
         Card(
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-            shape = MaterialTheme.shapes.extraLarge,
+            colors   = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+            shape    = MaterialTheme.shapes.extraLarge,
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
+
+                // Header
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier              = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment     = Alignment.CenterVertically
                 ) {
-                    Text(chartTitle, style = MaterialTheme.typography.titleMedium)
-                    Box {
+                    Text(
+                        chartTitle,
+                        style    = MaterialTheme.typography.titleMedium.copy(fontSize = 14.sp),
+                        modifier = Modifier.weight(1f)
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(
-                            onClick = { showGranularityMenu = true },
+                            onClick  = {
+                                chartContextYear  = today.year
+                                chartContextMonth = today.monthValue
+                            },
                             modifier = Modifier.size(32.dp)
                         ) {
                             Icon(
-                                Icons.Outlined.Tune,
-                                contentDescription = "Chart settings",
-                                modifier = Modifier.size(18.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                Icons.Outlined.Refresh,
+                                contentDescription = "Reset to current period",
+                                modifier = Modifier.size(16.dp),
+                                tint     = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        DropdownMenu(
-                            expanded = showGranularityMenu,
-                            onDismissRequest = { showGranularityMenu = false }
-                        ) {
-                            granularityOptions.forEach { (key, label, sub) ->
-                                DropdownMenuItem(
-                                    text = {
-                                        Column {
-                                            Text(label, style = MaterialTheme.typography.bodyMedium)
-                                            Text(
-                                                sub,
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                    },
-                                    onClick = {
-                                        viewModel.setChartGranularity(key)
-                                        showGranularityMenu = false
-                                    },
-                                    trailingIcon = {
-                                        if (granularity == key) {
-                                            Icon(
+                        Box {
+                            IconButton(
+                                onClick  = { showGranularityMenu = true },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    Icons.Outlined.Tune,
+                                    contentDescription = "Chart settings",
+                                    modifier = Modifier.size(18.dp),
+                                    tint     = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            DropdownMenu(
+                                expanded         = showGranularityMenu,
+                                onDismissRequest = { showGranularityMenu = false }
+                            ) {
+                                granularityOptions.forEach { (key, label, sub) ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Column {
+                                                Text(label, style = MaterialTheme.typography.bodyMedium)
+                                                Text(sub, style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            }
+                                        },
+                                        onClick = { viewModel.setChartGranularity(key); showGranularityMenu = false },
+                                        trailingIcon = {
+                                            if (granularity == key) Icon(
                                                 Icons.Outlined.Check, null,
-                                                tint = MaterialTheme.colorScheme.primary,
+                                                tint     = MaterialTheme.colorScheme.primary,
                                                 modifier = Modifier.size(16.dp)
                                             )
                                         }
-                                    }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Context chips — year selector (monthly) or month selector (weekly)
+                if (granularity == "monthly" || granularity == "weekly") {
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        modifier              = Modifier.fillMaxWidth().horizontalScroll(chartChipScrollState),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        if (granularity == "monthly") {
+                            availableChartYears.forEach { y ->
+                                FilterChip(
+                                    selected = y == chartContextYear,
+                                    onClick  = { chartContextYear = y },
+                                    label    = { Text("$y", style = MaterialTheme.typography.labelSmall) }
+                                )
+                            }
+                        } else { // weekly
+                            (1..12).forEach { m ->
+                                val abbr = YearMonth.of(chartContextYear, m)
+                                    .month.getDisplayName(JTextStyle.SHORT, Locale.getDefault())
+                                FilterChip(
+                                    selected = m == chartContextMonth,
+                                    onClick  = { chartContextMonth = m },
+                                    label    = { Text(abbr, style = MaterialTheme.typography.labelSmall) }
                                 )
                             }
                         }
                     }
                 }
+
                 Spacer(Modifier.height(12.dp))
                 ExpenseBarChart(
-                    bars           = bars,
+                    bars           = chartBars,
                     currencySymbol = currencySymbol,
-                    onBarClick     = onBarClick
+                    onBarClick     = { bar ->
+                        // Carry context forward before navigating
+                        when (granularity) {
+                            "yearly"  -> chartContextYear = bar.startDate.year
+                            "monthly" -> {
+                                chartContextYear  = bar.startDate.year
+                                chartContextMonth = bar.startDate.monthValue
+                            }
+                        }
+                        onBarClick(bar)
+                    }
                 )
             }
         }
 
-        // ── Donut chart for category breakdown ────────────────────────────────
+        // ── Spending by category ──────────────────────────────────────────────
         Card(
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-            shape = MaterialTheme.shapes.extraLarge,
+            colors   = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+            shape    = MaterialTheme.shapes.extraLarge,
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
-                Text("Spending by Category — This Month", style = MaterialTheme.typography.titleMedium)
-                Spacer(Modifier.height(16.dp))
-                if (catTotals.isEmpty()) {
+
+                // Header
+                Row(
+                    modifier              = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment     = Alignment.CenterVertically
+                ) {
                     Text(
-                        "No data this month",
+                        catTitle,
+                        style    = MaterialTheme.typography.titleMedium.copy(fontSize = 14.sp),
+                        modifier = Modifier.weight(1f)
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(
+                            onClick  = {
+                                catContextYear  = today.year
+                                catContextMonth = today.monthValue
+                                catPeriodIndex  = defaultCatPeriodIndex(
+                                    catGranularity, catPeriods, today.year, today.monthValue
+                                )
+                            },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                Icons.Outlined.Refresh,
+                                contentDescription = "Reset to current period",
+                                modifier = Modifier.size(16.dp),
+                                tint     = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Box {
+                            IconButton(
+                                onClick  = { showCatGranMenu = true },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    Icons.Outlined.Tune,
+                                    contentDescription = "Period settings",
+                                    modifier = Modifier.size(18.dp),
+                                    tint     = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            DropdownMenu(
+                                expanded         = showCatGranMenu,
+                                onDismissRequest = { showCatGranMenu = false }
+                            ) {
+                                granularityOptions.forEach { (key, label, sub) ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Column {
+                                                Text(label, style = MaterialTheme.typography.bodyMedium)
+                                                Text(sub, style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            }
+                                        },
+                                        onClick = { catGranularity = key; showCatGranMenu = false },
+                                        trailingIcon = {
+                                            if (catGranularity == key) Icon(
+                                                Icons.Outlined.Check, null,
+                                                tint     = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Period chip selector
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    modifier              = Modifier.fillMaxWidth().horizontalScroll(catChipScrollState),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    catPeriods.forEachIndexed { i, period ->
+                        FilterChip(
+                            selected = i == catPeriodIndex,
+                            onClick  = {
+                                catPeriodIndex = i
+                                when (catGranularity) {
+                                    "yearly"  -> catContextYear  = period.startDate.year
+                                    "monthly" -> {
+                                        catContextYear  = period.startDate.year
+                                        catContextMonth = period.startDate.monthValue
+                                    }
+                                    "weekly"  -> {
+                                        catContextYear  = period.startDate.year
+                                        catContextMonth = period.startDate.monthValue
+                                    }
+                                }
+                            },
+                            label = { Text(period.label, style = MaterialTheme.typography.labelSmall) }
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(12.dp))
+
+                if (catDisplay.isEmpty()) {
+                    Text(
+                        "No data for this period",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 } else {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier              = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment     = Alignment.CenterVertically
                     ) {
                         DonutChart(
-                            categories = catTotals,
+                            categories = catDisplay,
                             viewModel  = viewModel,
                             modifier   = Modifier.size(140.dp)
                         )
                         CategoryLegend(
-                            categories = catTotals,
-                            viewModel  = viewModel,
-                            modifier   = Modifier.weight(1f)
+                            categories      = catDisplay,
+                            viewModel       = viewModel,
+                            onCategoryClick = { if (it != "Other") catDetailCategory = it },
+                            modifier        = Modifier.weight(1f)
                         )
                     }
                 }
@@ -171,7 +427,27 @@ fun ReportsScreen(
 
         Spacer(Modifier.height(80.dp))
     }
+
+    // ── Category detail bottom sheet ──────────────────────────────────────────
+    if (catDetailCategory != null) {
+        val category = catDetailCategory!!
+        val period   = selectedCatPeriod
+        ModalBottomSheet(
+            onDismissRequest = { catDetailCategory = null },
+            sheetState       = catDetailSheetState
+        ) {
+            CategoryDetailSheet(
+                category       = category,
+                period         = period,
+                allTransactions = allTransactions,
+                viewModel      = viewModel,
+                currencySymbol = currencySymbol
+            )
+        }
+    }
 }
+
+// ── Bar chart ─────────────────────────────────────────────────────────────────
 
 @Composable
 private fun ExpenseBarChart(
@@ -186,11 +462,11 @@ private fun ExpenseBarChart(
     val density      = LocalDensity.current
     val labelStyle   = TextStyle(fontSize = 10.sp, color = labelColor)
 
-    val maxVal = bars.maxOfOrNull { it.value }?.coerceAtLeast(1.0) ?: 1.0
+    val maxVal   = bars.maxOfOrNull { it.value }?.coerceAtLeast(1.0) ?: 1.0
     val animProg by animateFloatAsState(
-        targetValue = 1f,
+        targetValue   = 1f,
         animationSpec = spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessVeryLow),
-        label = "bar"
+        label         = "bar"
     )
 
     fun fmtLabel(v: Double): String = when {
@@ -199,8 +475,6 @@ private fun ExpenseBarChart(
         else           -> "%.0f".format(v)
     }
 
-    // Measure y-label width and x-label height outside Canvas so we can use
-    // the same values for the transparent tap overlay Row.
     val yLabelWidthPx = remember(maxVal, textMeasurer) {
         listOf(maxVal, maxVal * 0.66, maxVal * 0.33)
             .maxOf { textMeasurer.measure(fmtLabel(it), labelStyle).size.width }
@@ -209,16 +483,15 @@ private fun ExpenseBarChart(
     val xLabelHeightPx = remember(textMeasurer) {
         textMeasurer.measure("Jan", labelStyle).size.height.toFloat()
     }
-    val leftMarginDp   = with(density) { (yLabelWidthPx + 18f).toDp() }
-    val bottomPadDp    = with(density) { (xLabelHeightPx + 6.dp.toPx()).toDp() }
+    val leftMarginDp = with(density) { (yLabelWidthPx + 18f).toDp() }
+    val bottomPadDp  = with(density) { (xLabelHeightPx + 6.dp.toPx()).toDp() }
 
     Box(modifier = Modifier.fillMaxWidth().height(180.dp)) {
         Canvas(modifier = Modifier.fillMaxWidth().fillMaxHeight()) {
-            val lm      = yLabelWidthPx + 18f
-            val chartW  = size.width - lm
-            val chartH  = size.height - xLabelHeightPx - 6.dp.toPx()
+            val lm     = yLabelWidthPx + 18f
+            val chartW = size.width - lm
+            val chartH = size.height - xLabelHeightPx - 6.dp.toPx()
 
-            // Grid + y-axis labels
             listOf(1.0, 0.66, 0.33).forEach { frac ->
                 val y    = chartH * (1f - frac.toFloat())
                 val meas = textMeasurer.measure(fmtLabel(maxVal * frac), labelStyle)
@@ -227,7 +500,6 @@ private fun ExpenseBarChart(
             }
             drawLine(gridColor, Offset(lm, chartH), Offset(size.width, chartH), strokeWidth = 0.5.dp.toPx())
 
-            // Bars + x-axis labels (full label, no truncation)
             val groupW = chartW / bars.size.coerceAtLeast(1)
             val barW   = groupW * 0.5f
             bars.forEachIndexed { i, bar ->
@@ -244,7 +516,6 @@ private fun ExpenseBarChart(
             }
         }
 
-        // Transparent tap targets aligned to each bar column
         if (bars.isNotEmpty()) {
             Row(
                 modifier = Modifier
@@ -264,6 +535,25 @@ private fun ExpenseBarChart(
     }
 }
 
+// ── Donut + legend ────────────────────────────────────────────────────────────
+
+private val chartPalette = listOf(
+    Color(0xFF4361EE), // vivid blue
+    Color(0xFFF72585), // hot pink
+    Color(0xFF4CC9F0), // sky blue
+    Color(0xFF06D6A0), // emerald
+    Color(0xFFFFB703), // golden amber
+    Color(0xFFE63946), // coral red
+    Color(0xFF8338EC), // violet
+    Color(0xFFFB8500), // orange
+    Color(0xFF118AB2), // teal blue
+    Color(0xFFBDE0FE), // pale blue (unlikely to be reached)
+)
+private val otherColor = Color(0xFFB0BEC5) // neutral blue-grey for "Other"
+
+private fun chartColor(index: Int, categoryName: String): Color =
+    if (categoryName == "Other") otherColor else chartPalette.getOrElse(index) { otherColor }
+
 @Composable
 private fun DonutChart(
     categories: List<Pair<String, Double>>,
@@ -271,11 +561,11 @@ private fun DonutChart(
     modifier: Modifier = Modifier
 ) {
     val total    = categories.sumOf { it.second }.coerceAtLeast(0.01)
-    val colors   = categories.map { (cat, _) -> viewModel.categoryFor(cat)?.color ?: Color(0xFF9E9E9E) }
+    val colors   = categories.mapIndexed { i, (cat, _) -> chartColor(i, cat) }
     val animProg by animateFloatAsState(
-        targetValue = 1f,
+        targetValue   = 1f,
         animationSpec = spring(Spring.DampingRatioLowBouncy, Spring.StiffnessVeryLow),
-        label = "donut"
+        label         = "donut"
     )
 
     Canvas(modifier = modifier) {
@@ -304,33 +594,155 @@ private fun DonutChart(
 private fun CategoryLegend(
     categories: List<Pair<String, Double>>,
     viewModel: TransactionViewModel,
+    onCategoryClick: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val total = categories.sumOf { it.second }.coerceAtLeast(0.01)
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        categories.take(6).forEach { (cat, amount) ->
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        categories.forEachIndexed { i, (cat, amount) ->
+            val dotColor  = chartColor(i, cat)
+            val isOther   = cat == "Other"
             Row(
-                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(6.dp))
+                    .then(if (!isOther) Modifier.clickable { onCategoryClick(cat) } else Modifier)
+                    .padding(horizontal = 4.dp, vertical = 3.dp),
+                verticalAlignment     = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Box(
                     modifier = Modifier
                         .size(8.dp)
                         .clip(RoundedCornerShape(50))
-                        .background(viewModel.categoryFor(cat)?.color ?: Color(0xFF9E9E9E))
+                        .background(dotColor)
                 )
                 Text(
                     cat,
-                    style = MaterialTheme.typography.labelSmall,
+                    style  = MaterialTheme.typography.labelSmall,
+                    color  = if (isOther) MaterialTheme.colorScheme.onSurfaceVariant
+                             else MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f),
                     maxLines = 1
                 )
                 Text(
                     "${"%.0f".format(amount / total * 100)}%",
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = if (isOther) MaterialTheme.colorScheme.onSurfaceVariant
+                            else MaterialTheme.colorScheme.onSurface
                 )
             }
         }
+    }
+}
+
+// ── Category detail bottom sheet ──────────────────────────────────────────────
+
+@Composable
+private fun CategoryDetailSheet(
+    category: String,
+    period: CatPeriod?,
+    allTransactions: List<Transaction>,
+    viewModel: TransactionViewModel,
+    currencySymbol: String
+) {
+    val catColor = viewModel.categoryFor(category)?.color ?: Color(0xFF9E9E9E)
+    val txns = remember(allTransactions, category, period) {
+        allTransactions.filter {
+            it.category == category &&
+            (period == null || (!it.date.isBefore(period.startDate) && !it.date.isAfter(period.endDate)))
+        }.sortedByDescending { it.date }
+    }
+    val total = txns.sumOf { it.amount }
+    val dateFmt = DateTimeFormatter.ofPattern("d MMM")
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        // Header
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(12.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(catColor)
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(category, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                if (period != null) {
+                    Text(
+                        period.title,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Text(
+                "$currencySymbol${"%.2f".format(total)}",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = catColor
+            )
+        }
+
+        HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp))
+
+        if (txns.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxWidth().padding(40.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("No transactions in this period", style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(0.dp)
+            ) {
+                items(txns) { txn ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            txn.date.format(dateFmt),
+                            style    = MaterialTheme.typography.labelMedium,
+                            color    = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.width(48.dp)
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(txn.title, style = MaterialTheme.typography.bodyMedium, maxLines = 1)
+                            if (txn.note.isNotBlank()) {
+                                Text(
+                                    txn.note,
+                                    style   = MaterialTheme.typography.labelSmall,
+                                    color   = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1
+                                )
+                            }
+                        }
+                        Text(
+                            "$currencySymbol${"%.2f".format(txn.amount)}",
+                            style    = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                            color    = if (txn.type == TransactionType.EXPENSE)
+                                           MaterialTheme.colorScheme.error
+                                       else
+                                           MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                }
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
     }
 }

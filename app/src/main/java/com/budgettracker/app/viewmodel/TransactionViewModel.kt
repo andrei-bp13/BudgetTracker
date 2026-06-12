@@ -13,13 +13,17 @@ import com.budgettracker.app.data.model.TransactionType
 import com.budgettracker.app.data.repository.CategoryRepository
 import com.budgettracker.app.data.repository.PreferencesRepository
 import com.budgettracker.app.data.repository.TransactionRepository
+import com.budgettracker.app.util.dailyExpenses
+import com.budgettracker.app.util.monthTotal
+import com.budgettracker.app.util.monthlyExpensesForYear
+import com.budgettracker.app.util.monthlyExpensesLast6
+import com.budgettracker.app.util.topCats
+import com.budgettracker.app.util.weeklyExpensesForMonth
+import com.budgettracker.app.util.yearlyExpenses
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.YearMonth
-import java.time.format.TextStyle
-import java.time.temporal.WeekFields
-import java.util.Locale
 
 data class ChartBar(
     val label: String,      // short x-axis label
@@ -58,6 +62,9 @@ class TransactionViewModel(
     val aiMode: StateFlow<Boolean> = prefs.aiMode
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
+    val customAccentHex: StateFlow<String> = prefs.customAccentHex
+        .stateIn(viewModelScope, SharingStarted.Eagerly, "2196F3")
+
     val currencySymbol: StateFlow<String> = currencyCode
         .map { code -> AllCurrencies.firstOrNull { it.code == code }?.symbol ?: "$" }
         .stateIn(viewModelScope, SharingStarted.Eagerly, "$")
@@ -71,6 +78,7 @@ class TransactionViewModel(
     val lastMonthDailyExpenses: StateFlow<List<Pair<Int, Double>>> = transactions
         .map { dailyExpenses(it, YearMonth.now().minusMonths(1)) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
 
     // ── Recent transactions (last 5 expenses) ────────────────────────────────
 
@@ -88,10 +96,11 @@ class TransactionViewModel(
 
     val expenseChartBars: StateFlow<List<ChartBar>> =
         combine(transactions, chartGranularity) { txns, gran ->
+            val today = LocalDate.now()
             when (gran) {
-                "weekly"  -> weeklyExpenses(txns)
-                "yearly"  -> yearlyExpenses(txns)
-                else      -> monthlyExpensesThisYear(txns)
+                "weekly"  -> weeklyExpensesForMonth(txns, today.year, today.monthValue)
+                "yearly"  -> yearlyExpenses(txns, today.year)
+                else      -> monthlyExpensesForYear(txns, today.year)
             }
         }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
@@ -158,108 +167,10 @@ class TransactionViewModel(
     fun setGranularColoring(v: Boolean)    = viewModelScope.launch { prefs.setGranularColoring(v) }
     fun setCurrencyCode(code: String)      = viewModelScope.launch { prefs.setCurrencyCode(code) }
     fun setChartGranularity(value: String) = viewModelScope.launch { prefs.setChartGranularity(value) }
-    fun setAiMode(enabled: Boolean)        = viewModelScope.launch { prefs.setAiMode(enabled) }
+    fun setAiMode(enabled: Boolean)         = viewModelScope.launch { prefs.setAiMode(enabled) }
+    fun setCustomAccentHex(hex: String)     = viewModelScope.launch { prefs.setCustomAccentHex(hex) }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    private fun dailyExpenses(list: List<Transaction>, month: YearMonth): List<Pair<Int, Double>> {
-        val days = month.lengthOfMonth()
-        val byDay = list
-            .filter { it.type == TransactionType.EXPENSE && YearMonth.from(it.date) == month }
-            .groupBy { it.date.dayOfMonth }
-            .mapValues { (_, v) -> v.sumOf { it.amount } }
-
-        var cumulative = 0.0
-        return (1..days).map { d ->
-            cumulative += byDay[d] ?: 0.0
-            d to cumulative
-        }
-    }
-
-    private fun topCats(list: List<Transaction>, month: YearMonth, limit: Int = 5): List<Pair<String, Double>> =
-        list.filter { it.type == TransactionType.EXPENSE && YearMonth.from(it.date) == month }
-            .groupBy { it.category }
-            .mapValues { (_, v) -> v.sumOf { it.amount } }
-            .entries.sortedByDescending { it.value }
-            .take(limit)
-            .map { it.key to it.value }
-
-    // last 6 months (kept for any legacy callers)
-    private fun monthlyExpensesLast6(list: List<Transaction>): List<Pair<String, Double>> {
-        val now = YearMonth.now()
-        return (5 downTo 0).map { offset ->
-            val month = now.minusMonths(offset.toLong())
-            val label = "${month.month.name.take(3)} ${month.year}"
-            label to monthTotal(list, month, TransactionType.EXPENSE)
-        }
-    }
-
-    // all 12 months of the current year
-    private fun monthlyExpensesThisYear(list: List<Transaction>): List<ChartBar> {
-        val year = LocalDate.now().year
-        return (1..12).map { m ->
-            val ym    = YearMonth.of(year, m)
-            val start = ym.atDay(1)
-            val end   = ym.atEndOfMonth()
-            val abbr  = ym.month.getDisplayName(TextStyle.SHORT, Locale.getDefault())
-            ChartBar(
-                label     = abbr,
-                title     = "${ym.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} $year",
-                value     = monthTotal(list, ym, TransactionType.EXPENSE),
-                startDate = start,
-                endDate   = end
-            )
-        }
-    }
-
-    // 7-day groups for the current month (last group may be shorter)
-    private fun weeklyExpenses(list: List<Transaction>): List<ChartBar> {
-        val today       = LocalDate.now()
-        val ym          = YearMonth.from(today)
-        val daysInMonth = ym.lengthOfMonth()
-        val monthAbbr   = ym.month.getDisplayName(TextStyle.SHORT, Locale.getDefault())
-        val bars        = mutableListOf<ChartBar>()
-        var day         = 1
-        while (day <= daysInMonth) {
-            val endDay = minOf(day + 6, daysInMonth)
-            val start  = ym.atDay(day)
-            val end    = ym.atDay(endDay)
-            val label  = if (day == endDay) "$day" else "$day-$endDay"
-            val total  = list.filter {
-                it.type == TransactionType.EXPENSE &&
-                !it.date.isBefore(start) && !it.date.isAfter(end)
-            }.sumOf { it.amount }
-            bars.add(ChartBar(
-                label     = label,
-                title     = "$monthAbbr $label",
-                value     = total,
-                startDate = start,
-                endDate   = end
-            ))
-            day += 7
-        }
-        return bars
-    }
-
-    // one bar per year — span from earliest year in data to current
-    private fun yearlyExpenses(list: List<Transaction>): List<ChartBar> {
-        val currentYear = LocalDate.now().year
-        val firstYear   = list.minOfOrNull { it.date.year } ?: currentYear
-        return (firstYear..currentYear).map { y ->
-            val total = list.filter { it.type == TransactionType.EXPENSE && it.date.year == y }
-                            .sumOf { it.amount }
-            ChartBar(
-                label     = "$y",
-                title     = "$y",
-                value     = total,
-                startDate = LocalDate.of(y, 1, 1),
-                endDate   = LocalDate.of(y, 12, 31)
-            )
-        }
-    }
-
-    private fun monthTotal(list: List<Transaction>, month: YearMonth, type: TransactionType): Double =
-        list.filter { it.type == type && YearMonth.from(it.date) == month }.sumOf { it.amount }
+    // helpers are now in com.budgettracker.app.util.BudgetCalculations
 
     class Factory(
         private val repo: TransactionRepository,

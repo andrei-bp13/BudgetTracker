@@ -1,0 +1,54 @@
+package com.budgettracker.app.data.csv
+
+import com.budgettracker.app.data.model.PaymentType
+import com.budgettracker.app.data.model.Transaction
+import com.budgettracker.app.data.model.TransactionType
+import java.time.LocalDate
+import java.util.UUID
+
+const val CSV_HEADER = "id,title,amount,type,category,date,note,payment_type"
+
+fun splitCsvLine(line: String): List<String> {
+    val result   = mutableListOf<String>()
+    val sb       = StringBuilder()
+    var inQuotes = false
+    var i        = 0
+    while (i < line.length) {
+        when {
+            // "" inside a quoted field → literal " character (RFC 4180)
+            line[i] == '"' && inQuotes && i + 1 < line.length && line[i + 1] == '"' -> {
+                sb.append('"'); i += 2
+            }
+            line[i] == '"'              -> { inQuotes = !inQuotes; i++ }
+            line[i] == ',' && !inQuotes -> { result.add(sb.toString()); sb.clear(); i++ }
+            else                        -> { sb.append(line[i]); i++ }
+        }
+    }
+    result.add(sb.toString())
+    return result
+}
+
+fun escapeCsv(value: String): String =
+    if (value.contains(',') || value.contains('"'))
+        "\"${value.replace("\"", "\"\"")}\"" else value
+
+fun parseCsvLine(line: String): Transaction? = runCatching {
+    val cols = splitCsvLine(line)
+    if (cols.size < 6) return null
+    Transaction(
+        id          = cols[0].ifBlank { UUID.randomUUID().toString() },
+        title       = cols[1],
+        amount      = cols[2].toDouble(),
+        type        = TransactionType.valueOf(cols[3]),
+        category    = cols[4],
+        date        = LocalDate.parse(cols[5]),
+        note        = if (cols.size > 6) cols[6] else "",
+        paymentType = if (cols.size > 7)
+                          runCatching { PaymentType.valueOf(cols[7]) }.getOrDefault(PaymentType.DEBIT)
+                      else PaymentType.DEBIT
+    )
+}.getOrNull()
+
+fun serializeCsvLine(t: Transaction): String =
+    "${t.id},${escapeCsv(t.title)},${t.amount},${t.type.name}," +
+    "${escapeCsv(t.category)},${t.date},${escapeCsv(t.note)},${t.paymentType.name}"

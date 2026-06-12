@@ -19,7 +19,7 @@ val DefaultCategories: List<CategoryItem> = listOf(
     CategoryItem("cat_transport",    "Transportation",   "car",             "#1E88E5"),
     CategoryItem("cat_entertainment","Entertainment",    "movie",           "#FF6F00"),
     CategoryItem("cat_healthcare",   "Healthcare",       "hospital",        "#00897B"),
-    CategoryItem("cat_housing",      "Housing",          "home",            "#6D4C41"),
+    CategoryItem("cat_housing",      "Housing",          "home",            "#5C6BC0"),
     CategoryItem("cat_utilities",    "Utilities",        "electric",        "#757575"),
     CategoryItem("cat_education",    "Education",        "school",          "#039BE5"),
     CategoryItem("cat_travel",       "Travel",           "flight",          "#43A047"),
@@ -36,11 +36,26 @@ val DefaultCategories: List<CategoryItem> = listOf(
 )
 
 val CategoryColorOptions: List<Color> = listOf(
-    Color(0xFFE53935), Color(0xFFFF5722), Color(0xFFFF9800), Color(0xFFFFC107),
-    Color(0xFF8BC34A), Color(0xFF4CAF50), Color(0xFF009688), Color(0xFF00BCD4),
-    Color(0xFF2196F3), Color(0xFF3F51B5), Color(0xFF9C27B0), Color(0xFFE91E63),
-    Color(0xFF795548), Color(0xFF607D8B), Color(0xFF757575), Color(0xFF1E88E5),
-    Color(0xFF43A047), Color(0xFFD81B60), Color(0xFF00897B), Color(0xFF6D4C41),
+    Color(0xFFEF5350), // Red
+    Color(0xFFFF7043), // Deep Orange
+    Color(0xFFFFB300), // Amber
+    Color(0xFFFDD835), // Yellow
+    Color(0xFF66BB6A), // Green
+    Color(0xFF26A69A), // Teal
+    Color(0xFF29B6F6), // Sky Blue
+    Color(0xFF1E88E5), // Blue
+    Color(0xFF5C6BC0), // Indigo
+    Color(0xFF7E57C2), // Deep Purple
+    Color(0xFFAB47BC), // Purple
+    Color(0xFFEC407A), // Pink
+    Color(0xFFF06292), // Light Pink
+    Color(0xFF00BCD4), // Cyan
+    Color(0xFF00E5FF), // Bright Cyan
+    Color(0xFF69F0AE), // Light Green
+    Color(0xFFFFCC02), // Gold
+    Color(0xFFFF6E40), // Coral
+    Color(0xFF607D8B), // Blue-Grey
+    Color(0xFF9E9E9E), // Grey
 )
 
 fun colorToHex(color: Color): String {
