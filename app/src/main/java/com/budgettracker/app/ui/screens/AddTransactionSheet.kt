@@ -208,18 +208,18 @@ fun AddTransactionSheet(
             val trackColor = MaterialTheme.colorScheme.surfaceVariant
             val thumbColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
 
-            // Grid clipped so partial items at edges are hidden
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(MaterialTheme.shapes.medium)
-            ) {
+            // Grid sized to an exact multiple of (item + gap) so no partial items appear
+            val itemW = 80f  // dp
+            val gap   = 8f   // dp
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                val cols      = ((maxWidth.value + gap) / (itemW + gap)).toInt().coerceAtLeast(2)
+                val gridWidth = (itemW * cols + gap * (cols - 1)).dp
                 LazyHorizontalGrid(
                     rows                  = GridCells.Fixed(2),
                     state                 = gridState,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement   = Arrangement.spacedBy(8.dp),
-                    modifier              = Modifier.fillMaxWidth().height(152.dp)
+                    horizontalArrangement = Arrangement.spacedBy(gap.dp),
+                    verticalArrangement   = Arrangement.spacedBy(gap.dp),
+                    modifier              = Modifier.width(gridWidth).height(152.dp)
                 ) {
                     items(categories, key = { it.id }) { cat ->
                         val selected = selectedCat == cat.name
@@ -263,7 +263,7 @@ fun AddTransactionSheet(
                         }
                     }
                 }
-            }
+            } // BoxWithConstraints
 
             // Scrollbar — only shown when content overflows
             if (thumbWidthFraction < 1f) {
