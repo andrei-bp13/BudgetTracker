@@ -38,7 +38,7 @@ fun TopCategoriesCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {
                 val maxAmount = categories.maxOf { it.second }.coerceAtLeast(0.01)
-                categories.forEach { (name, amount) ->
+                categories.forEachIndexed { i, (name, amount) ->
                     CategoryBarRow(
                         name            = name,
                         amount          = amount,
@@ -47,7 +47,13 @@ fun TopCategoriesCard(
                         iconId          = categoryFor(name)?.iconId ?: "more_horiz",
                         onCategoryClick = { onCategoryClick(name) }
                     )
-                    Spacer(Modifier.height(10.dp))
+                    if (i < categories.lastIndex) {
+                        HorizontalDivider(
+                            modifier  = Modifier.padding(vertical = 8.dp),
+                            color     = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                            thickness = 0.5.dp
+                        )
+                    }
                 }
             }
         }

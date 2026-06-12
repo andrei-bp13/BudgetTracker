@@ -59,9 +59,9 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                         val route = currentEntry?.destination?.route
                         Text(
                             when (route) {
-                                "home"    -> "BudgetTracker"
+                                "home"    -> "Dashboard"
                                 "reports" -> "Reports"
-                                else      -> "BudgetTracker"
+                                else      -> "Dashboard"
                             },
                             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black)
                         )
@@ -116,7 +116,7 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                         onClick  = { showAddSheet = true },
                         icon = {
                             Surface(
-                                shape = MaterialTheme.shapes.large,
+                                shape = androidx.compose.foundation.shape.CircleShape,
                                 color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(48.dp)
                             ) {

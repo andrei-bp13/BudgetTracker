@@ -48,7 +48,7 @@ fun HomeScreen(
     ) {
         // ── Month summary card ────────────────────────────────────────────────
         Card(
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
             shape = MaterialTheme.shapes.extraLarge,
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -60,17 +60,17 @@ fun HomeScreen(
                 Text(
                     "Total spent this month",
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
                     "$currencySymbol ${"%.2f".format(expense)}",
                     style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Spacer(Modifier.height(12.dp))
                 HorizontalDivider(
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
                     thickness = 0.5.dp
                 )
                 Spacer(Modifier.height(10.dp))
@@ -83,21 +83,20 @@ fun HomeScreen(
                 ) {
                     PaymentType.values().forEach { pt ->
                         val amount = byPaymentType[pt] ?: 0.0
-                        val iconTint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(3.dp)
                         ) {
-                            PaymentTypeIcon(type = pt, tint = iconTint, size = 18.dp)
+                            PaymentTypeIcon(type = pt, tint = MaterialTheme.colorScheme.onSurfaceVariant, size = 18.dp)
                             Text(
                                 "$currencySymbol ${"%.0f".format(amount)}",
                                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
                                 pt.displayName(),
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f)
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -127,21 +126,23 @@ fun HomeScreen(
 
         // ── Two-column lower section ──────────────────────────────────────────
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Max),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             RecentSpendingCard(
                 transactions = recent,
                 resolveColor = resolveColor,
                 categoryFor  = { viewModel.categoryFor(it) },
-                modifier     = Modifier.weight(1f)
+                modifier     = Modifier.weight(1f).fillMaxHeight()
             )
             TopCategoriesCard(
                 categories      = topCats,
                 resolveColor    = resolveColor,
                 categoryFor     = { viewModel.categoryFor(it) },
                 onCategoryClick = onCategoryClick,
-                modifier        = Modifier.weight(1f)
+                modifier        = Modifier.weight(1f).fillMaxHeight()
             )
         }
 

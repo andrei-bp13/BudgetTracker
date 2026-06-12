@@ -1,5 +1,6 @@
 package com.budgettracker.app.ui.screens
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,6 +16,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -127,6 +130,14 @@ fun AddTransactionSheet(
                     ) {
                         row.forEach { cat ->
                             val selected = selectedCat == cat.name
+                            val scale by animateFloatAsState(
+                                targetValue   = if (selected) 1.15f else 1f,
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                                    stiffness    = Spring.StiffnessMedium
+                                ),
+                                label = "catScale"
+                            )
                             Column(
                                 modifier = Modifier
                                     .weight(1f)
@@ -137,6 +148,7 @@ fun AddTransactionSheet(
                                 Box(
                                     modifier = Modifier
                                         .size(44.dp)
+                                        .scale(scale)
                                         .clip(CircleShape)
                                         .background(
                                             if (selected) cat.color
@@ -151,7 +163,7 @@ fun AddTransactionSheet(
                                     Icon(
                                         imageVector = iconById(cat.iconId),
                                         contentDescription = null,
-                                        tint = if (selected) cat.color else cat.color.copy(alpha = 0.8f),
+                                        tint = if (selected) Color.White else cat.color.copy(alpha = 0.8f),
                                         modifier = Modifier.size(22.dp)
                                     )
                                 }
