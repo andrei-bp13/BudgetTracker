@@ -1,0 +1,51 @@
+package com.budgettracker.app.data.model
+
+import androidx.compose.ui.graphics.Color
+
+data class CategoryItem(
+    val id: String,
+    val name: String,
+    val iconId: String,
+    val colorHex: String,   // "#RRGGBB"
+    val isDefault: Boolean = true
+) {
+    val color: Color get() = Color(android.graphics.Color.parseColor(colorHex))
+}
+
+val DefaultCategories: List<CategoryItem> = listOf(
+    CategoryItem("cat_food",         "Food & Dining",    "restaurant",      "#E53935"),
+    CategoryItem("cat_groceries",    "Groceries",        "groceries",       "#F4511E"),
+    CategoryItem("cat_shopping",     "Shopping",         "shopping_bag",    "#8E24AA"),
+    CategoryItem("cat_transport",    "Transportation",   "car",             "#1E88E5"),
+    CategoryItem("cat_entertainment","Entertainment",    "movie",           "#FF6F00"),
+    CategoryItem("cat_healthcare",   "Healthcare",       "hospital",        "#00897B"),
+    CategoryItem("cat_housing",      "Housing",          "home",            "#6D4C41"),
+    CategoryItem("cat_utilities",    "Utilities",        "electric",        "#757575"),
+    CategoryItem("cat_education",    "Education",        "school",          "#039BE5"),
+    CategoryItem("cat_travel",       "Travel",           "flight",          "#43A047"),
+    CategoryItem("cat_personal",     "Personal Care",    "content_cut",     "#D81B60"),
+    CategoryItem("cat_pets",         "Pets",             "pets",            "#FF8F00"),
+    CategoryItem("cat_sports",       "Sports & Fitness", "fitness",         "#E53935"),
+    CategoryItem("cat_family",       "Family & Kids",    "family",          "#9C27B0"),
+    CategoryItem("cat_gifts",        "Gifts",            "card_giftcard",   "#E91E63"),
+    CategoryItem("cat_subscriptions","Subscriptions",    "subscriptions",   "#3F51B5"),
+    CategoryItem("cat_salary",       "Salary",           "work",            "#2E7D32"),
+    CategoryItem("cat_freelance",    "Freelance",        "computer",        "#1565C0"),
+    CategoryItem("cat_investment",   "Investment",       "trending_up",     "#558B2F"),
+    CategoryItem("cat_other_income", "Other Income",     "savings",         "#00695C"),
+)
+
+val CategoryColorOptions: List<Color> = listOf(
+    Color(0xFFE53935), Color(0xFFFF5722), Color(0xFFFF9800), Color(0xFFFFC107),
+    Color(0xFF8BC34A), Color(0xFF4CAF50), Color(0xFF009688), Color(0xFF00BCD4),
+    Color(0xFF2196F3), Color(0xFF3F51B5), Color(0xFF9C27B0), Color(0xFFE91E63),
+    Color(0xFF795548), Color(0xFF607D8B), Color(0xFF757575), Color(0xFF1E88E5),
+    Color(0xFF43A047), Color(0xFFD81B60), Color(0xFF00897B), Color(0xFF6D4C41),
+)
+
+fun colorToHex(color: Color): String {
+    val r = (color.red   * 255).toInt()
+    val g = (color.green * 255).toInt()
+    val b = (color.blue  * 255).toInt()
+    return "#%02X%02X%02X".format(r, g, b)
+}

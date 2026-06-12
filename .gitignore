@@ -1,0 +1,37 @@
+# Built artifacts
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Build directories
+build/
+.gradle/
+captures/
+out/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.DS_Store
+Thumbs.db
+
+# Local config (contains SDK path — machine-specific)
+local.properties
+
+# Proguard
+proguard/
+*.pro.bak
+
+# Android Studio navigation component (generated)
+app/src/main/res/navigation/
+
+# Keystore — never commit signing keys
+*.jks
+*.keystore
+release/
+
+# Kotlin build cache
+.kotlin/

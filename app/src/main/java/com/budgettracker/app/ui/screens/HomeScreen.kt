@@ -1,0 +1,150 @@
+package com.budgettracker.app.ui.screens
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.budgettracker.app.data.model.PaymentType
+import com.budgettracker.app.ui.components.*
+import com.budgettracker.app.ui.theme.LocalCurrencySymbol
+import com.budgettracker.app.viewmodel.TransactionViewModel
+import java.time.LocalDate
+import java.time.format.TextStyle
+import java.util.Locale
+
+@Composable
+fun HomeScreen(
+    viewModel: TransactionViewModel,
+    onAddTransaction: () -> Unit,
+    onCategoryClick: (String) -> Unit = {}
+) {
+    val thisMonth        by viewModel.thisMonthDailyExpenses.collectAsState()
+    val lastMonth        by viewModel.lastMonthDailyExpenses.collectAsState()
+    val recent           by viewModel.recentExpenses.collectAsState()
+    val topCats          by viewModel.topCategories.collectAsState()
+    val expense          by viewModel.thisMonthExpense.collectAsState()
+    val globalColoring   by viewModel.globalColoring.collectAsState()
+    val byPaymentType    by viewModel.thisMonthByPaymentType.collectAsState()
+
+    val accent = MaterialTheme.colorScheme.primary
+    val resolveColor: (String) -> androidx.compose.ui.graphics.Color = { name ->
+        if (globalColoring) accent else viewModel.categoryFor(name)?.color ?: accent
+    }
+
+    val currencySymbol = LocalCurrencySymbol.current
+    val monthName = LocalDate.now().month.getDisplayName(TextStyle.FULL, Locale.getDefault())
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // ── Month summary card ────────────────────────────────────────────────
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+            shape = MaterialTheme.shapes.extraLarge,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 16.dp)
+            ) {
+                Text(
+                    "Total spent this month",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                )
+                Text(
+                    "$currencySymbol ${"%.2f".format(expense)}",
+                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+
+                Spacer(Modifier.height(12.dp))
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f),
+                    thickness = 0.5.dp
+                )
+                Spacer(Modifier.height(10.dp))
+
+                // ── Payment type breakdown ────────────────────────────────────
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceAround,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    PaymentType.values().forEach { pt ->
+                        val amount = byPaymentType[pt] ?: 0.0
+                        val iconTint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(3.dp)
+                        ) {
+                            PaymentTypeIcon(type = pt, tint = iconTint, size = 18.dp)
+                            Text(
+                                "$currencySymbol ${"%.0f".format(amount)}",
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Text(
+                                pt.displayName(),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // ── Monthly progress chart ────────────────────────────────────────────
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+            shape = MaterialTheme.shapes.extraLarge,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                Text(
+                    "Monthly Progress — $monthName",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(Modifier.height(12.dp))
+                MonthlyProgressChart(
+                    thisMonth = thisMonth,
+                    lastMonth = lastMonth,
+                    modifier  = Modifier.fillMaxWidth()
+                )
+            }
+        }
+
+        // ── Two-column lower section ──────────────────────────────────────────
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            RecentSpendingCard(
+                transactions = recent,
+                resolveColor = resolveColor,
+                categoryFor  = { viewModel.categoryFor(it) },
+                modifier     = Modifier.weight(1f)
+            )
+            TopCategoriesCard(
+                categories      = topCats,
+                resolveColor    = resolveColor,
+                categoryFor     = { viewModel.categoryFor(it) },
+                onCategoryClick = onCategoryClick,
+                modifier        = Modifier.weight(1f)
+            )
+        }
+
+        Spacer(Modifier.height(80.dp))
+    }
+}
