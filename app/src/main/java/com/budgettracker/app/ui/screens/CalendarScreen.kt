@@ -1,8 +1,10 @@
 package com.budgettracker.app.ui.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,12 +17,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.budgettracker.app.data.model.Transaction
 import com.budgettracker.app.data.model.TransactionType
+import com.budgettracker.app.ui.components.EditDeleteOverlay
 import com.budgettracker.app.ui.components.PaymentTypeIcon
 import com.budgettracker.app.ui.components.displayName
 import com.budgettracker.app.ui.icons.iconById
@@ -33,15 +40,20 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun CalendarScreen(viewModel: TransactionViewModel) {
+fun CalendarScreen(
+    viewModel: TransactionViewModel,
+    onEditTransaction: (Transaction) -> Unit = {},
+    onDeleteTransaction: (Transaction) -> Unit = {}
+) {
     val allTransactions by viewModel.transactions.collectAsState()
     val currencySymbol  = LocalCurrencySymbol.current
     val accent          = MaterialTheme.colorScheme.primary
     val today           = LocalDate.now()
 
-    var selectedDate       by remember { mutableStateOf(today) }
-    var displayedMonth     by remember { mutableStateOf(YearMonth.now()) }
+    var selectedDate        by remember { mutableStateOf(today) }
+    var displayedMonth      by remember { mutableStateOf(YearMonth.now()) }
     var showYearMonthPicker by remember { mutableStateOf(false) }
 
     val transactionsByDate = remember(allTransactions) {
@@ -60,148 +72,176 @@ fun CalendarScreen(viewModel: TransactionViewModel) {
 
     val headerFmt = DateTimeFormatter.ofPattern("EEEE, MMMM d", Locale.getDefault())
 
-    LazyColumn(
+    // Overlay state
+    var overlayTransaction by remember { mutableStateOf<Transaction?>(null) }
+    var overlayBounds      by remember { mutableStateOf(Rect.Zero) }
+    var rootCoords         by remember { mutableStateOf<LayoutCoordinates?>(null) }
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp),
-        contentPadding = PaddingValues(vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(0.dp)
+            .onGloballyPositioned { rootCoords = it }
     ) {
-        // ── Calendar card ─────────────────────────────────────────────────────
-        item {
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                ),
-                shape    = MaterialTheme.shapes.extraLarge,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp)) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            contentPadding = PaddingValues(vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(0.dp)
+        ) {
+            // ── Calendar card ─────────────────────────────────────────────────────
+            item {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                    ),
+                    shape    = MaterialTheme.shapes.extraLarge,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp)) {
 
-                    // Month navigation
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = { displayedMonth = displayedMonth.minusMonths(1) }) {
-                            Icon(Icons.Rounded.ChevronLeft, contentDescription = "Previous month")
+                        // Month navigation
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            IconButton(onClick = { displayedMonth = displayedMonth.minusMonths(1) }) {
+                                Icon(Icons.Rounded.ChevronLeft, contentDescription = "Previous month")
+                            }
+                            TextButton(onClick = { showYearMonthPicker = true }) {
+                                Text(
+                                    "${displayedMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${displayedMonth.year}",
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            IconButton(onClick = { displayedMonth = displayedMonth.plusMonths(1) }) {
+                                Icon(Icons.Rounded.ChevronRight, contentDescription = "Next month")
+                            }
                         }
-                        TextButton(onClick = { showYearMonthPicker = true }) {
-                            Text(
-                                "${displayedMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${displayedMonth.year}",
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
+
+                        Spacer(Modifier.height(4.dp))
+
+                        // Day-of-week headers (Mon–Sun)
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            listOf("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su").forEach { d ->
+                                Text(
+                                    d,
+                                    modifier = Modifier.weight(1f),
+                                    textAlign = TextAlign.Center,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
-                        IconButton(onClick = { displayedMonth = displayedMonth.plusMonths(1) }) {
-                            Icon(Icons.Rounded.ChevronRight, contentDescription = "Next month")
-                        }
-                    }
 
-                    Spacer(Modifier.height(4.dp))
+                        Spacer(Modifier.height(6.dp))
 
-                    // Day-of-week headers (Mon–Sun)
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        listOf("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su").forEach { d ->
-                            Text(
-                                d,
-                                modifier = Modifier.weight(1f),
-                                textAlign = TextAlign.Center,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
+                        // Day grid
+                        val firstDay    = displayedMonth.atDay(1)
+                        val offset      = (firstDay.dayOfWeek.value - 1)
+                        val daysInMonth = displayedMonth.lengthOfMonth()
+                        val rows        = ((offset + daysInMonth) + 6) / 7
 
-                    Spacer(Modifier.height(6.dp))
-
-                    // Day grid
-                    val firstDay    = displayedMonth.atDay(1)
-                    val offset      = (firstDay.dayOfWeek.value - 1) // Mon=0 … Sun=6
-                    val daysInMonth = displayedMonth.lengthOfMonth()
-                    val rows        = ((offset + daysInMonth) + 6) / 7
-
-                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        repeat(rows) { row ->
-                            Row(modifier = Modifier.fillMaxWidth()) {
-                                repeat(7) { col ->
-                                    val cellIndex = row * 7 + col
-                                    val dayNum    = cellIndex - offset + 1
-                                    Box(
-                                        modifier = Modifier.weight(1f),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        if (dayNum in 1..daysInMonth) {
-                                            val date       = displayedMonth.atDay(dayNum)
-                                            val isSelected = date == selectedDate
-                                            val isToday    = date == today
-                                            val hasDot     = dayNum in daysWithTransactions
-                                            DayCell(
-                                                day         = dayNum,
-                                                isSelected  = isSelected,
-                                                isToday     = isToday,
-                                                hasDot      = hasDot,
-                                                accentColor = accent,
-                                                onClick     = { selectedDate = date }
-                                            )
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            repeat(rows) { row ->
+                                Row(modifier = Modifier.fillMaxWidth()) {
+                                    repeat(7) { col ->
+                                        val cellIndex = row * 7 + col
+                                        val dayNum    = cellIndex - offset + 1
+                                        Box(
+                                            modifier = Modifier.weight(1f),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            if (dayNum in 1..daysInMonth) {
+                                                val date       = displayedMonth.atDay(dayNum)
+                                                val isSelected = date == selectedDate
+                                                val isToday    = date == today
+                                                val hasDot     = dayNum in daysWithTransactions
+                                                DayCell(
+                                                    day         = dayNum,
+                                                    isSelected  = isSelected,
+                                                    isToday     = isToday,
+                                                    hasDot      = hasDot,
+                                                    accentColor = accent,
+                                                    onClick     = { selectedDate = date }
+                                                )
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
+
+                        Spacer(Modifier.height(4.dp))
                     }
-
-                    Spacer(Modifier.height(4.dp))
                 }
+                Spacer(Modifier.height(16.dp))
             }
-            Spacer(Modifier.height(16.dp))
-        }
 
-        // ── Selected-day header ───────────────────────────────────────────────
-        item {
-            Text(
-                selectedDate.format(headerFmt),
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-            )
-            Spacer(Modifier.height(8.dp))
-        }
-
-        // ── Transactions for selected day ─────────────────────────────────────
-        if (selectedDayTransactions.isEmpty()) {
+            // ── Selected-day header ───────────────────────────────────────────────
             item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 32.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        "No transactions on this day",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                Text(
+                    selectedDate.format(headerFmt),
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                )
+                Spacer(Modifier.height(8.dp))
+            }
+
+            // ── Transactions for selected day ─────────────────────────────────────
+            if (selectedDayTransactions.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "No transactions on this day",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            } else {
+                items(selectedDayTransactions, key = { it.id }) { txn ->
+                    CalendarTransactionRow(
+                        txn            = txn,
+                        currencySymbol = currencySymbol,
+                        categoryColor  = viewModel.categoryFor(txn.category)?.color
+                            ?: MaterialTheme.colorScheme.primary,
+                        categoryIconId = viewModel.categoryFor(txn.category)?.iconId ?: "more_horiz",
+                        onLongPress    = { bounds ->
+                            overlayTransaction = txn
+                            overlayBounds      = bounds
+                        }
+                    )
+                    HorizontalDivider(
+                        color     = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                        thickness = 0.5.dp
                     )
                 }
             }
-        } else {
-            items(selectedDayTransactions, key = { it.id }) { txn ->
-                CalendarTransactionRow(
-                    txn            = txn,
-                    currencySymbol = currencySymbol,
-                    categoryColor  = viewModel.categoryFor(txn.category)?.color
-                        ?: MaterialTheme.colorScheme.primary,
-                    categoryIconId = viewModel.categoryFor(txn.category)?.iconId ?: "more_horiz"
-                )
-                HorizontalDivider(
-                    color     = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-                    thickness = 0.5.dp
-                )
-            }
+
+            item { Spacer(Modifier.height(80.dp)) }
         }
 
-        item { Spacer(Modifier.height(80.dp)) }
+        // Overlay (scrim + edit/delete buttons) positioned over the long-pressed row
+        val activeTxn = overlayTransaction
+        if (activeTxn != null && rootCoords != null) {
+            EditDeleteOverlay(
+                transaction = activeTxn,
+                bounds      = overlayBounds,
+                rootCoords  = rootCoords!!,
+                onEdit      = { t -> onEditTransaction(t) },
+                onDelete    = { t -> onDeleteTransaction(t) },
+                onDismiss   = { overlayTransaction = null }
+            )
+        }
     }
 
     // ── Year / month picker dialog ────────────────────────────────────────────
@@ -211,7 +251,6 @@ fun CalendarScreen(viewModel: TransactionViewModel) {
             onDismiss = { showYearMonthPicker = false },
             onSelect  = { ym ->
                 displayedMonth = ym
-                // if selected date is outside the new month, reset to 1st
                 if (YearMonth.from(selectedDate) != ym) selectedDate = ym.atDay(1)
                 showYearMonthPicker = false
             }
@@ -242,7 +281,7 @@ private fun YearMonthPickerDialog(
         title = { Text("Select month") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                // ── Year selector ─────────────────────────────────────────────
+                // Year selector
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -260,7 +299,7 @@ private fun YearMonthPickerDialog(
                     }
                 }
 
-                // ── Month grid (4 × 3) ────────────────────────────────────────
+                // Month grid (4 × 3)
                 val months = Month.values()
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     months.toList().chunked(4).forEach { row ->
@@ -340,7 +379,6 @@ private fun DayCell(
                 }
             )
         }
-        // Dot — always allocate the space so rows stay the same height
         Box(
             modifier = Modifier
                 .size(4.dp)
@@ -356,18 +394,23 @@ private fun DayCell(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun CalendarTransactionRow(
     txn: Transaction,
     currencySymbol: String,
     categoryColor: Color,
-    categoryIconId: String
+    categoryIconId: String,
+    onLongPress: (Rect) -> Unit
 ) {
     val secondaryColor = MaterialTheme.colorScheme.onSurfaceVariant
+    var rowBounds by remember { mutableStateOf(Rect.Zero) }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .onGloballyPositioned { rowBounds = it.boundsInRoot() }
+            .combinedClickable(onClick = {}, onLongClick = { onLongPress(rowBounds) })
             .padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)

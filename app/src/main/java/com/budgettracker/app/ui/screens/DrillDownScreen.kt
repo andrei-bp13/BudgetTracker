@@ -1,8 +1,9 @@
 package com.budgettracker.app.ui.screens
 
-import androidx.compose.animation.*
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -16,11 +17,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.budgettracker.app.data.model.Transaction
 import com.budgettracker.app.data.model.TransactionType
+import com.budgettracker.app.ui.components.EditDeleteOverlay
 import com.budgettracker.app.ui.components.PaymentTypeIcon
 import com.budgettracker.app.ui.components.displayName
 import com.budgettracker.app.ui.icons.iconById
@@ -29,14 +35,16 @@ import com.budgettracker.app.viewmodel.TransactionViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun DrillDownScreen(
     title: String,
     startDate: LocalDate,
     endDate: LocalDate,
     viewModel: TransactionViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onEditTransaction: (Transaction) -> Unit = {},
+    onDeleteTransaction: (Transaction) -> Unit = {}
 ) {
     val allTransactions by viewModel.transactions.collectAsState()
     val currencySymbol  = LocalCurrencySymbol.current
@@ -50,7 +58,6 @@ fun DrillDownScreen(
 
     val totalAmount = remember(filtered) { filtered.sumOf { it.amount } }
 
-    // Group by category, sorted by total descending
     val byCategory = remember(filtered) {
         filtered
             .groupBy { it.category }
@@ -59,124 +66,153 @@ fun DrillDownScreen(
     }
 
     val expandedCategories = remember { mutableStateMapOf<String, Boolean>() }
-    val dateFmt     = DateTimeFormatter.ofPattern("MMM d")
+    val dateFmt       = DateTimeFormatter.ofPattern("MMM d")
     val fallbackColor = MaterialTheme.colorScheme.primary
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        title,
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black)
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
-        }
-    ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp),
-            contentPadding = PaddingValues(vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(0.dp)
-        ) {
-            // ── Summary card ──────────────────────────────────────────────────
-            item {
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-                    ),
-                    shape = MaterialTheme.shapes.extraLarge,
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp, vertical = 14.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(
-                                "Total expenses",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                "$currencySymbol ${"%.2f".format(totalAmount)}",
-                                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black),
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text(
-                                "${filtered.size}",
-                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                "transactions",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-            }
+    // Overlay state
+    var overlayTransaction by remember { mutableStateOf<Transaction?>(null) }
+    var overlayBounds      by remember { mutableStateOf(Rect.Zero) }
+    var rootCoords         by remember { mutableStateOf<LayoutCoordinates?>(null) }
 
-            // ── Category groups ───────────────────────────────────────────────
-            byCategory.forEach { (cat, txns) ->
-                val catTotal   = txns.sumOf { it.amount }
-                val isExpanded = expandedCategories[cat] == true
-                val catItem    = viewModel.categoryFor(cat)
-                val catColor   = catItem?.color ?: fallbackColor
-                val catIconId  = catItem?.iconId ?: "more_horiz"
-
-                item(key = "header_$cat") {
-                    CategoryDrillHeader(
-                        name           = cat,
-                        total          = catTotal,
-                        count          = txns.size,
-                        color          = catColor,
-                        iconId         = catIconId,
-                        isExpanded     = isExpanded,
-                        currencySymbol = currencySymbol,
-                        onClick        = { expandedCategories[cat] = !isExpanded }
-                    )
-                }
-
-                if (isExpanded) {
-                    items(txns, key = { it.id }) { txn ->
-                        DrillTransactionRow(
-                            txn            = txn,
-                            color          = catColor,
-                            currencySymbol = currencySymbol,
-                            dateFmt        = dateFmt
+    // Root Box captures screen coordinates so the overlay can be positioned absolutely
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .onGloballyPositioned { rootCoords = it }
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            title,
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black)
                         )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        }
+                    }
+                )
+            }
+        ) { padding ->
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(horizontal = 16.dp),
+                contentPadding = PaddingValues(vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(0.dp)
+            ) {
+                // ── Summary card ──────────────────────────────────────────────────
+                item {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                        ),
+                        shape = MaterialTheme.shapes.extraLarge,
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp, vertical = 14.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    "Total expenses",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    "$currencySymbol ${"%.2f".format(totalAmount)}",
+                                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black),
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(
+                                    "${filtered.size}",
+                                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    "transactions",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // ── Category groups ───────────────────────────────────────────────
+                byCategory.forEach { (cat, txns) ->
+                    val catTotal   = txns.sumOf { it.amount }
+                    val isExpanded = expandedCategories[cat] == true
+                    val catItem    = viewModel.categoryFor(cat)
+                    val catColor   = catItem?.color ?: fallbackColor
+                    val catIconId  = catItem?.iconId ?: "more_horiz"
+
+                    item(key = "header_$cat") {
+                        CategoryDrillHeader(
+                            name           = cat,
+                            total          = catTotal,
+                            count          = txns.size,
+                            color          = catColor,
+                            iconId         = catIconId,
+                            isExpanded     = isExpanded,
+                            currencySymbol = currencySymbol,
+                            onClick        = { expandedCategories[cat] = !isExpanded }
+                        )
+                    }
+
+                    if (isExpanded) {
+                        items(txns, key = { it.id }) { txn ->
+                            DrillTransactionRow(
+                                txn            = txn,
+                                color          = catColor,
+                                currencySymbol = currencySymbol,
+                                dateFmt        = dateFmt,
+                                onLongPress    = { bounds ->
+                                    overlayTransaction = txn
+                                    overlayBounds      = bounds
+                                }
+                            )
+                            HorizontalDivider(
+                                modifier  = Modifier.padding(start = 52.dp),
+                                color     = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                                thickness = 0.5.dp
+                            )
+                        }
+                    }
+
+                    item(key = "div_$cat") {
                         HorizontalDivider(
-                            modifier  = Modifier.padding(start = 52.dp),
-                            color     = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                            color     = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
                             thickness = 0.5.dp
                         )
                     }
                 }
 
-                item(key = "div_$cat") {
-                    HorizontalDivider(
-                        color     = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-                        thickness = 0.5.dp
-                    )
-                }
+                item { Spacer(Modifier.height(80.dp)) }
             }
+        }
 
-            item { Spacer(Modifier.height(80.dp)) }
+        // Overlay (scrim + edit/delete buttons) positioned over the long-pressed row
+        val activeTxn = overlayTransaction
+        if (activeTxn != null && rootCoords != null) {
+            EditDeleteOverlay(
+                transaction = activeTxn,
+                bounds      = overlayBounds,
+                rootCoords  = rootCoords!!,
+                onEdit      = { t -> onEditTransaction(t) },
+                onDelete    = { t -> onDeleteTransaction(t) },
+                onDismiss   = { overlayTransaction = null }
+            )
         }
     }
 }
@@ -243,18 +279,23 @@ private fun CategoryDrillHeader(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun DrillTransactionRow(
     txn: Transaction,
     color: Color,
     currencySymbol: String,
-    dateFmt: DateTimeFormatter
+    dateFmt: DateTimeFormatter,
+    onLongPress: (Rect) -> Unit
 ) {
     val secondary = MaterialTheme.colorScheme.onSurfaceVariant
+    var rowBounds by remember { mutableStateOf(Rect.Zero) }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .onGloballyPositioned { rowBounds = it.boundsInRoot() }
+            .combinedClickable(onClick = {}, onLongClick = { onLongPress(rowBounds) })
             .padding(start = 52.dp, top = 8.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp)

@@ -50,6 +50,11 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
     val scope               = rememberCoroutineScope()
     val currencySymbol      by viewModel.currencySymbol.collectAsState()
 
+    // Track current route at the top level — used for both topBar visibility and bottomBar selection
+    val currentEntry by navController.currentBackStackEntryAsState()
+    val route = currentEntry?.destination?.route
+    val isTopLevel = route == null || route in setOf(Screen.Home.route, Screen.Reports.route, Screen.Calendar.route)
+
     CompositionLocalProvider(LocalCurrencySymbol provides currencySymbol) {
         ModalNavigationDrawer(
             drawerState = drawerState,
@@ -66,54 +71,55 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
         ) {
             Scaffold(
                 topBar = {
-                    TopAppBar(
-                        title = {
-                            val currentEntry by navController.currentBackStackEntryAsState()
-                            val route = currentEntry?.destination?.route
-                            Text(
-                                when (route) {
-                                    "home"     -> "Dashboard"
-                                    "reports"  -> "Reports"
-                                    "calendar" -> "Calendar"
-                                    else       -> "Dashboard"
-                                },
-                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black)
-                            )
-                        },
-                        navigationIcon = {
-                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                Icon(Icons.Rounded.Menu, contentDescription = "Menu")
-                            }
-                        },
-                        actions = {
-                            IconButton(onClick = { /* TODO: account screen */ }) {
-                                Surface(
-                                    shape    = CircleShape,
-                                    color    = MaterialTheme.colorScheme.primaryContainer,
-                                    modifier = Modifier.size(32.dp)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Text(
-                                            "A",
-                                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black),
-                                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                                        )
+                    // Only show the global top bar for the three top-level tabs;
+                    // sub-screens (DrillDown, CategoryDetail, etc.) carry their own TopAppBar.
+                    if (isTopLevel) {
+                        TopAppBar(
+                            title = {
+                                Text(
+                                    when (route) {
+                                        Screen.Home.route     -> "Dashboard"
+                                        Screen.Reports.route  -> "Reports"
+                                        Screen.Calendar.route -> "Calendar"
+                                        else                  -> ""
+                                    },
+                                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black)
+                                )
+                            },
+                            navigationIcon = {
+                                IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                                    Icon(Icons.Rounded.Menu, contentDescription = "Menu")
+                                }
+                            },
+                            actions = {
+                                IconButton(onClick = { /* TODO: account screen */ }) {
+                                    Surface(
+                                        shape    = CircleShape,
+                                        color    = MaterialTheme.colorScheme.primaryContainer,
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Text(
+                                                "A",
+                                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black),
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                            )
+                                        }
                                     }
                                 }
-                            }
-                        },
-                        colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = MaterialTheme.colorScheme.surface
+                            },
+                            colors = TopAppBarDefaults.topAppBarColors(
+                                containerColor = MaterialTheme.colorScheme.surface
+                            )
                         )
-                    )
+                    }
                 },
                 bottomBar = {
                     NavigationBar(
                         tonalElevation = 4.dp,
                         containerColor = MaterialTheme.colorScheme.surfaceContainer
                     ) {
-                        val navBackStack by navController.currentBackStackEntryAsState()
-                        val current = navBackStack?.destination
+                        val current = currentEntry?.destination
 
                         // 1 — Home
                         NavigationBarItem(
@@ -217,15 +223,21 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                         val end      = backStack.arguments?.getString("endDate")
                             ?.let { LocalDate.parse(it) } ?: LocalDate.now()
                         DrillDownScreen(
-                            title     = title,
-                            startDate = start,
-                            endDate   = end,
-                            viewModel = viewModel,
-                            onBack    = { navController.popBackStack() }
+                            title               = title,
+                            startDate           = start,
+                            endDate             = end,
+                            viewModel           = viewModel,
+                            onBack              = { navController.popBackStack() },
+                            onEditTransaction   = { t -> editingTransaction = t },
+                            onDeleteTransaction = { t -> viewModel.deleteTransaction(t.id) }
                         )
                     }
                     composable(Screen.Calendar.route) {
-                        CalendarScreen(viewModel = viewModel)
+                        CalendarScreen(
+                            viewModel           = viewModel,
+                            onEditTransaction   = { t -> editingTransaction = t },
+                            onDeleteTransaction = { t -> viewModel.deleteTransaction(t.id) }
+                        )
                     }
                     composable(Screen.PaymentTypeDetail.route) { backStack ->
                         val typeName = backStack.arguments?.getString("typeName") ?: "DEBIT"
