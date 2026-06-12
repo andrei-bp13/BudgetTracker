@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -41,36 +42,34 @@ fun AddTransactionSheet(
     onDismiss: () -> Unit,
     initialTransaction: Transaction? = null
 ) {
-    val allCategories  by viewModel.categories.collectAsState()
+    val allCategories   by viewModel.categories.collectAsState()
     val allTransactions by viewModel.transactions.collectAsState()
-    val currencySymbol = LocalCurrencySymbol.current
-    val isEditing      = initialTransaction != null
+    val currencySymbol  = LocalCurrencySymbol.current
+    val isEditing       = initialTransaction != null
 
-    var title       by remember { mutableStateOf(initialTransaction?.title ?: "") }
-    var amount      by remember { mutableStateOf(initialTransaction?.amount?.toString() ?: "") }
-    var note        by remember { mutableStateOf(initialTransaction?.note ?: "") }
-    var paymentType by remember { mutableStateOf(initialTransaction?.paymentType ?: PaymentType.DEBIT) }
-    var selectedCat by remember { mutableStateOf(initialTransaction?.category ?: "Food & Dining") }
+    var title          by remember { mutableStateOf(initialTransaction?.title    ?: "") }
+    var amount         by remember { mutableStateOf(initialTransaction?.amount?.toString() ?: "") }
+    var note           by remember { mutableStateOf(initialTransaction?.note     ?: "") }
+    var paymentType    by remember { mutableStateOf(initialTransaction?.paymentType ?: PaymentType.DEBIT) }
+    var selectedCat    by remember { mutableStateOf(initialTransaction?.category ?: "Food & Dining") }
     var sortByMostUsed by remember { mutableStateOf(false) }
 
-    val incomeNames = setOf("Salary", "Freelance", "Investment", "Other Income")
-    val baseCategories = allCategories.filter { cat -> cat.name !in incomeNames }
+    val incomeNames    = setOf("Salary", "Freelance", "Investment", "Other Income")
+    val baseCategories = allCategories.filter { it.name !in incomeNames }
 
     val usageCount = remember(allTransactions) {
         allTransactions.groupingBy { it.category }.eachCount()
     }
 
     val categories = remember(baseCategories, sortByMostUsed, usageCount) {
-        if (sortByMostUsed)
-            baseCategories.sortedByDescending { usageCount[it.name] ?: 0 }
-        else
-            baseCategories.sortedBy { it.name }
+        if (sortByMostUsed) baseCategories.sortedByDescending { usageCount[it.name] ?: 0 }
+        else                baseCategories.sortedBy { it.name }
     }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        dragHandle = { BottomSheetDefaults.DragHandle() }
+        sheetState       = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        dragHandle       = { BottomSheetDefaults.DragHandle() }
     ) {
         Column(
             modifier = Modifier
@@ -80,10 +79,11 @@ fun AddTransactionSheet(
                 .padding(bottom = 48.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // ── Header ───────────────────────────────────────────────────────
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier              = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment     = Alignment.CenterVertically
             ) {
                 Text(
                     if (isEditing) "Edit Expense" else "Add Expense",
@@ -94,7 +94,7 @@ fun AddTransactionSheet(
                 }
             }
 
-            // ── Compact text fields ───────────────────────────────────────────
+            // ── Title ────────────────────────────────────────────────────────
             OutlinedTextField(
                 value         = title,
                 onValueChange = { title = it },
@@ -105,126 +105,18 @@ fun AddTransactionSheet(
                 shape         = MaterialTheme.shapes.medium
             )
 
+            // ── Amount ───────────────────────────────────────────────────────
             OutlinedTextField(
-                value         = amount,
-                onValueChange = { amount = it.filter { c -> c.isDigit() || c == '.' } },
-                label         = { Text("Amount", style = MaterialTheme.typography.labelSmall) },
-                textStyle     = MaterialTheme.typography.bodyMedium,
-                prefix        = { Text("$currencySymbol ", style = MaterialTheme.typography.bodyMedium) },
-                modifier      = Modifier.fillMaxWidth().height(52.dp),
+                value           = amount,
+                onValueChange   = { amount = it.filter { c -> c.isDigit() || c == '.' } },
+                label           = { Text("Amount", style = MaterialTheme.typography.labelSmall) },
+                textStyle       = MaterialTheme.typography.bodyMedium,
+                prefix          = { Text("$currencySymbol ", style = MaterialTheme.typography.bodyMedium) },
+                modifier        = Modifier.fillMaxWidth().height(52.dp),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                singleLine    = true,
-                shape         = MaterialTheme.shapes.medium
+                singleLine      = true,
+                shape           = MaterialTheme.shapes.medium
             )
-
-            // ── Payment method ────────────────────────────────────────────────
-            Text(
-                "Payment Method",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                PaymentType.values().forEach { pt ->
-                    PaymentTypeButton(
-                        type     = pt,
-                        selected = paymentType == pt,
-                        onClick  = { paymentType = pt }
-                    )
-                }
-            }
-
-            // ── Category ─────────────────────────────────────────────────────
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    "Category",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                TextButton(
-                    onClick = { sortByMostUsed = !sortByMostUsed },
-                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
-                ) {
-                    Icon(
-                        Icons.Rounded.SwapVert,
-                        contentDescription = "Sort",
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        if (sortByMostUsed) "Most Used" else "A–Z",
-                        style = MaterialTheme.typography.labelSmall
-                    )
-                }
-            }
-
-            // 2-row horizontal scrolling grid
-            LazyHorizontalGrid(
-                rows = GridCells.Fixed(2),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement   = Arrangement.spacedBy(8.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(152.dp)
-            ) {
-                items(categories, key = { it.id }) { cat ->
-                    val selected = selectedCat == cat.name
-                    val scale by animateFloatAsState(
-                        targetValue   = if (selected) 1.12f else 1f,
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                            stiffness    = Spring.StiffnessMedium
-                        ),
-                        label = "catScale"
-                    )
-                    Column(
-                        modifier = Modifier
-                            .width(64.dp)
-                            .clickable { selectedCat = cat.name },
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(38.dp)
-                                .scale(scale)
-                                .clip(CircleShape)
-                                .background(
-                                    if (selected) cat.color
-                                    else cat.color.copy(alpha = 0.15f)
-                                )
-                                .then(
-                                    if (selected) Modifier.border(2.dp, cat.color, CircleShape)
-                                    else Modifier
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector        = iconById(cat.iconId),
-                                contentDescription = null,
-                                tint               = if (selected) Color.White else cat.color.copy(alpha = 0.8f),
-                                modifier           = Modifier.size(20.dp)
-                            )
-                        }
-                        Text(
-                            text      = cat.name,
-                            style     = MaterialTheme.typography.labelSmall,
-                            color     = if (selected) cat.color
-                                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines  = 2,
-                            overflow  = TextOverflow.Ellipsis,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                }
-            }
 
             // ── Note ─────────────────────────────────────────────────────────
             OutlinedTextField(
@@ -237,6 +129,136 @@ fun AddTransactionSheet(
                 shape         = MaterialTheme.shapes.medium
             )
 
+            // ── Payment type pill ─────────────────────────────────────────────
+            val paymentTypes = PaymentType.values()
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                paymentTypes.forEachIndexed { index, pt ->
+                    SegmentedButton(
+                        selected = paymentType == pt,
+                        onClick  = { paymentType = pt },
+                        shape    = SegmentedButtonDefaults.itemShape(index, paymentTypes.size),
+                        icon     = {
+                            PaymentTypeIcon(
+                                type = pt,
+                                tint = LocalContentColor.current,
+                                size = 16.dp
+                            )
+                        }
+                    ) {
+                        Text(
+                            pt.displayName(),
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
+                }
+            }
+
+            // ── Category header ───────────────────────────────────────────────
+            Row(
+                modifier              = Modifier.fillMaxWidth(),
+                verticalAlignment     = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    "Category",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                TextButton(
+                    onClick        = { sortByMostUsed = !sortByMostUsed },
+                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
+                ) {
+                    Icon(Icons.Rounded.SwapVert, contentDescription = "Sort", modifier = Modifier.size(14.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text(if (sortByMostUsed) "Most Used" else "A–Z", style = MaterialTheme.typography.labelSmall)
+                }
+            }
+
+            // ── Category grid (2 rows, horizontally scrollable) ───────────────
+            val gridState      = rememberLazyGridState()
+            val showRightFade  by remember { derivedStateOf { gridState.canScrollForward } }
+            val showLeftFade   by remember { derivedStateOf { gridState.canScrollBackward } }
+            val sheetBg        = MaterialTheme.colorScheme.surfaceContainerLow
+
+            Box(modifier = Modifier.fillMaxWidth()) {
+                LazyHorizontalGrid(
+                    rows                  = GridCells.Fixed(2),
+                    state                 = gridState,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement   = Arrangement.spacedBy(8.dp),
+                    modifier              = Modifier.fillMaxWidth().height(152.dp)
+                ) {
+                    items(categories, key = { it.id }) { cat ->
+                        val selected = selectedCat == cat.name
+                        val scale by animateFloatAsState(
+                            targetValue   = if (selected) 1.12f else 1f,
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness    = Spring.StiffnessMedium
+                            ),
+                            label = "catScale"
+                        )
+                        Column(
+                            modifier            = Modifier.width(80.dp).clickable { selectedCat = cat.name },
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .scale(scale)
+                                    .clip(CircleShape)
+                                    .background(if (selected) cat.color else cat.color.copy(alpha = 0.15f))
+                                    .then(if (selected) Modifier.border(2.dp, cat.color, CircleShape) else Modifier),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector        = iconById(cat.iconId),
+                                    contentDescription = null,
+                                    tint               = if (selected) Color.White else cat.color.copy(alpha = 0.8f),
+                                    modifier           = Modifier.size(20.dp)
+                                )
+                            }
+                            Text(
+                                text      = cat.name,
+                                style     = MaterialTheme.typography.labelSmall,
+                                color     = if (selected) cat.color else MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines  = 2,
+                                overflow  = TextOverflow.Ellipsis,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                }
+
+                // Left fade
+                if (showLeftFade) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.CenterStart)
+                            .width(24.dp)
+                            .height(152.dp)
+                            .background(
+                                Brush.horizontalGradient(listOf(sheetBg, Color.Transparent))
+                            )
+                    )
+                }
+
+                // Right fade
+                if (showRightFade) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .width(24.dp)
+                            .height(152.dp)
+                            .background(
+                                Brush.horizontalGradient(listOf(Color.Transparent, sheetBg))
+                            )
+                    )
+                }
+            }
+
+            // ── Save button ───────────────────────────────────────────────────
             Button(
                 onClick = {
                     val amt = amount.toDoubleOrNull() ?: return@Button
@@ -267,10 +289,8 @@ fun AddTransactionSheet(
                     }
                     onDismiss()
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = MaterialTheme.shapes.large
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape    = MaterialTheme.shapes.large
             ) {
                 Text(
                     if (isEditing) "Update Expense" else "Save Expense",
@@ -278,42 +298,5 @@ fun AddTransactionSheet(
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun PaymentTypeButton(type: PaymentType, selected: Boolean, onClick: () -> Unit) {
-    val accent    = MaterialTheme.colorScheme.primary
-    val onAccent  = MaterialTheme.colorScheme.onPrimary
-    val surface   = MaterialTheme.colorScheme.surfaceVariant
-    val onSurface = MaterialTheme.colorScheme.onSurfaceVariant
-
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-        modifier = Modifier.clickable(onClick = onClick)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-                .background(if (selected) accent else surface)
-                .then(
-                    if (!selected) Modifier.border(1.5.dp, accent.copy(alpha = 0.3f), CircleShape)
-                    else Modifier
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            PaymentTypeIcon(
-                type = type,
-                tint = if (selected) onAccent else onSurface,
-                size = 20.dp
-            )
-        }
-        Text(
-            type.displayName(),
-            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
-            color = if (selected) accent else onSurface
-        )
     }
 }
