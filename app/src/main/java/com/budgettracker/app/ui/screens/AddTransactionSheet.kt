@@ -14,6 +14,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.SwapVert
 import androidx.compose.material3.*
+import androidx.compose.ui.platform.LocalDensity
+import kotlinx.coroutines.flow.filter
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -66,7 +68,7 @@ fun AddTransactionSheet(
 
     val categories = remember(baseCategories, sortByMostUsed, usageCount) {
         if (sortByMostUsed) baseCategories.sortedByDescending { usageCount[it.name] ?: 0 }
-        else                baseCategories.sortedBy { it.name }
+        else                baseCategories.sortedBy { it.name.lowercase() }
     }
 
     ModalBottomSheet(
@@ -80,7 +82,7 @@ fun AddTransactionSheet(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 48.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             // ── Header ───────────────────────────────────────────────────────
             Row(
@@ -101,9 +103,9 @@ fun AddTransactionSheet(
             OutlinedTextField(
                 value         = title,
                 onValueChange = { title = it },
-                label         = { Text("Title", style = MaterialTheme.typography.labelSmall) },
+                label         = { Text("Title") },
                 textStyle     = MaterialTheme.typography.bodyMedium,
-                modifier      = Modifier.fillMaxWidth().height(52.dp),
+                modifier      = Modifier.fillMaxWidth(),
                 singleLine    = true,
                 shape         = MaterialTheme.shapes.medium
             )
@@ -112,10 +114,10 @@ fun AddTransactionSheet(
             OutlinedTextField(
                 value           = amount,
                 onValueChange   = { amount = it.filter { c -> c.isDigit() || c == '.' } },
-                label           = { Text("Amount", style = MaterialTheme.typography.labelSmall) },
+                label           = { Text("Amount") },
                 textStyle       = MaterialTheme.typography.bodyMedium,
                 prefix          = { Text("$currencySymbol ", style = MaterialTheme.typography.bodyMedium) },
-                modifier        = Modifier.fillMaxWidth().height(52.dp),
+                modifier        = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 singleLine      = true,
                 shape           = MaterialTheme.shapes.medium
@@ -125,9 +127,9 @@ fun AddTransactionSheet(
             OutlinedTextField(
                 value         = note,
                 onValueChange = { note = it },
-                label         = { Text("Note (optional)", style = MaterialTheme.typography.labelSmall) },
+                label         = { Text("Note (optional)") },
                 textStyle     = MaterialTheme.typography.bodyMedium,
-                modifier      = Modifier.fillMaxWidth().height(52.dp),
+                modifier      = Modifier.fillMaxWidth(),
                 singleLine    = true,
                 shape         = MaterialTheme.shapes.medium
             )
@@ -209,11 +211,42 @@ fun AddTransactionSheet(
             val thumbColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
 
             // Grid sized to an exact multiple of (item + gap) so no partial items appear
-            val itemW = 80f  // dp
-            val gap   = 8f   // dp
+            val itemW   = 80f  // dp
+            val gap     = 8f   // dp
             BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
                 val cols      = ((maxWidth.value + gap) / (itemW + gap)).toInt().coerceAtLeast(2)
                 val gridWidth = (itemW * cols + gap * (cols - 1)).dp
+                val density   = LocalDensity.current
+
+                // Snap whole pages: if scroll > half a page, advance; otherwise return
+                LaunchedEffect(gridState, cols) {
+                    snapshotFlow { gridState.isScrollInProgress }
+                        .filter { !it }
+                        .collect {
+                            val info      = gridState.layoutInfo
+                            val firstItem = info.visibleItemsInfo.firstOrNull() ?: return@collect
+                            if (info.totalItemsCount == 0) return@collect
+
+                            val firstCol     = firstItem.index / 2
+                            val pageIdx      = firstCol / cols
+                            val colInPage    = firstCol % cols
+                            val gapPx        = with(density) { gap.dp.roundToPx() }
+                            val colStepPx    = firstItem.size.width + gapPx
+                            val scrollInPage = colInPage * colStepPx + (-firstItem.offset.x).coerceAtLeast(0)
+                            val halfPagePx   = cols * colStepPx / 2
+
+                            val targetPage = if (scrollInPage >= halfPagePx) pageIdx + 1 else pageIdx
+                            val totalCols  = (info.totalItemsCount + 1) / 2
+                            val maxPage    = (totalCols + cols - 1) / cols
+                            val targetIdx  = (targetPage.coerceAtMost(maxPage - 1) * cols * 2)
+                                               .coerceIn(0, info.totalItemsCount - 1)
+
+                            if (firstItem.index != targetIdx || firstItem.offset.x != 0) {
+                                gridState.animateScrollToItem(targetIdx)
+                            }
+                        }
+                }
+
                 LazyHorizontalGrid(
                     rows                  = GridCells.Fixed(2),
                     state                 = gridState,
