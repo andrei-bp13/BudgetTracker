@@ -1,23 +1,19 @@
 package com.budgettracker.app.ui.components
 
-import androidx.compose.animation.*
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.budgettracker.app.data.model.CategoryItem
@@ -31,19 +27,9 @@ fun RecentSpendingCard(
     transactions: List<Transaction>,
     resolveColor: (String) -> Color,
     categoryFor: (String) -> CategoryItem?,
-    onEdit: (Transaction) -> Unit = {},
-    onDelete: (Transaction) -> Unit = {},
+    onLongPress: (Transaction, Rect) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
-    // Track which item has its overlay open, and whether it's in delete-confirm state
-    var activeId      by remember { mutableStateOf<String?>(null) }
-    var confirmDelete by remember { mutableStateOf(false) }
-
-    fun dismiss() {
-        activeId      = null
-        confirmDelete = false
-    }
-
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
@@ -60,85 +46,22 @@ fun RecentSpendingCard(
                 )
             } else {
                 transactions.forEachIndexed { i, t ->
-                    val color   = resolveColor(t.category)
-                    val cat     = categoryFor(t.category)
-                    val isActive = activeId == t.id
+                    val color = resolveColor(t.category)
+                    val cat   = categoryFor(t.category)
 
-                    Box(modifier = Modifier.fillMaxWidth()) {
-                        // ── Row content ───────────────────────────────────────
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .combinedClickable(
-                                    onClick    = { if (isActive) dismiss() },
-                                    onLongClick = {
-                                        activeId      = t.id
-                                        confirmDelete = false
-                                    }
-                                )
-                        ) {
-                            RecentRow(t, cat, color)
-                        }
+                    // Capture this row's bounds so the parent can position the overlay
+                    var rowBounds by remember { mutableStateOf(Rect.Zero) }
 
-                        // ── Action overlay ────────────────────────────────────
-                        OverlayVisibility(visible = isActive) {
-                            Box(
-                                modifier = Modifier
-                                    .matchParentSize()
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(color.copy(alpha = 0.88f))
-                                    // tapping the overlay background dismisses
-                                    .combinedClickable(onClick = { dismiss() }),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (confirmDelete) {
-                                    // ── Confirm / cancel ──────────────────────
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(24.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        OverlayIconButton(
-                                            icon    = Icons.Outlined.Check,
-                                            label   = "Confirm",
-                                            tint    = Color.White
-                                        ) {
-                                            onDelete(t)
-                                            dismiss()
-                                        }
-                                        OverlayIconButton(
-                                            icon    = Icons.Outlined.Close,
-                                            label   = "Cancel",
-                                            tint    = Color.White.copy(alpha = 0.7f)
-                                        ) {
-                                            confirmDelete = false
-                                        }
-                                    }
-                                } else {
-                                    // ── Edit / delete ─────────────────────────
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(24.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        OverlayIconButton(
-                                            icon  = Icons.Outlined.Edit,
-                                            label = "Edit",
-                                            tint  = Color.White
-                                        ) {
-                                            onEdit(t)
-                                            dismiss()
-                                        }
-                                        OverlayIconButton(
-                                            icon  = Icons.Outlined.Delete,
-                                            label = "Delete",
-                                            tint  = Color.White
-                                        ) {
-                                            confirmDelete = true
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onGloballyPositioned { rowBounds = it.boundsInRoot() }
+                            .combinedClickable(
+                                onClick    = { /* normal tap does nothing */ },
+                                onLongClick = { onLongPress(t, rowBounds) }
+                            )
+                    ) {
+                        RecentRow(t, cat, color)
                     }
 
                     if (i < transactions.lastIndex) {
@@ -151,43 +74,6 @@ fun RecentSpendingCard(
                 }
             }
         }
-    }
-}
-
-// Standalone wrapper so AnimatedVisibility resolves without a ColumnScope receiver
-@Composable
-private fun OverlayVisibility(visible: Boolean, content: @Composable () -> Unit) {
-    AnimatedVisibility(
-        visible = visible,
-        enter   = fadeIn() + scaleIn(initialScale = 0.95f),
-        exit    = fadeOut() + scaleOut(targetScale = 0.95f)
-    ) { content() }
-}
-
-@Composable
-private fun OverlayIconButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    tint: Color,
-    onClick: () -> Unit
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        IconButton(onClick = onClick) {
-            Icon(
-                imageVector        = icon,
-                contentDescription = label,
-                tint               = tint,
-                modifier           = Modifier.size(24.dp)
-            )
-        }
-        Text(
-            label,
-            style = MaterialTheme.typography.labelSmall,
-            color = tint
-        )
     }
 }
 

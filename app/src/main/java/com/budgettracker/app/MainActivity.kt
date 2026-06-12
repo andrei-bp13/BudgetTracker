@@ -21,10 +21,11 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val vm: TransactionViewModel = viewModel(factory = factory)
-            val themeMode   by vm.themeMode.collectAsState()
-            val accentIndex by vm.accentIndex.collectAsState()
+            val themeMode       by vm.themeMode.collectAsState()
+            val accentIndex     by vm.accentIndex.collectAsState()
+            val customAccentHex by vm.customAccentHex.collectAsState()
 
-            BudgetTrackerTheme(themeMode = themeMode, accentIndex = accentIndex) {
+            BudgetTrackerTheme(themeMode = themeMode, accentIndex = accentIndex, customAccentHex = customAccentHex) {
                 BudgetTrackerNavGraph(viewModel = vm)
             }
         }
