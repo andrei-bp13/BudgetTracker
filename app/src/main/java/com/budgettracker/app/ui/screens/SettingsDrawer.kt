@@ -33,6 +33,7 @@ fun SettingsDrawer(
     val globalColoring   by viewModel.globalColoring.collectAsState()
     val granularColoring by viewModel.granularColoring.collectAsState()
     val currencyCode     by viewModel.currencyCode.collectAsState()
+    val aiMode           by viewModel.aiMode.collectAsState()
     var showCurrencyPicker by remember { mutableStateOf(false) }
 
     val exportLauncher = rememberLauncherForActivityResult(
@@ -118,19 +119,33 @@ fun SettingsDrawer(
 
         Spacer(Modifier.height(8.dp))
 
-        // Coloring mode checkboxes
-        Column(modifier = Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            ColoringCheckbox(
-                label       = "Use global theming",
+        // Coloring mode switches
+        Column(modifier = Modifier.padding(horizontal = 4.dp), verticalArrangement = Arrangement.spacedBy(0.dp)) {
+            SettingsSwitch(
+                label       = "Global theming",
                 description = "All categories use the accent color",
                 checked     = globalColoring,
                 onChecked   = { viewModel.setGlobalColoring(it) }
             )
-            ColoringCheckbox(
-                label       = "Use granular coloring",
+            SettingsSwitch(
+                label       = "Granular coloring",
                 description = "Each category uses its own color",
                 checked     = granularColoring,
                 onChecked   = { viewModel.setGranularColoring(it) }
+            )
+        }
+
+        Divider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
+
+        // ── Input mode section ────────────────────────────────────────────────
+        SectionLabel("Input Mode")
+
+        Column(modifier = Modifier.padding(horizontal = 4.dp)) {
+            SettingsSwitch(
+                label       = "AI Mode",
+                description = if (aiMode) "Expenses added via AI assistant" else "Expenses added manually",
+                checked     = aiMode,
+                onChecked   = { viewModel.setAiMode(it) }
             )
         }
 
@@ -277,7 +292,7 @@ private fun ColorSwatch(color: Color, name: String, selected: Boolean, onClick: 
 }
 
 @Composable
-private fun ColoringCheckbox(
+private fun SettingsSwitch(
     label: String,
     description: String,
     checked: Boolean,
@@ -287,17 +302,17 @@ private fun ColoringCheckbox(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onChecked(!checked) }
-            .padding(vertical = 4.dp),
+            .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Checkbox(
-            checked = checked,
-            onCheckedChange = onChecked
-        )
-        Column {
+        Column(modifier = Modifier.weight(1f)) {
             Text(label, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium))
             Text(description, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+        Switch(
+            checked         = checked,
+            onCheckedChange = onChecked
+        )
     }
 }

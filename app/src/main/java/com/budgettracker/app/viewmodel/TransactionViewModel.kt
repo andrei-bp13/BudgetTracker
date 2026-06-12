@@ -55,6 +55,9 @@ class TransactionViewModel(
     val chartGranularity: StateFlow<String> = prefs.chartGranularity
         .stateIn(viewModelScope, SharingStarted.Eagerly, "monthly")
 
+    val aiMode: StateFlow<Boolean> = prefs.aiMode
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
     val currencySymbol: StateFlow<String> = currencyCode
         .map { code -> AllCurrencies.firstOrNull { it.code == code }?.symbol ?: "$" }
         .stateIn(viewModelScope, SharingStarted.Eagerly, "$")
@@ -155,6 +158,7 @@ class TransactionViewModel(
     fun setGranularColoring(v: Boolean)    = viewModelScope.launch { prefs.setGranularColoring(v) }
     fun setCurrencyCode(code: String)      = viewModelScope.launch { prefs.setCurrencyCode(code) }
     fun setChartGranularity(value: String) = viewModelScope.launch { prefs.setChartGranularity(value) }
+    fun setAiMode(enabled: Boolean)        = viewModelScope.launch { prefs.setAiMode(enabled) }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 

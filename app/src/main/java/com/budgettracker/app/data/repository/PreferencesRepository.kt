@@ -20,6 +20,7 @@ class PreferencesRepository(private val context: Context) {
         val GRANULAR_COLORING = booleanPreferencesKey("granular_coloring")
         val CURRENCY_CODE       = stringPreferencesKey("currency_code")
         val CHART_GRANULARITY   = stringPreferencesKey("chart_granularity")
+        val AI_MODE             = booleanPreferencesKey("ai_mode")
         const val DEFAULT_ACCENT = 0
     }
 
@@ -27,6 +28,7 @@ class PreferencesRepository(private val context: Context) {
     val accentColorIndex: Flow<Int>    = context.dataStore.data.map { it[ACCENT_COLOR]      ?: DEFAULT_ACCENT }
     val currencyCode: Flow<String>     = context.dataStore.data.map { it[CURRENCY_CODE]     ?: "USD" }
     val chartGranularity: Flow<String> = context.dataStore.data.map { it[CHART_GRANULARITY] ?: "monthly" }
+    val aiMode: Flow<Boolean>          = context.dataStore.data.map { it[AI_MODE]           ?: false }
 
     // false = off, true = on. Only one should be active at a time.
     val globalColoring: Flow<Boolean>   = context.dataStore.data.map { it[GLOBAL_COLORING]   ?: false }
@@ -36,6 +38,7 @@ class PreferencesRepository(private val context: Context) {
     suspend fun setAccentColorIndex(index: Int) { context.dataStore.edit { it[ACCENT_COLOR] = index } }
     suspend fun setCurrencyCode(code: String)      { context.dataStore.edit { it[CURRENCY_CODE]     = code } }
     suspend fun setChartGranularity(value: String) { context.dataStore.edit { it[CHART_GRANULARITY] = value } }
+    suspend fun setAiMode(enabled: Boolean)        { context.dataStore.edit { it[AI_MODE]           = enabled } }
 
     suspend fun setGlobalColoring(enabled: Boolean) {
         context.dataStore.edit {
