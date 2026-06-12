@@ -7,6 +7,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,11 +30,26 @@ import androidx.compose.ui.unit.sp
 import com.budgettracker.app.ui.theme.LocalCurrencySymbol
 import com.budgettracker.app.viewmodel.TransactionViewModel
 
+private val granularityOptions = listOf(
+    Triple("weekly",  "Weekly",  "Last 12 weeks"),
+    Triple("monthly", "Monthly", "All months this year"),
+    Triple("yearly",  "Yearly",  "All years"),
+)
+
 @Composable
 fun ReportsScreen(viewModel: TransactionViewModel) {
-    val monthly   by viewModel.monthlyTotals.collectAsState()
-    val catTotals by viewModel.categoryTotalsThisMonth.collectAsState()
+    val chartData    by viewModel.expenseChartData.collectAsState()
+    val granularity  by viewModel.chartGranularity.collectAsState()
+    val catTotals    by viewModel.categoryTotalsThisMonth.collectAsState()
     val currencySymbol = LocalCurrencySymbol.current
+
+    var showGranularityMenu by remember { mutableStateOf(false) }
+
+    val chartTitle = when (granularity) {
+        "weekly"  -> "Expenses — Last 12 Weeks"
+        "yearly"  -> "Expenses — By Year"
+        else      -> "Expenses — This Year"
+    }
 
     Column(
         modifier = Modifier
@@ -47,9 +65,55 @@ fun ReportsScreen(viewModel: TransactionViewModel) {
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
-                Text("Expenses — Last 6 Months", style = MaterialTheme.typography.titleMedium)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(chartTitle, style = MaterialTheme.typography.titleMedium)
+                    Box {
+                        IconButton(
+                            onClick = { showGranularityMenu = true },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                Icons.Outlined.Tune,
+                                contentDescription = "Chart settings",
+                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showGranularityMenu,
+                            onDismissRequest = { showGranularityMenu = false }
+                        ) {
+                            granularityOptions.forEach { (key, label, sub) ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Column {
+                                            Text(label, style = MaterialTheme.typography.bodyMedium)
+                                            Text(sub, style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                    },
+                                    onClick = {
+                                        viewModel.setChartGranularity(key)
+                                        showGranularityMenu = false
+                                    },
+                                    trailingIcon = {
+                                        if (granularity == key) {
+                                            Icon(Icons.Outlined.Check, null,
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(16.dp))
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
                 Spacer(Modifier.height(12.dp))
-                ExpenseBarChart(monthly = monthly, currencySymbol = currencySymbol)
+                ExpenseBarChart(monthly = chartData, currencySymbol = currencySymbol)
             }
         }
 

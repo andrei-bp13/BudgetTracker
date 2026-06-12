@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.temporal.WeekFields
 
 class TransactionViewModel(
     private val repo: TransactionRepository,
@@ -40,6 +41,9 @@ class TransactionViewModel(
 
     val currencyCode: StateFlow<String> = prefs.currencyCode
         .stateIn(viewModelScope, SharingStarted.Eagerly, "USD")
+
+    val chartGranularity: StateFlow<String> = prefs.chartGranularity
+        .stateIn(viewModelScope, SharingStarted.Eagerly, "monthly")
 
     val currencySymbol: StateFlow<String> = currencyCode
         .map { code -> AllCurrencies.firstOrNull { it.code == code }?.symbol ?: "$" }
@@ -67,10 +71,20 @@ class TransactionViewModel(
         .map { topCats(it, YearMonth.now()) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    // ── Reports: monthly expense totals for last 6 months ────────────────────
+    // ── Reports: expense chart data (granularity-aware) ───────────────────────
 
+    val expenseChartData: StateFlow<List<Pair<String, Double>>> =
+        combine(transactions, chartGranularity) { txns, gran ->
+            when (gran) {
+                "weekly"  -> weeklyExpenses(txns)
+                "yearly"  -> yearlyExpenses(txns)
+                else      -> monthlyExpensesThisYear(txns)
+            }
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    // kept for backward-compat with anything still referencing it
     val monthlyTotals: StateFlow<List<Pair<String, Double>>> = transactions
-        .map { monthlyExpenses(it) }
+        .map { monthlyExpensesLast6(it) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val categoryTotalsThisMonth: StateFlow<List<Pair<String, Double>>> = transactions
@@ -125,11 +139,12 @@ class TransactionViewModel(
     fun categoryFor(name: String): CategoryItem? =
         categories.value.firstOrNull { it.name == name }
 
-    fun setThemeMode(mode: String)      = viewModelScope.launch { prefs.setThemeMode(mode) }
-    fun setAccentIndex(i: Int)          = viewModelScope.launch { prefs.setAccentColorIndex(i) }
-    fun setGlobalColoring(v: Boolean)   = viewModelScope.launch { prefs.setGlobalColoring(v) }
-    fun setGranularColoring(v: Boolean) = viewModelScope.launch { prefs.setGranularColoring(v) }
-    fun setCurrencyCode(code: String)   = viewModelScope.launch { prefs.setCurrencyCode(code) }
+    fun setThemeMode(mode: String)         = viewModelScope.launch { prefs.setThemeMode(mode) }
+    fun setAccentIndex(i: Int)             = viewModelScope.launch { prefs.setAccentColorIndex(i) }
+    fun setGlobalColoring(v: Boolean)      = viewModelScope.launch { prefs.setGlobalColoring(v) }
+    fun setGranularColoring(v: Boolean)    = viewModelScope.launch { prefs.setGranularColoring(v) }
+    fun setCurrencyCode(code: String)      = viewModelScope.launch { prefs.setCurrencyCode(code) }
+    fun setChartGranularity(value: String) = viewModelScope.launch { prefs.setChartGranularity(value) }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -155,12 +170,52 @@ class TransactionViewModel(
             .take(limit)
             .map { it.key to it.value }
 
-    private fun monthlyExpenses(list: List<Transaction>): List<Pair<String, Double>> {
+    // last 6 months (kept for any legacy callers)
+    private fun monthlyExpensesLast6(list: List<Transaction>): List<Pair<String, Double>> {
         val now = YearMonth.now()
         return (5 downTo 0).map { offset ->
             val month = now.minusMonths(offset.toLong())
             val label = "${month.month.name.take(3)} ${month.year}"
             label to monthTotal(list, month, TransactionType.EXPENSE)
+        }
+    }
+
+    // all 12 months of the current year
+    private fun monthlyExpensesThisYear(list: List<Transaction>): List<Pair<String, Double>> {
+        val year = LocalDate.now().year
+        return (1..12).map { m ->
+            val ym    = YearMonth.of(year, m)
+            val label = ym.month.name.take(3)
+            label to monthTotal(list, ym, TransactionType.EXPENSE)
+        }
+    }
+
+    // last 12 ISO calendar weeks
+    private fun weeklyExpenses(list: List<Transaction>): List<Pair<String, Double>> {
+        val isoWeek   = WeekFields.ISO
+        val today     = LocalDate.now()
+        val weekStart = today.with(isoWeek.dayOfWeek(), 1)
+        return (11 downTo 0).map { offset ->
+            val start  = weekStart.minusWeeks(offset.toLong())
+            val end    = start.plusDays(6)
+            val cwNum  = start.get(isoWeek.weekOfWeekBasedYear())
+            val label  = "CW$cwNum"
+            val total  = list.filter {
+                it.type == TransactionType.EXPENSE &&
+                !it.date.isBefore(start) && !it.date.isAfter(end)
+            }.sumOf { it.amount }
+            label to total
+        }
+    }
+
+    // one bar per year — span from earliest year in data to current
+    private fun yearlyExpenses(list: List<Transaction>): List<Pair<String, Double>> {
+        val currentYear = LocalDate.now().year
+        val firstYear   = list.minOfOrNull { it.date.year } ?: currentYear
+        return (firstYear..currentYear).map { y ->
+            val total = list.filter { it.type == TransactionType.EXPENSE && it.date.year == y }
+                            .sumOf { it.amount }
+            "$y" to total
         }
     }
 

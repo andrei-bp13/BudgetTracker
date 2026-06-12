@@ -27,6 +27,7 @@ import com.budgettracker.app.ui.icons.iconById
 import com.budgettracker.app.ui.theme.LocalCurrencySymbol
 import com.budgettracker.app.viewmodel.TransactionViewModel
 import java.time.LocalDate
+import java.time.Month
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
@@ -39,8 +40,9 @@ fun CalendarScreen(viewModel: TransactionViewModel) {
     val accent          = MaterialTheme.colorScheme.primary
     val today           = LocalDate.now()
 
-    var selectedDate    by remember { mutableStateOf(today) }
-    var displayedMonth  by remember { mutableStateOf(YearMonth.now()) }
+    var selectedDate       by remember { mutableStateOf(today) }
+    var displayedMonth     by remember { mutableStateOf(YearMonth.now()) }
+    var showYearMonthPicker by remember { mutableStateOf(false) }
 
     val transactionsByDate = remember(allTransactions) {
         allTransactions.groupBy { it.date }
@@ -82,19 +84,17 @@ fun CalendarScreen(viewModel: TransactionViewModel) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        IconButton(onClick = {
-                            displayedMonth = displayedMonth.minusMonths(1)
-                            // keep selected date in sync if it's in the new month
-                        }) {
+                        IconButton(onClick = { displayedMonth = displayedMonth.minusMonths(1) }) {
                             Icon(Icons.Rounded.ChevronLeft, contentDescription = "Previous month")
                         }
-                        Text(
-                            "${displayedMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${displayedMonth.year}",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                        )
-                        IconButton(onClick = {
-                            displayedMonth = displayedMonth.plusMonths(1)
-                        }) {
+                        TextButton(onClick = { showYearMonthPicker = true }) {
+                            Text(
+                                "${displayedMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${displayedMonth.year}",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        IconButton(onClick = { displayedMonth = displayedMonth.plusMonths(1) }) {
                             Icon(Icons.Rounded.ChevronRight, contentDescription = "Next month")
                         }
                     }
@@ -203,6 +203,101 @@ fun CalendarScreen(viewModel: TransactionViewModel) {
 
         item { Spacer(Modifier.height(80.dp)) }
     }
+
+    // ── Year / month picker dialog ────────────────────────────────────────────
+    if (showYearMonthPicker) {
+        YearMonthPickerDialog(
+            current  = displayedMonth,
+            onDismiss = { showYearMonthPicker = false },
+            onSelect  = { ym ->
+                displayedMonth = ym
+                // if selected date is outside the new month, reset to 1st
+                if (YearMonth.from(selectedDate) != ym) selectedDate = ym.atDay(1)
+                showYearMonthPicker = false
+            }
+        )
+    }
+}
+
+@Composable
+private fun YearMonthPickerDialog(
+    current: YearMonth,
+    onDismiss: () -> Unit,
+    onSelect: (YearMonth) -> Unit
+) {
+    var pickerYear  by remember { mutableStateOf(current.year) }
+    var pickerMonth by remember { mutableStateOf(current.month) }
+    val accent = MaterialTheme.colorScheme.primary
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = { onSelect(YearMonth.of(pickerYear, pickerMonth)) }) {
+                Text("OK")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+        title = { Text("Select month") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                // ── Year selector ─────────────────────────────────────────────
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = { pickerYear-- }) {
+                        Icon(Icons.Rounded.ChevronLeft, contentDescription = "Previous year")
+                    }
+                    Text(
+                        "$pickerYear",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                    )
+                    IconButton(onClick = { pickerYear++ }) {
+                        Icon(Icons.Rounded.ChevronRight, contentDescription = "Next year")
+                    }
+                }
+
+                // ── Month grid (4 × 3) ────────────────────────────────────────
+                val months = Month.values()
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    months.toList().chunked(4).forEach { row ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            row.forEach { month ->
+                                val isSelected = month == pickerMonth
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(MaterialTheme.shapes.small)
+                                        .background(
+                                            if (isSelected) accent
+                                            else MaterialTheme.colorScheme.surfaceContainerHigh
+                                        )
+                                        .clickable { pickerMonth = month }
+                                        .padding(vertical = 8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        month.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
+                                        style = MaterialTheme.typography.labelMedium.copy(
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                        ),
+                                        color = if (isSelected) Color.White
+                                                else MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    )
 }
 
 @Composable
