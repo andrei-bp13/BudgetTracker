@@ -8,16 +8,16 @@ import androidx.compose.ui.graphics.Color
 data class AccentOption(val name: String, val seed: Color)
 
 val AccentColors = listOf(
-    AccentOption("Indigo",    Color(0xFF3F51B5)),
-    AccentOption("Purple",    Color(0xFF9C27B0)),
-    AccentOption("Pink",      Color(0xFFE91E63)),
-    AccentOption("Red",       Color(0xFFF44336)),
-    AccentOption("Orange",    Color(0xFFFF5722)),
-    AccentOption("Amber",     Color(0xFFFFC107)),
-    AccentOption("Green",     Color(0xFF4CAF50)),
-    AccentOption("Teal",      Color(0xFF009688)),
-    AccentOption("Blue",      Color(0xFF2196F3)),
-    AccentOption("Brown",     Color(0xFF795548)),
+    AccentOption("Blue",    Color(0xFF4361EE)),  // vivid blue
+    AccentOption("Violet",  Color(0xFF8338EC)),  // violet
+    AccentOption("Pink",    Color(0xFFF72585)),  // hot pink
+    AccentOption("Coral",   Color(0xFFE63946)),  // coral red
+    AccentOption("Orange",  Color(0xFFFB8500)),  // orange
+    AccentOption("Amber",   Color(0xFFFFB703)),  // golden amber
+    AccentOption("Emerald", Color(0xFF06D6A0)),  // emerald
+    AccentOption("Teal",    Color(0xFF118AB2)),  // teal blue
+    AccentOption("Sky",     Color(0xFF4CC9F0)),  // sky blue
+    AccentOption("Custom",  Color(0xFF4361EE)),  // placeholder; actual color stored in prefs
 )
 
 fun accentColorScheme(seed: Color, dark: Boolean): ColorScheme {
