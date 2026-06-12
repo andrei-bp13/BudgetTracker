@@ -34,16 +34,18 @@ import java.util.UUID
 @Composable
 fun AddTransactionSheet(
     viewModel: TransactionViewModel,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    initialTransaction: Transaction? = null
 ) {
     val allCategories  by viewModel.categories.collectAsState()
     val currencySymbol = LocalCurrencySymbol.current
+    val isEditing      = initialTransaction != null
 
-    var title       by remember { mutableStateOf("") }
-    var amount      by remember { mutableStateOf("") }
-    var note        by remember { mutableStateOf("") }
-    var paymentType by remember { mutableStateOf(PaymentType.DEBIT) }
-    var selectedCat by remember { mutableStateOf("Food & Dining") }
+    var title       by remember { mutableStateOf(initialTransaction?.title ?: "") }
+    var amount      by remember { mutableStateOf(initialTransaction?.amount?.toString() ?: "") }
+    var note        by remember { mutableStateOf(initialTransaction?.note ?: "") }
+    var paymentType by remember { mutableStateOf(initialTransaction?.paymentType ?: PaymentType.DEBIT) }
+    var selectedCat by remember { mutableStateOf(initialTransaction?.category ?: "Food & Dining") }
 
     val incomeNames = setOf("Salary", "Freelance", "Investment", "Other Income")
     val categories  = allCategories.filter { cat -> cat.name !in incomeNames }
@@ -67,7 +69,7 @@ fun AddTransactionSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "Add Expense",
+                    if (isEditing) "Edit Expense" else "Add Expense",
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black)
                 )
                 IconButton(onClick = onDismiss) {
@@ -194,18 +196,30 @@ fun AddTransactionSheet(
                 onClick = {
                     val amt = amount.toDoubleOrNull() ?: return@Button
                     if (title.isBlank()) return@Button
-                    viewModel.addTransaction(
-                        Transaction(
-                            id          = UUID.randomUUID().toString(),
-                            title       = title.trim(),
-                            amount      = amt,
-                            type        = TransactionType.EXPENSE,
-                            category    = selectedCat,
-                            date        = LocalDate.now(),
-                            note        = note.trim(),
-                            paymentType = paymentType
+                    if (isEditing && initialTransaction != null) {
+                        viewModel.updateTransaction(
+                            initialTransaction.copy(
+                                title       = title.trim(),
+                                amount      = amt,
+                                category    = selectedCat,
+                                note        = note.trim(),
+                                paymentType = paymentType
+                            )
                         )
-                    )
+                    } else {
+                        viewModel.addTransaction(
+                            Transaction(
+                                id          = UUID.randomUUID().toString(),
+                                title       = title.trim(),
+                                amount      = amt,
+                                type        = TransactionType.EXPENSE,
+                                category    = selectedCat,
+                                date        = LocalDate.now(),
+                                note        = note.trim(),
+                                paymentType = paymentType
+                            )
+                        )
+                    }
                     onDismiss()
                 },
                 modifier = Modifier
@@ -214,7 +228,7 @@ fun AddTransactionSheet(
                 shape = MaterialTheme.shapes.large
             ) {
                 Text(
-                    "Save Expense",
+                    if (isEditing) "Update Expense" else "Save Expense",
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
                 )
             }

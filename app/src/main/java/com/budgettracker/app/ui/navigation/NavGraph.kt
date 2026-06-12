@@ -43,11 +43,12 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
-    val navController  = rememberNavController()
-    val drawerState    = rememberDrawerState(DrawerValue.Closed)
-    var showAddSheet   by remember { mutableStateOf(false) }
-    val scope          = rememberCoroutineScope()
-    val currencySymbol by viewModel.currencySymbol.collectAsState()
+    val navController       = rememberNavController()
+    val drawerState         = rememberDrawerState(DrawerValue.Closed)
+    var showAddSheet        by remember { mutableStateOf(false) }
+    var editingTransaction  by remember { mutableStateOf<com.budgettracker.app.data.model.Transaction?>(null) }
+    val scope               = rememberCoroutineScope()
+    val currencySymbol      by viewModel.currencySymbol.collectAsState()
 
     CompositionLocalProvider(LocalCurrencySymbol provides currencySymbol) {
         ModalNavigationDrawer(
@@ -178,10 +179,12 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                 ) {
                     composable(Screen.Home.route) {
                         HomeScreen(
-                            viewModel          = viewModel,
-                            onAddTransaction   = { showAddSheet = true },
-                            onCategoryClick    = { name -> navController.navigate(Screen.CategoryDetail.route(name)) },
-                            onPaymentTypeClick = { pt -> navController.navigate(Screen.PaymentTypeDetail.route(pt)) }
+                            viewModel           = viewModel,
+                            onAddTransaction    = { showAddSheet = true },
+                            onCategoryClick     = { name -> navController.navigate(Screen.CategoryDetail.route(name)) },
+                            onPaymentTypeClick  = { pt -> navController.navigate(Screen.PaymentTypeDetail.route(pt)) },
+                            onEditTransaction   = { t -> editingTransaction = t },
+                            onDeleteTransaction = { t -> viewModel.deleteTransaction(t.id) }
                         )
                     }
                     composable(Screen.CategoryDetail.route) { backStack ->
@@ -240,10 +243,14 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
             }
         }
 
-        if (showAddSheet) {
+        if (showAddSheet || editingTransaction != null) {
             AddTransactionSheet(
-                viewModel = viewModel,
-                onDismiss = { showAddSheet = false }
+                viewModel          = viewModel,
+                initialTransaction = editingTransaction,
+                onDismiss          = {
+                    showAddSheet       = false
+                    editingTransaction = null
+                }
             )
         }
     } // end CompositionLocalProvider

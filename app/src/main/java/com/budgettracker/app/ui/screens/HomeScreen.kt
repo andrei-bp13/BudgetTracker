@@ -25,7 +25,9 @@ fun HomeScreen(
     viewModel: TransactionViewModel,
     onAddTransaction: () -> Unit,
     onCategoryClick: (String) -> Unit = {},
-    onPaymentTypeClick: (PaymentType) -> Unit = {}
+    onPaymentTypeClick: (PaymentType) -> Unit = {},
+    onEditTransaction: (com.budgettracker.app.data.model.Transaction) -> Unit = {},
+    onDeleteTransaction: (com.budgettracker.app.data.model.Transaction) -> Unit = {}
 ) {
     val thisMonth        by viewModel.thisMonthDailyExpenses.collectAsState()
     val lastMonth        by viewModel.lastMonthDailyExpenses.collectAsState()
@@ -143,6 +145,8 @@ fun HomeScreen(
                 transactions = recent,
                 resolveColor = resolveColor,
                 categoryFor  = { viewModel.categoryFor(it) },
+                onEdit       = onEditTransaction,
+                onDelete     = onDeleteTransaction,
                 modifier     = Modifier.weight(1f).fillMaxHeight()
             )
             TopCategoriesCard(
