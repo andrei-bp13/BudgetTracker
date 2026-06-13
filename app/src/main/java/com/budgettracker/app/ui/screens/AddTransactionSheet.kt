@@ -32,6 +32,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.budgettracker.app.data.model.*
 import com.budgettracker.app.ui.components.PaymentTypeIcon
 import com.budgettracker.app.ui.components.displayName
@@ -92,33 +93,55 @@ fun AddTransactionSheet(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment     = Alignment.CenterVertically
             ) {
-                val typeLabel    = if (transactionType == TransactionType.EXPENSE) "Expense" else "Income"
-                val incomeColor  = MaterialTheme.colorScheme.tertiary
-                val defaultColor = MaterialTheme.colorScheme.onSurface
+                val verb       = if (isEditing) "Edit" else "Add"
+                val titleStyle = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Black,
+                    fontSize   = 18.sp
+                )
+                val activeColor = MaterialTheme.colorScheme.onSurface
+                val dimColor    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+
                 Row(
-                    modifier          = Modifier
-                        .clip(MaterialTheme.shapes.small)
-                        .clickable {
-                            val newType = if (transactionType == TransactionType.EXPENSE)
-                                TransactionType.INCOME else TransactionType.EXPENSE
-                            transactionType = newType
-                            val newCats = if (newType == TransactionType.INCOME) incomeCategories else expenseCategories
-                            selectedCat = newCats.firstOrNull()?.name ?: selectedCat
-                        }
-                        .padding(horizontal = 4.dp, vertical = 2.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    modifier              = Modifier.weight(1f),
+                    verticalAlignment     = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(
-                        if (isEditing) "Edit $typeLabel" else "Add $typeLabel",
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
-                        color = if (transactionType == TransactionType.INCOME) incomeColor else defaultColor
+                        "$verb Expense",
+                        style    = titleStyle,
+                        color    = if (transactionType == TransactionType.EXPENSE) activeColor else dimColor,
+                        modifier = Modifier.clickable(enabled = transactionType != TransactionType.EXPENSE) {
+                            transactionType = TransactionType.EXPENSE
+                            selectedCat = expenseCategories.firstOrNull()?.name ?: selectedCat
+                        }
                     )
-                    Icon(
-                        Icons.Rounded.SwapHoriz,
-                        contentDescription = "Switch type",
-                        modifier = Modifier.size(18.dp),
-                        tint     = if (transactionType == TransactionType.INCOME) incomeColor else MaterialTheme.colorScheme.onSurfaceVariant
+                    Box(
+                        modifier         = Modifier
+                            .clickable {
+                                val newType = if (transactionType == TransactionType.EXPENSE)
+                                    TransactionType.INCOME else TransactionType.EXPENSE
+                                transactionType = newType
+                                selectedCat = (if (newType == TransactionType.INCOME) incomeCategories else expenseCategories)
+                                    .firstOrNull()?.name ?: selectedCat
+                            }
+                            .padding(horizontal = 6.dp, vertical = 4.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Rounded.SwapHoriz,
+                            contentDescription = "Switch type",
+                            modifier = Modifier.size(16.dp),
+                            tint     = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Text(
+                        "$verb Income",
+                        style    = titleStyle,
+                        color    = if (transactionType == TransactionType.INCOME) activeColor else dimColor,
+                        modifier = Modifier.clickable(enabled = transactionType != TransactionType.INCOME) {
+                            transactionType = TransactionType.INCOME
+                            selectedCat = incomeCategories.firstOrNull()?.name ?: selectedCat
+                        }
                     )
                 }
                 IconButton(onClick = onDismiss) {
@@ -380,9 +403,9 @@ fun AddTransactionSheet(
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape    = MaterialTheme.shapes.large
             ) {
+                val typeLabel = if (transactionType == TransactionType.EXPENSE) "Expense" else "Income"
                 Text(
-                    if (isEditing) "Update ${ if (transactionType == TransactionType.EXPENSE) "Expense" else "Income" }"
-                    else           "Save ${   if (transactionType == TransactionType.EXPENSE) "Expense" else "Income" }",
+                    if (isEditing) "Update $typeLabel" else "Save $typeLabel",
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
                 )
             }
