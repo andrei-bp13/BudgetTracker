@@ -19,17 +19,26 @@ data class CatPeriod(
 
 // ── Bar-chart helpers (context-aware, fully injectable for tests) ──────────────
 
-fun computeMonthlyBars(transactions: List<Transaction>, year: Int): List<ChartBar> =
+fun computeMonthlyBars(
+    transactions: List<Transaction>,
+    year: Int,
+    type: TransactionType = TransactionType.EXPENSE
+): List<ChartBar> =
     (1..12).map { m ->
         val ym    = YearMonth.of(year, m)
         val label = ym.month.getDisplayName(TextStyle.SHORT, Locale.getDefault())
         val total = transactions.filter {
-            it.type == TransactionType.EXPENSE && YearMonth.from(it.date) == ym
+            it.type == type && YearMonth.from(it.date) == ym
         }.sumOf { it.amount }
         ChartBar(label, "$label $year", total, ym.atDay(1), ym.atEndOfMonth())
     }
 
-fun computeWeeklyBars(transactions: List<Transaction>, year: Int, month: Int): List<ChartBar> {
+fun computeWeeklyBars(
+    transactions: List<Transaction>,
+    year: Int,
+    month: Int,
+    type: TransactionType = TransactionType.EXPENSE
+): List<ChartBar> {
     val ym   = YearMonth.of(year, month)
     val dim  = ym.lengthOfMonth()
     val abbr = ym.month.getDisplayName(TextStyle.SHORT, Locale.getDefault())
@@ -41,7 +50,7 @@ fun computeWeeklyBars(transactions: List<Transaction>, year: Int, month: Int): L
             val end    = ym.atDay(endDay)
             val lbl    = if (day == endDay) "$day" else "$day–$endDay"
             val total  = transactions.filter {
-                it.type == TransactionType.EXPENSE && !it.date.isBefore(start) && !it.date.isAfter(end)
+                it.type == type && !it.date.isBefore(start) && !it.date.isAfter(end)
             }.sumOf { it.amount }
             add(ChartBar(lbl, "$abbr $lbl $year", total, start, end))
             day += 7
@@ -51,12 +60,13 @@ fun computeWeeklyBars(transactions: List<Transaction>, year: Int, month: Int): L
 
 fun computeYearlyBars(
     transactions: List<Transaction>,
-    today: LocalDate = LocalDate.now()
+    today: LocalDate = LocalDate.now(),
+    type: TransactionType = TransactionType.EXPENSE
 ): List<ChartBar> {
     val firstYear = transactions.minOfOrNull { it.date.year } ?: today.year
     return (firstYear..today.year).map { y ->
         val total = transactions.filter {
-            it.type == TransactionType.EXPENSE && it.date.year == y
+            it.type == type && it.date.year == y
         }.sumOf { it.amount }
         ChartBar("$y", "$y", total, LocalDate.of(y, 1, 1), LocalDate.of(y, 12, 31))
     }
@@ -224,6 +234,16 @@ fun filterExpensesByDateRange(
     end: LocalDate
 ): List<Transaction> = transactions.filter {
     it.type == TransactionType.EXPENSE && !it.date.isBefore(start) && !it.date.isAfter(end)
+}
+
+/** Returns transactions of [type] in [start]..[end] inclusive. */
+fun filterByTypeAndDateRange(
+    transactions: List<Transaction>,
+    start: LocalDate,
+    end: LocalDate,
+    type: TransactionType
+): List<Transaction> = transactions.filter {
+    it.type == type && !it.date.isBefore(start) && !it.date.isAfter(end)
 }
 
 /** Groups transactions by category and sums amounts, sorted descending by total. */

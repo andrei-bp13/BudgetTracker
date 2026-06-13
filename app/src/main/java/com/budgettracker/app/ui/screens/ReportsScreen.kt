@@ -43,6 +43,7 @@ import com.budgettracker.app.util.computeMonthlyBars
 import com.budgettracker.app.util.computeWeeklyBars
 import com.budgettracker.app.util.computeYearlyBars
 import com.budgettracker.app.util.defaultCatPeriodIndex
+import com.budgettracker.app.util.filterByTypeAndDateRange
 import com.budgettracker.app.util.filterExpensesByDateRange
 import com.budgettracker.app.util.filterInDateRange
 import com.budgettracker.app.viewmodel.ChartBar
@@ -156,6 +157,79 @@ fun ReportsScreen(
 
     val catTitle = selectedCatPeriod?.let { "Spending by Category — ${it.title}" }
         ?: "Spending by Category"
+
+    // ── Income chart context ──────────────────────────────────────────────────
+    var incomeGranularity        by remember { mutableStateOf("monthly") }
+    var showIncomeGranularityMenu by remember { mutableStateOf(false) }
+    var incomeChartContextYear   by remember { mutableIntStateOf(today.year) }
+    var incomeChartContextMonth  by remember { mutableIntStateOf(today.monthValue) }
+
+    val incomeChartBars = remember(allTransactions, incomeGranularity, incomeChartContextYear, incomeChartContextMonth) {
+        when (incomeGranularity) {
+            "weekly"  -> computeWeeklyBars(allTransactions, incomeChartContextYear, incomeChartContextMonth, TransactionType.INCOME)
+            "yearly"  -> computeYearlyBars(allTransactions, type = TransactionType.INCOME)
+            else      -> computeMonthlyBars(allTransactions, incomeChartContextYear, TransactionType.INCOME)
+        }
+    }
+
+    val incomeChartTitle = when (incomeGranularity) {
+        "weekly"  -> {
+            val abbr = YearMonth.of(incomeChartContextYear, incomeChartContextMonth)
+                .month.getDisplayName(JTextStyle.SHORT, Locale.getDefault())
+            "Income — $abbr $incomeChartContextYear by Week"
+        }
+        "yearly"  -> "Income — By Year"
+        else      -> "Income — $incomeChartContextYear"
+    }
+
+    val incomeChipScrollState = rememberScrollState()
+    LaunchedEffect(incomeGranularity, incomeChartContextYear, incomeChartContextMonth) {
+        val idx = when (incomeGranularity) {
+            "monthly" -> availableChartYears.indexOf(incomeChartContextYear).coerceAtLeast(0)
+            "weekly"  -> incomeChartContextMonth - 1
+            else      -> 0
+        }
+        incomeChipScrollState.animateScrollTo((idx * 58.dp.value).toInt())
+    }
+
+    // ── Income category context ───────────────────────────────────────────────
+    var incomeCatGranularity   by remember { mutableStateOf("monthly") }
+    var showIncomeCatGranMenu  by remember { mutableStateOf(false) }
+    var incomeCatContextYear   by remember { mutableIntStateOf(today.year) }
+    var incomeCatContextMonth  by remember { mutableIntStateOf(today.monthValue) }
+
+    val incomeCatPeriods = remember(incomeCatGranularity, allTransactions, incomeCatContextYear, incomeCatContextMonth) {
+        catPeriods(incomeCatGranularity, allTransactions, incomeCatContextYear, incomeCatContextMonth)
+    }
+    var incomeCatPeriodIndex by remember { mutableIntStateOf(today.monthValue - 1) }
+    LaunchedEffect(incomeCatGranularity) {
+        incomeCatPeriodIndex = defaultCatPeriodIndex(incomeCatGranularity, incomeCatPeriods, incomeCatContextYear, incomeCatContextMonth)
+    }
+
+    val incomeCatChipScrollState = rememberScrollState()
+    LaunchedEffect(incomeCatPeriodIndex) {
+        incomeCatChipScrollState.animateScrollTo((incomeCatPeriodIndex * 58.dp.value).toInt())
+    }
+
+    val selectedIncomeCatPeriod = incomeCatPeriods.getOrNull(incomeCatPeriodIndex)
+    var incomeCatDetailCategory by remember { mutableStateOf<String?>(null) }
+    val incomeCatDetailSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    val incomeCatTotals = remember(allTransactions, selectedIncomeCatPeriod) {
+        if (selectedIncomeCatPeriod == null) emptyList()
+        else computeCategoryTotals(
+            filterByTypeAndDateRange(allTransactions, selectedIncomeCatPeriod.startDate, selectedIncomeCatPeriod.endDate, TransactionType.INCOME)
+        )
+    }
+
+    val incomeCatDisplay = remember(incomeCatTotals) {
+        val top = incomeCatTotals.take(6)
+        val otherAmount = incomeCatTotals.drop(6).sumOf { it.second }
+        if (otherAmount > 0.001) top + ("Other" to otherAmount) else top
+    }
+
+    val incomeCatTitle = selectedIncomeCatPeriod?.let { "Income by Category — ${it.title}" }
+        ?: "Income by Category"
 
     Column(
         modifier = Modifier
@@ -385,6 +459,206 @@ fun ReportsScreen(
             }
         }
 
+        // ── Income bar chart ──────────────────────────────────────────────────
+        Card(
+            colors   = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+            shape    = MaterialTheme.shapes.extraLarge,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+
+                Row(
+                    modifier              = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment     = Alignment.CenterVertically
+                ) {
+                    Text(
+                        incomeChartTitle,
+                        style    = MaterialTheme.typography.titleMedium.copy(fontSize = 14.sp),
+                        modifier = Modifier.weight(1f)
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(
+                            onClick  = {
+                                incomeChartContextYear  = today.year
+                                incomeChartContextMonth = today.monthValue
+                            },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(Icons.Outlined.Refresh, contentDescription = "Reset",
+                                modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Box {
+                            IconButton(
+                                onClick  = { showIncomeGranularityMenu = true },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(Icons.Outlined.Tune, contentDescription = "Chart settings",
+                                    modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            GranularityDropdownMenu(
+                                expanded    = showIncomeGranularityMenu,
+                                selectedKey = incomeGranularity,
+                                onDismiss   = { showIncomeGranularityMenu = false },
+                                onSelect    = { incomeGranularity = it }
+                            )
+                        }
+                    }
+                }
+
+                if (incomeGranularity == "monthly" || incomeGranularity == "weekly") {
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        modifier              = Modifier.fillMaxWidth().horizontalScroll(incomeChipScrollState),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        if (incomeGranularity == "monthly") {
+                            availableChartYears.forEach { y ->
+                                FilterChip(
+                                    selected = y == incomeChartContextYear,
+                                    onClick  = { incomeChartContextYear = y },
+                                    label    = { Text("$y", style = MaterialTheme.typography.labelSmall) }
+                                )
+                            }
+                        } else {
+                            (1..12).forEach { m ->
+                                val abbr = YearMonth.of(incomeChartContextYear, m)
+                                    .month.getDisplayName(JTextStyle.SHORT, Locale.getDefault())
+                                FilterChip(
+                                    selected = m == incomeChartContextMonth,
+                                    onClick  = { incomeChartContextMonth = m },
+                                    label    = { Text(abbr, style = MaterialTheme.typography.labelSmall) }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(12.dp))
+                ExpenseBarChart(
+                    bars           = incomeChartBars,
+                    currencySymbol = currencySymbol,
+                    barColor       = Color(0xFF4CAF50),
+                    onBarClick     = { bar ->
+                        when (incomeGranularity) {
+                            "yearly"  -> incomeChartContextYear = bar.startDate.year
+                            "monthly" -> {
+                                incomeChartContextYear  = bar.startDate.year
+                                incomeChartContextMonth = bar.startDate.monthValue
+                            }
+                        }
+                    }
+                )
+            }
+        }
+
+        // ── Income by category ────────────────────────────────────────────────
+        Card(
+            colors   = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+            shape    = MaterialTheme.shapes.extraLarge,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+
+                Row(
+                    modifier              = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment     = Alignment.CenterVertically
+                ) {
+                    Text(
+                        incomeCatTitle,
+                        style    = MaterialTheme.typography.titleMedium.copy(fontSize = 14.sp),
+                        modifier = Modifier.weight(1f)
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(
+                            onClick  = {
+                                incomeCatContextYear  = today.year
+                                incomeCatContextMonth = today.monthValue
+                                incomeCatPeriodIndex  = defaultCatPeriodIndex(
+                                    incomeCatGranularity, incomeCatPeriods, today.year, today.monthValue
+                                )
+                            },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(Icons.Outlined.Refresh, contentDescription = "Reset",
+                                modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Box {
+                            IconButton(
+                                onClick  = { showIncomeCatGranMenu = true },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(Icons.Outlined.Tune, contentDescription = "Period settings",
+                                    modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            GranularityDropdownMenu(
+                                expanded    = showIncomeCatGranMenu,
+                                selectedKey = incomeCatGranularity,
+                                onDismiss   = { showIncomeCatGranMenu = false },
+                                onSelect    = { incomeCatGranularity = it }
+                            )
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    modifier              = Modifier.fillMaxWidth().horizontalScroll(incomeCatChipScrollState),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    incomeCatPeriods.forEachIndexed { i, period ->
+                        FilterChip(
+                            selected = i == incomeCatPeriodIndex,
+                            onClick  = {
+                                incomeCatPeriodIndex = i
+                                when (incomeCatGranularity) {
+                                    "yearly"  -> incomeCatContextYear  = period.startDate.year
+                                    "monthly" -> {
+                                        incomeCatContextYear  = period.startDate.year
+                                        incomeCatContextMonth = period.startDate.monthValue
+                                    }
+                                    "weekly"  -> {
+                                        incomeCatContextYear  = period.startDate.year
+                                        incomeCatContextMonth = period.startDate.monthValue
+                                    }
+                                }
+                            },
+                            label = { Text(period.label, style = MaterialTheme.typography.labelSmall) }
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(12.dp))
+
+                if (incomeCatDisplay.isEmpty()) {
+                    Text(
+                        "No income data for this period",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    Row(
+                        modifier              = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment     = Alignment.CenterVertically
+                    ) {
+                        DonutChart(
+                            categories = incomeCatDisplay,
+                            viewModel  = viewModel,
+                            modifier   = Modifier.size(140.dp)
+                        )
+                        CategoryLegend(
+                            categories      = incomeCatDisplay,
+                            viewModel       = viewModel,
+                            onCategoryClick = { if (it != "Other") incomeCatDetailCategory = it },
+                            modifier        = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+        }
+
         Spacer(Modifier.height(80.dp))
     }
 
@@ -397,6 +671,21 @@ fun ReportsScreen(
             CategoryDetailSheet(
                 category        = category,
                 period          = selectedCatPeriod,
+                allTransactions = allTransactions,
+                viewModel       = viewModel,
+                currencySymbol  = currencySymbol
+            )
+        }
+    }
+
+    incomeCatDetailCategory?.let { category ->
+        ModalBottomSheet(
+            onDismissRequest = { incomeCatDetailCategory = null },
+            sheetState       = incomeCatDetailSheetState
+        ) {
+            CategoryDetailSheet(
+                category        = category,
+                period          = selectedIncomeCatPeriod,
                 allTransactions = allTransactions,
                 viewModel       = viewModel,
                 currencySymbol  = currencySymbol
@@ -446,9 +735,10 @@ private fun GranularityDropdownMenu(
 private fun ExpenseBarChart(
     bars: List<ChartBar>,
     currencySymbol: String,
-    onBarClick: (ChartBar) -> Unit
+    onBarClick: (ChartBar) -> Unit,
+    barColor: Color = Color.Unspecified
 ) {
-    val barColor     = MaterialTheme.colorScheme.primary
+    val resolvedBarColor = if (barColor == Color.Unspecified) MaterialTheme.colorScheme.primary else barColor
     val gridColor    = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
     val labelColor   = MaterialTheme.colorScheme.onSurfaceVariant
     val textMeasurer = rememberTextMeasurer()
@@ -499,7 +789,7 @@ private fun ExpenseBarChart(
                 val cx = lm + groupW * i + groupW / 2f
                 val bh = (bar.value / maxVal * chartH * animProg).toFloat().coerceAtLeast(2f)
                 drawRoundRect(
-                    color        = barColor,
+                    color        = resolvedBarColor,
                     topLeft      = Offset(cx - barW / 2f, chartH - bh),
                     size         = Size(barW, bh),
                     cornerRadius = CornerRadius(4.dp.toPx())
