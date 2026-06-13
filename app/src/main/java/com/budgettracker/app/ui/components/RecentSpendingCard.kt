@@ -14,13 +14,9 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.budgettracker.app.data.model.CategoryItem
 import com.budgettracker.app.data.model.Transaction
 import com.budgettracker.app.data.model.TransactionType
@@ -98,10 +94,11 @@ private fun RecentRow(t: Transaction, cat: CategoryItem?, color: Color) {
                          else           Color(0xFF4CAF50)
 
     Row(
-        modifier = Modifier.padding(vertical = 2.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        modifier              = Modifier.padding(vertical = 2.dp),
+        verticalAlignment     = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
+        // Category icon
         Box(
             modifier = Modifier
                 .size(36.dp)
@@ -117,36 +114,34 @@ private fun RecentRow(t: Transaction, cat: CategoryItem?, color: Color) {
             )
         }
 
+        // Left: title + amount
         Column(modifier = Modifier.weight(1f)) {
-            // Title with date · time inline, smaller and not bold
             Text(
-                text = buildAnnotatedString {
-                    withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) {
-                        append(t.title)
-                    }
-                    withStyle(SpanStyle(
-                        fontWeight = FontWeight.Normal,
-                        fontSize   = 10.sp,
-                        color      = secondaryColor
-                    )) {
-                        append("  ·  ${t.date.format(dateFmt)}  ${t.time.format(timeFmt)}")
-                    }
-                },
-                style    = MaterialTheme.typography.bodySmall,
+                t.title,
+                style    = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
             Spacer(Modifier.height(2.dp))
+            Text(
+                amountText,
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                color = amountColor
+            )
+        }
+
+        // Right: date+time + payment type
+        Column(horizontalAlignment = Alignment.End) {
+            Text(
+                "${t.date.format(dateFmt)} · ${t.time.format(timeFmt)}",
+                style = MaterialTheme.typography.labelSmall,
+                color = secondaryColor
+            )
+            Spacer(Modifier.height(2.dp))
             Row(
                 verticalAlignment     = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(3.dp)
             ) {
-                Text(
-                    amountText,
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                    color = amountColor
-                )
-                Text("·", style = MaterialTheme.typography.labelSmall, color = secondaryColor)
                 PaymentTypeIcon(type = t.paymentType, tint = secondaryColor, size = 12.dp)
                 Text(
                     t.paymentType.displayName(),
