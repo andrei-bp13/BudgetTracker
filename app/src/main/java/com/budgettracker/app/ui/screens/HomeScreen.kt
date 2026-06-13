@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
@@ -41,9 +42,11 @@ fun HomeScreen(
     val lastMonth      by viewModel.lastMonthDailyExpenses.collectAsState()
     val recent         by viewModel.recentTransactions.collectAsState()
     val topCats        by viewModel.topCategories.collectAsState()
-    val expense        by viewModel.thisMonthExpense.collectAsState()
-    val globalColoring by viewModel.globalColoring.collectAsState()
-    val byPaymentType  by viewModel.thisMonthByPaymentType.collectAsState()
+    val expense             by viewModel.thisMonthExpense.collectAsState()
+    val income              by viewModel.thisMonthIncome.collectAsState()
+    val globalColoring      by viewModel.globalColoring.collectAsState()
+    val byPaymentType       by viewModel.thisMonthByPaymentType.collectAsState()
+    val byPaymentTypeIncome by viewModel.thisMonthIncomeByPaymentType.collectAsState()
 
     val accent = MaterialTheme.colorScheme.primary
     val resolveColor: (String) -> androidx.compose.ui.graphics.Color = remember(globalColoring, accent) {
@@ -83,16 +86,37 @@ fun HomeScreen(
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp, vertical = 16.dp)
                 ) {
-                    Text(
-                        "Total spent this month",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        "$currencySymbol ${"%.2f".format(expense)}",
-                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    // ── Spent + Income totals side by side ────────────────────
+                    Row(
+                        modifier              = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment     = Alignment.Top
+                    ) {
+                        Column {
+                            Text(
+                                "Total spent this month",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                "$currencySymbol ${"%.2f".format(expense)}",
+                                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                "Total income this month",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                "$currencySymbol ${"%.2f".format(income)}",
+                                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
+                                color = Color(0xFF4CAF50)
+                            )
+                        }
+                    }
 
                     Spacer(Modifier.height(12.dp))
                     HorizontalDivider(
@@ -103,12 +127,13 @@ fun HomeScreen(
 
                     // ── Payment type breakdown ────────────────────────────────
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier              = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceAround,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment     = Alignment.CenterVertically
                     ) {
                         PaymentType.values().forEach { pt ->
-                            val amount = byPaymentType[pt] ?: 0.0
+                            val spent  = byPaymentType[pt] ?: 0.0
+                            val earned = byPaymentTypeIncome[pt] ?: 0.0
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.spacedBy(3.dp),
@@ -118,11 +143,26 @@ fun HomeScreen(
                                     .padding(horizontal = 12.dp, vertical = 8.dp)
                             ) {
                                 PaymentTypeIcon(type = pt, tint = MaterialTheme.colorScheme.onSurfaceVariant, size = 18.dp)
-                                Text(
-                                    "$currencySymbol ${"%.0f".format(amount)}",
-                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
+                                Row(
+                                    verticalAlignment     = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                ) {
+                                    Text(
+                                        "$currencySymbol ${"%.0f".format(spent)}",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                    Text(
+                                        "/",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        "${"%.0f".format(earned)}",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                                        color = Color(0xFF4CAF50)
+                                    )
+                                }
                                 Text(
                                     pt.displayName(),
                                     style = MaterialTheme.typography.labelSmall,

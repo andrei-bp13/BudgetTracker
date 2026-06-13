@@ -102,12 +102,29 @@ class TransactionViewModel(
         .map { monthTotal(it, YearMonth.now(), TransactionType.EXPENSE) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, 0.0)
 
+    val thisMonthIncome: StateFlow<Double> = transactions
+        .map { monthTotal(it, YearMonth.now(), TransactionType.INCOME) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, 0.0)
+
     val thisMonthByPaymentType: StateFlow<Map<PaymentType, Double>> = transactions
         .map { list ->
             val now = YearMonth.now()
             PaymentType.values().associateWith { pt ->
                 list.filter {
                     it.type == TransactionType.EXPENSE &&
+                    YearMonth.from(it.date) == now &&
+                    it.paymentType == pt
+                }.sumOf { it.amount }
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+
+    val thisMonthIncomeByPaymentType: StateFlow<Map<PaymentType, Double>> = transactions
+        .map { list ->
+            val now = YearMonth.now()
+            PaymentType.values().associateWith { pt ->
+                list.filter {
+                    it.type == TransactionType.INCOME &&
                     YearMonth.from(it.date) == now &&
                     it.paymentType == pt
                 }.sumOf { it.amount }
