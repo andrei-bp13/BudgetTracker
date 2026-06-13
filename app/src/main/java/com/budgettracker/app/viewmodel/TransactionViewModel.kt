@@ -142,6 +142,10 @@ class TransactionViewModel(
         .map { list -> list.filter { it.name !in incomeNames } }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
+    val incomeCategories: StateFlow<List<CategoryItem>> = categories
+        .map { list -> list.filter { it.name in incomeNames } }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
     fun saveCategory(item: CategoryItem) = viewModelScope.launch {
         catRepo.upsertCategory(categories.value, item)
     }

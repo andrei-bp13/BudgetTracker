@@ -12,6 +12,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material.icons.rounded.SwapVert
 import androidx.compose.material3.*
 import androidx.compose.ui.platform.LocalDensity
@@ -47,17 +48,21 @@ fun AddTransactionSheet(
     onDismiss: () -> Unit,
     initialTransaction: Transaction? = null
 ) {
-    val baseCategories  by viewModel.expenseCategories.collectAsState()
-    val allTransactions by viewModel.transactions.collectAsState()
-    val currencySymbol  = LocalCurrencySymbol.current
-    val isEditing       = initialTransaction != null
+    val expenseCategories by viewModel.expenseCategories.collectAsState()
+    val incomeCategories  by viewModel.incomeCategories.collectAsState()
+    val allTransactions   by viewModel.transactions.collectAsState()
+    val currencySymbol    = LocalCurrencySymbol.current
+    val isEditing         = initialTransaction != null
 
+    var transactionType by remember { mutableStateOf(initialTransaction?.type ?: TransactionType.EXPENSE) }
     var title          by remember { mutableStateOf(initialTransaction?.title    ?: "") }
     var amount         by remember { mutableStateOf(initialTransaction?.amount?.toString() ?: "") }
     var note           by remember { mutableStateOf(initialTransaction?.note     ?: "") }
     var paymentType    by remember { mutableStateOf(initialTransaction?.paymentType ?: PaymentType.DEBIT) }
     var selectedCat    by remember { mutableStateOf(initialTransaction?.category ?: "Food & Dining") }
     var sortByMostUsed by remember { mutableStateOf(false) }
+
+    val baseCategories = if (transactionType == TransactionType.EXPENSE) expenseCategories else incomeCategories
 
     val usageCount = remember(allTransactions) {
         allTransactions.groupingBy { it.category }.eachCount()
@@ -87,10 +92,35 @@ fun AddTransactionSheet(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment     = Alignment.CenterVertically
             ) {
-                Text(
-                    if (isEditing) "Edit Expense" else "Add Expense",
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black)
-                )
+                val typeLabel    = if (transactionType == TransactionType.EXPENSE) "Expense" else "Income"
+                val incomeColor  = MaterialTheme.colorScheme.tertiary
+                val defaultColor = MaterialTheme.colorScheme.onSurface
+                Row(
+                    modifier          = Modifier
+                        .clip(MaterialTheme.shapes.small)
+                        .clickable {
+                            val newType = if (transactionType == TransactionType.EXPENSE)
+                                TransactionType.INCOME else TransactionType.EXPENSE
+                            transactionType = newType
+                            val newCats = if (newType == TransactionType.INCOME) incomeCategories else expenseCategories
+                            selectedCat = newCats.firstOrNull()?.name ?: selectedCat
+                        }
+                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        if (isEditing) "Edit $typeLabel" else "Add $typeLabel",
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
+                        color = if (transactionType == TransactionType.INCOME) incomeColor else defaultColor
+                    )
+                    Icon(
+                        Icons.Rounded.SwapHoriz,
+                        contentDescription = "Switch type",
+                        modifier = Modifier.size(18.dp),
+                        tint     = if (transactionType == TransactionType.INCOME) incomeColor else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 IconButton(onClick = onDismiss) {
                     Icon(Icons.Rounded.Close, contentDescription = "Close")
                 }
@@ -337,7 +367,7 @@ fun AddTransactionSheet(
                                 id          = UUID.randomUUID().toString(),
                                 title       = titleVal,
                                 amount      = amountVal,
-                                type        = TransactionType.EXPENSE,
+                                type        = transactionType,
                                 category    = selectedCat,
                                 date        = LocalDate.now(),
                                 note        = note.trim(),
@@ -351,7 +381,8 @@ fun AddTransactionSheet(
                 shape    = MaterialTheme.shapes.large
             ) {
                 Text(
-                    if (isEditing) "Update Expense" else "Save Expense",
+                    if (isEditing) "Update ${ if (transactionType == TransactionType.EXPENSE) "Expense" else "Income" }"
+                    else           "Save ${   if (transactionType == TransactionType.EXPENSE) "Expense" else "Income" }",
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
                 )
             }
