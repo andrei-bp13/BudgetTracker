@@ -8,34 +8,10 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import com.budgettracker.app.data.model.Transaction
-import java.io.BufferedReader
 import java.io.File
 import java.time.LocalDate
 
 class CsvManager(private val context: Context) {
-
-    private val csvFile: File
-        get() = File(context.filesDir, "transactions.csv")
-
-    fun ensureInitialized() {
-        if (!csvFile.exists()) {
-            context.assets.open("transactions.csv").use { input ->
-                csvFile.outputStream().use { output -> input.copyTo(output) }
-            }
-        }
-    }
-
-    fun readAll(): List<Transaction> {
-        if (!csvFile.exists()) ensureInitialized()
-        return csvFile.bufferedReader().use { parseInternalReader(it) }
-    }
-
-    fun writeAll(transactions: List<Transaction>) {
-        csvFile.bufferedWriter().use { writer ->
-            writer.write("$CSV_HEADER\n")
-            transactions.forEach { t -> writer.write("${serializeCsvLine(t)}\n") }
-        }
-    }
 
     fun exportTo(uri: Uri, transactions: List<Transaction>) {
         context.contentResolver.openOutputStream(uri)?.use { out ->
@@ -47,8 +23,8 @@ class CsvManager(private val context: Context) {
     }
 
     /**
-     * Imports transactions from [uri]. Returns the number of rows that failed to parse;
-     * if any rows failed, an error log is written to the Downloads folder.
+     * Imports transactions from [uri]. Returns a ParseResult; if any rows failed,
+     * an error log is written to the Downloads folder.
      */
     fun importFrom(uri: Uri): ParseResult {
         val reader = context.contentResolver.openInputStream(uri)
@@ -59,13 +35,6 @@ class CsvManager(private val context: Context) {
     }
 
     // ── Internal helpers ──────────────────────────────────────────────────────
-
-    private fun parseInternalReader(reader: BufferedReader): List<Transaction> {
-        val result = mutableListOf<Transaction>()
-        reader.readLine() // skip header
-        reader.forEachLine { line -> parseCsvLine(line)?.let { result.add(it) } }
-        return result
-    }
 
     private fun writeErrorLog(failedLines: List<String>) {
         val date     = LocalDate.now().toString()

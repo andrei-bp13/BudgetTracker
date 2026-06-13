@@ -21,13 +21,6 @@ class TransactionRepository(
     val transactions: StateFlow<List<Transaction>> = _transactions.asStateFlow()
 
     suspend fun load() = withContext(Dispatchers.IO) {
-        // One-time migration: if Room is empty but internal CSV has data, seed Room from it.
-        // Self-healing: also covers reinstall scenarios where Room was wiped but CSV survived.
-        val csvTransactions = csvManager.readAll()
-        if (dao.getCount() == 0 && csvTransactions.isNotEmpty()) {
-            dao.insertAll(csvTransactions.map { it.toEntity() })
-        }
-        // Room is now the primary source of truth.
         _transactions.value = dao.getAll().map { it.toTransaction() }
     }
 
