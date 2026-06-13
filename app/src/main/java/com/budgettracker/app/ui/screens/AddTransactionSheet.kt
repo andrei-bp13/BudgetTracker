@@ -215,8 +215,8 @@ fun AddTransactionSheet(
                 val gridWidth = (itemW * cols + gap * (cols - 1)).dp
                 val density   = LocalDensity.current
 
-                // Snap whole pages: if scroll > half a page, advance; otherwise return
-                LaunchedEffect(gridState, cols) {
+                // Snap per-column: if scroll > half a column width, advance one column
+                LaunchedEffect(gridState) {
                     snapshotFlow { gridState.isScrollInProgress }
                         .filter { !it }
                         .collect {
@@ -224,19 +224,14 @@ fun AddTransactionSheet(
                             val firstItem = info.visibleItemsInfo.firstOrNull() ?: return@collect
                             if (info.totalItemsCount == 0) return@collect
 
-                            val firstCol     = firstItem.index / 2
-                            val pageIdx      = firstCol / cols
-                            val colInPage    = firstCol % cols
-                            val gapPx        = with(density) { gap.dp.roundToPx() }
-                            val colStepPx    = firstItem.size.width + gapPx
-                            val scrollInPage = colInPage * colStepPx + (-firstItem.offset.x).coerceAtLeast(0)
-                            val halfPagePx   = cols * colStepPx / 2
-
-                            val targetPage = if (scrollInPage >= halfPagePx) pageIdx + 1 else pageIdx
-                            val totalCols  = (info.totalItemsCount + 1) / 2
-                            val maxPage    = (totalCols + cols - 1) / cols
-                            val targetIdx  = (targetPage.coerceAtMost(maxPage - 1) * cols * 2)
-                                               .coerceIn(0, info.totalItemsCount - 1)
+                            val gapPx       = with(density) { gap.dp.roundToPx() }
+                            val colStepPx   = firstItem.size.width + gapPx
+                            val offsetInCol = (-firstItem.offset.x).coerceAtLeast(0)
+                            val firstCol    = firstItem.index / 2
+                            val totalCols   = (info.totalItemsCount + 1) / 2
+                            val targetCol   = if (offsetInCol >= colStepPx / 2) firstCol + 1 else firstCol
+                            val targetIdx   = (targetCol.coerceAtMost(totalCols - 1) * 2)
+                                                .coerceIn(0, info.totalItemsCount - 1)
 
                             if (firstItem.index != targetIdx || firstItem.offset.x != 0) {
                                 gridState.animateScrollToItem(targetIdx)
