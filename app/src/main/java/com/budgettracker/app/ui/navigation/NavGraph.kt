@@ -38,6 +38,7 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
     object PaymentTypeDetail : Screen("payment/{typeName}", "Payment", Icons.Rounded.Home) {
         fun route(type: PaymentType) = "payment/${type.name}"
     }
+    object Budget : Screen("budget", "Budget", Icons.Rounded.Savings)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -63,7 +64,7 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
     // Track current route at the top level — used for both topBar visibility and bottomBar selection
     val currentEntry by navController.currentBackStackEntryAsState()
     val route = currentEntry?.destination?.route
-    val isTopLevel = route == null || route in setOf(Screen.Home.route, Screen.Reports.route, Screen.Calendar.route)
+    val isTopLevel = route == null || route in setOf(Screen.Home.route, Screen.Reports.route, Screen.Calendar.route, Screen.Budget.route)
 
     CompositionLocalProvider(LocalCurrencySymbol provides currencySymbol) {
         ModalNavigationDrawer(
@@ -81,6 +82,15 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
         ) {
             Scaffold(
                 snackbarHost = { SnackbarHost(snackbarHostState) },
+                floatingActionButton = {
+                    FloatingActionButton(
+                        onClick        = { showAddSheet = true },
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor   = MaterialTheme.colorScheme.onPrimary
+                    ) {
+                        Icon(Icons.Rounded.Add, contentDescription = "Add transaction")
+                    }
+                },
                 topBar = {
                     // Only show the global top bar for the three top-level tabs;
                     // sub-screens (DrillDown, CategoryDetail, etc.) carry their own TopAppBar.
@@ -92,6 +102,7 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                                         Screen.Home.route     -> "Dashboard"
                                         Screen.Reports.route  -> "Reports"
                                         Screen.Calendar.route -> "Calendar"
+                                        Screen.Budget.route   -> "Budget"
                                         else                  -> ""
                                     },
                                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black)
@@ -148,26 +159,12 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                             label    = { Text(Screen.Reports.label) }
                         )
 
-                        // 3 — Add (circle FAB)
+                        // 3 — Budget
                         NavigationBarItem(
-                            selected = false,
-                            onClick  = { showAddSheet = true },
-                            icon = {
-                                Surface(
-                                    shape    = CircleShape,
-                                    color    = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(48.dp)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Icon(
-                                            Icons.Rounded.Add,
-                                            contentDescription = "Add",
-                                            tint = MaterialTheme.colorScheme.onPrimary
-                                        )
-                                    }
-                                }
-                            },
-                            label = { Text("Add") }
+                            selected = current?.hierarchy?.any { it.route == Screen.Budget.route } == true,
+                            onClick  = { navController.navigate(Screen.Budget.route) { launchSingleTop = true; restoreState = true } },
+                            icon     = { Icon(Screen.Budget.icon, contentDescription = Screen.Budget.label) },
+                            label    = { Text(Screen.Budget.label) }
                         )
 
                         // 4 — Calendar
@@ -264,6 +261,9 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                             viewModel = viewModel,
                             onBack    = { navController.popBackStack() }
                         )
+                    }
+                    composable(Screen.Budget.route) {
+                        BudgetScreen()
                     }
                 }
             }
