@@ -37,9 +37,12 @@ class CsvManager(private val context: Context) {
         }
     }
 
-    fun exportTo(uri: Uri) {
+    fun exportTo(uri: Uri, transactions: List<Transaction>) {
         context.contentResolver.openOutputStream(uri)?.use { out ->
-            csvFile.inputStream().use { it.copyTo(out) }
+            out.bufferedWriter().use { writer ->
+                writer.write("$CSV_HEADER\n")
+                transactions.forEach { writer.write("${serializeCsvLine(it)}\n") }
+            }
         }
     }
 
