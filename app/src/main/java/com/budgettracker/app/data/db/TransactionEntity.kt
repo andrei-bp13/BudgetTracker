@@ -6,6 +6,7 @@ import com.budgettracker.app.data.model.PaymentType
 import com.budgettracker.app.data.model.Transaction
 import com.budgettracker.app.data.model.TransactionType
 import java.time.LocalDate
+import java.time.LocalTime
 
 @Entity(tableName = "transactions")
 data class TransactionEntity(
@@ -16,18 +17,20 @@ data class TransactionEntity(
     val category: String,
     val dateEpochDay: Long,
     val note: String,
-    val paymentType: String
+    val paymentType: String,
+    val timeSecondOfDay: Int = 0
 )
 
 fun Transaction.toEntity() = TransactionEntity(
-    id           = id,
-    title        = title,
-    amount       = amount,
-    type         = type.name,
-    category     = category,
-    dateEpochDay = date.toEpochDay(),
-    note         = note,
-    paymentType  = paymentType.name
+    id              = id,
+    title           = title,
+    amount          = amount,
+    type            = type.name,
+    category        = category,
+    dateEpochDay    = date.toEpochDay(),
+    note            = note,
+    paymentType     = paymentType.name,
+    timeSecondOfDay = time.toSecondOfDay()
 )
 
 fun TransactionEntity.toTransaction() = Transaction(
@@ -38,5 +41,6 @@ fun TransactionEntity.toTransaction() = Transaction(
     category    = category,
     date        = LocalDate.ofEpochDay(dateEpochDay),
     note        = note,
-    paymentType = runCatching { PaymentType.valueOf(paymentType) }.getOrDefault(PaymentType.DEBIT)
+    paymentType = runCatching { PaymentType.valueOf(paymentType) }.getOrDefault(PaymentType.DEBIT),
+    time        = LocalTime.ofSecondOfDay(timeSecondOfDay.toLong())
 )

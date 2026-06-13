@@ -180,7 +180,7 @@ class CsvParserTest {
 
     // ── CSV_HEADER ────────────────────────────────────────────────────────────
 
-    @Test fun `CSV_HEADER has exactly 8 columns`() {
-        assertEquals(8, CSV_HEADER.split(",").size)
+    @Test fun `CSV_HEADER has exactly 9 columns`() {
+        assertEquals(9, CSV_HEADER.split(",").size)
     }
 }

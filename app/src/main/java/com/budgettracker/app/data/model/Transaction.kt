@@ -1,6 +1,7 @@
 package com.budgettracker.app.data.model
 
 import java.time.LocalDate
+import java.time.LocalTime
 
 enum class TransactionType { INCOME, EXPENSE }
 enum class PaymentType { DEBIT, CREDIT, CASH }
@@ -13,5 +14,6 @@ data class Transaction(
     val category: String,
     val date: LocalDate,
     val note: String = "",
-    val paymentType: PaymentType = PaymentType.DEBIT
+    val paymentType: PaymentType = PaymentType.DEBIT,
+    val time: LocalTime = LocalTime.MIDNIGHT
 )

@@ -5,6 +5,7 @@ import com.budgettracker.app.data.model.Transaction
 import com.budgettracker.app.data.model.TransactionType
 import java.io.BufferedReader
 import java.time.LocalDate
+import java.time.LocalTime
 import java.util.UUID
 
 data class ParseResult(val transactions: List<Transaction>, val failedLines: List<String>)
@@ -21,7 +22,7 @@ fun parseCsvContent(reader: BufferedReader): ParseResult {
     return ParseResult(transactions, failedLines)
 }
 
-const val CSV_HEADER = "id,title,amount,type,category,date,note,payment_type"
+const val CSV_HEADER = "id,title,amount,type,category,date,note,payment_type,time"
 
 fun splitCsvLine(line: String): List<String> {
     val result   = mutableListOf<String>()
@@ -60,10 +61,12 @@ fun parseCsvLine(line: String): Transaction? = runCatching {
         note        = if (cols.size > 6) cols[6] else "",
         paymentType = if (cols.size > 7)
                           runCatching { PaymentType.valueOf(cols[7]) }.getOrDefault(PaymentType.DEBIT)
-                      else PaymentType.DEBIT
+                      else PaymentType.DEBIT,
+        time        = if (cols.size > 8) runCatching { LocalTime.parse(cols[8]) }.getOrDefault(LocalTime.MIDNIGHT)
+                      else LocalTime.MIDNIGHT
     )
 }.getOrNull()
 
 fun serializeCsvLine(t: Transaction): String =
     "${t.id},${escapeCsv(t.title)},${t.amount},${t.type.name}," +
-    "${escapeCsv(t.category)},${t.date},${escapeCsv(t.note)},${t.paymentType.name}"
+    "${escapeCsv(t.category)},${t.date},${escapeCsv(t.note)},${t.paymentType.name},${t.time}"

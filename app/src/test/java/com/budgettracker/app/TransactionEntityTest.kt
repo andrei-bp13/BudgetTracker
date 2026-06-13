@@ -8,6 +8,7 @@ import com.budgettracker.app.data.model.Transaction
 import com.budgettracker.app.data.model.TransactionType
 import org.junit.Test
 import java.time.LocalDate
+import java.time.LocalTime
 import kotlin.test.assertEquals
 
 class TransactionEntityTest {
@@ -20,7 +21,8 @@ class TransactionEntityTest {
         category    = "Food",
         date        = LocalDate.of(2025, 6, 15),
         note        = "weekly shop",
-        paymentType = PaymentType.CREDIT
+        paymentType = PaymentType.CREDIT,
+        time        = LocalTime.of(14, 30)
     )
 
     @Test fun `toEntity preserves all fields`() {
@@ -33,6 +35,7 @@ class TransactionEntityTest {
         assertEquals(LocalDate.of(2025, 6, 15).toEpochDay(), entity.dateEpochDay)
         assertEquals("weekly shop",                entity.note)
         assertEquals("CREDIT",                     entity.paymentType)
+        assertEquals(LocalTime.of(14, 30).toSecondOfDay(), entity.timeSecondOfDay)
     }
 
     @Test fun `toTransaction round-trips through toEntity`() {
