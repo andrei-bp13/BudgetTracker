@@ -39,7 +39,7 @@ fun HomeScreen(
 ) {
     val thisMonth      by viewModel.thisMonthDailyExpenses.collectAsState()
     val lastMonth      by viewModel.lastMonthDailyExpenses.collectAsState()
-    val recent         by viewModel.recentExpenses.collectAsState()
+    val recent         by viewModel.recentTransactions.collectAsState()
     val topCats        by viewModel.topCategories.collectAsState()
     val expense        by viewModel.thisMonthExpense.collectAsState()
     val globalColoring by viewModel.globalColoring.collectAsState()
@@ -151,31 +151,26 @@ fun HomeScreen(
                 }
             }
 
-            // ── Two-column lower section ──────────────────────────────────────
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(IntrinsicSize.Max),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                RecentSpendingCard(
-                    transactions = recent,
-                    resolveColor = resolveColor,
-                    categoryFor  = { viewModel.categoryFor(it) },
-                    onLongPress  = { txn, bounds ->
-                        overlayTransaction = txn
-                        overlayBounds      = bounds
-                    },
-                    modifier     = Modifier.weight(1f).fillMaxHeight()
-                )
-                TopCategoriesCard(
-                    categories      = topCats,
-                    resolveColor    = resolveColor,
-                    categoryFor     = { viewModel.categoryFor(it) },
-                    onCategoryClick = onCategoryClick,
-                    modifier        = Modifier.weight(1f).fillMaxHeight()
-                )
-            }
+            // ── Recent Transactions ───────────────────────────────────────────
+            RecentSpendingCard(
+                transactions = recent,
+                resolveColor = resolveColor,
+                categoryFor  = { viewModel.categoryFor(it) },
+                onLongPress  = { txn, bounds ->
+                    overlayTransaction = txn
+                    overlayBounds      = bounds
+                },
+                modifier     = Modifier.fillMaxWidth()
+            )
+
+            // ── Top Categories ────────────────────────────────────────────────
+            TopCategoriesCard(
+                categories      = topCats,
+                resolveColor    = resolveColor,
+                categoryFor     = { viewModel.categoryFor(it) },
+                onCategoryClick = onCategoryClick,
+                modifier        = Modifier.fillMaxWidth()
+            )
 
             Spacer(Modifier.height(80.dp))
         }

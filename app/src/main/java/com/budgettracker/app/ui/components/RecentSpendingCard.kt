@@ -14,12 +14,22 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.budgettracker.app.data.model.CategoryItem
 import com.budgettracker.app.data.model.Transaction
+import com.budgettracker.app.data.model.TransactionType
 import com.budgettracker.app.ui.icons.iconById
 import com.budgettracker.app.ui.theme.LocalCurrencySymbol
+import java.time.format.DateTimeFormatter
+
+private val dateFmt = DateTimeFormatter.ofPattern("MMM d")
+private val timeFmt = DateTimeFormatter.ofPattern("HH:mm")
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -36,7 +46,7 @@ fun RecentSpendingCard(
         shape = MaterialTheme.shapes.extraLarge
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("Recent Spending", style = MaterialTheme.typography.titleMedium)
+            Text("Recent Transactions", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(12.dp))
             if (transactions.isEmpty()) {
                 Text(
@@ -49,7 +59,6 @@ fun RecentSpendingCard(
                     val color = resolveColor(t.category)
                     val cat   = categoryFor(t.category)
 
-                    // Capture this row's bounds so the parent can position the overlay
                     var rowBounds by remember { mutableStateOf(Rect.Zero) }
 
                     Box(
@@ -57,7 +66,7 @@ fun RecentSpendingCard(
                             .fillMaxWidth()
                             .onGloballyPositioned { rowBounds = it.boundsInRoot() }
                             .combinedClickable(
-                                onClick    = { /* normal tap does nothing */ },
+                                onClick     = { },
                                 onLongClick = { onLongPress(t, rowBounds) }
                             )
                     ) {
@@ -82,6 +91,11 @@ private fun RecentRow(t: Transaction, cat: CategoryItem?, color: Color) {
     val iconId         = cat?.iconId ?: "more_horiz"
     val currencySymbol = LocalCurrencySymbol.current
     val secondaryColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val isExpense      = t.type == TransactionType.EXPENSE
+    val amountText     = if (isExpense) "-$currencySymbol ${"%.2f".format(t.amount)}"
+                         else           "+$currencySymbol ${"%.2f".format(t.amount)}"
+    val amountColor    = if (isExpense) MaterialTheme.colorScheme.error
+                         else           Color(0xFF4CAF50)
 
     Row(
         modifier = Modifier.padding(vertical = 2.dp),
@@ -104,20 +118,33 @@ private fun RecentRow(t: Transaction, cat: CategoryItem?, color: Color) {
         }
 
         Column(modifier = Modifier.weight(1f)) {
+            // Title with date · time inline, smaller and not bold
             Text(
-                t.title,
-                style    = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
-                maxLines = 1
+                text = buildAnnotatedString {
+                    withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) {
+                        append(t.title)
+                    }
+                    withStyle(SpanStyle(
+                        fontWeight = FontWeight.Normal,
+                        fontSize   = 10.sp,
+                        color      = secondaryColor
+                    )) {
+                        append("  ·  ${t.date.format(dateFmt)}  ${t.time.format(timeFmt)}")
+                    }
+                },
+                style    = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             Spacer(Modifier.height(2.dp))
             Row(
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment     = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    "-$currencySymbol ${"%.2f".format(t.amount)}",
+                    amountText,
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.error
+                    color = amountColor
                 )
                 Text("·", style = MaterialTheme.typography.labelSmall, color = secondaryColor)
                 PaymentTypeIcon(type = t.paymentType, tint = secondaryColor, size = 12.dp)

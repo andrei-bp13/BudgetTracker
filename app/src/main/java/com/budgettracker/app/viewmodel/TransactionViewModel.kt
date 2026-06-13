@@ -72,6 +72,10 @@ class TransactionViewModel(
         .map { it.filter { t -> t.type == TransactionType.EXPENSE }.take(5) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
+    val recentTransactions: StateFlow<List<Transaction>> = transactions
+        .map { it.take(5) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
     val topCategories: StateFlow<List<Pair<String, Double>>> = transactions
         .map { topCats(it, YearMonth.now()) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
