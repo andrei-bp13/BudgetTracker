@@ -77,7 +77,8 @@ fun AddTransactionSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState       = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        dragHandle       = { BottomSheetDefaults.DragHandle() }
+        dragHandle       = { BottomSheetDefaults.DragHandle() },
+        modifier         = Modifier.fillMaxHeight()
     ) {
         Column(
             modifier = Modifier
@@ -229,7 +230,13 @@ fun AddTransactionSheet(
                 }
             }
 
-            // ── Category grid (2 rows, horizontally scrollable + scrollbar) ───
+            // ── Category grid (horizontally scrollable + scrollbar) ──────────
+            // Income with <= 4 items: single row; everything else: 2 rows.
+            // Scrollbar appears automatically when content overflows (> 8 income items
+            // or expense items that don't fit in the visible columns).
+            val gridRows   = if (transactionType == TransactionType.INCOME && categories.size <= 4) 1 else 2
+            val gridHeight = if (gridRows == 1) 76.dp else 152.dp
+
             val gridState = rememberLazyGridState()
 
             // Compute scrollbar thumb position and size from visible item indices
@@ -238,9 +245,9 @@ fun AddTransactionSheet(
                     val info       = gridState.layoutInfo
                     val totalItems = info.totalItemsCount
                     if (totalItems == 0) return@derivedStateOf 0f
-                    val firstCol   = (info.visibleItemsInfo.firstOrNull()?.index ?: 0) / 2
-                    val totalCols  = (totalItems + 1) / 2
-                    val visCols    = ((info.visibleItemsInfo.lastOrNull()?.index ?: 0) / 2) - firstCol + 1
+                    val firstCol   = (info.visibleItemsInfo.firstOrNull()?.index ?: 0) / gridRows
+                    val totalCols  = (totalItems + gridRows - 1) / gridRows
+                    val visCols    = ((info.visibleItemsInfo.lastOrNull()?.index ?: 0) / gridRows) - firstCol + 1
                     val maxScroll  = (totalCols - visCols).coerceAtLeast(1)
                     (firstCol.toFloat() / maxScroll) * (1f - visCols.toFloat() / totalCols)
                 }
@@ -250,9 +257,9 @@ fun AddTransactionSheet(
                     val info       = gridState.layoutInfo
                     val totalItems = info.totalItemsCount
                     if (totalItems == 0) return@derivedStateOf 1f
-                    val totalCols  = (totalItems + 1) / 2
-                    val firstCol   = (info.visibleItemsInfo.firstOrNull()?.index ?: 0) / 2
-                    val visCols    = ((info.visibleItemsInfo.lastOrNull()?.index ?: 0) / 2) - firstCol + 1
+                    val totalCols  = (totalItems + gridRows - 1) / gridRows
+                    val firstCol   = (info.visibleItemsInfo.firstOrNull()?.index ?: 0) / gridRows
+                    val visCols    = ((info.visibleItemsInfo.lastOrNull()?.index ?: 0) / gridRows) - firstCol + 1
                     (visCols.toFloat() / totalCols).coerceIn(0f, 1f)
                 }
             }
@@ -280,10 +287,10 @@ fun AddTransactionSheet(
                             val gapPx       = with(density) { gap.dp.roundToPx() }
                             val colStepPx   = firstItem.size.width + gapPx
                             val offsetInCol = (-firstItem.offset.x).coerceAtLeast(0)
-                            val firstCol    = firstItem.index / 2
-                            val totalCols   = (info.totalItemsCount + 1) / 2
+                            val firstCol    = firstItem.index / gridRows
+                            val totalCols   = (info.totalItemsCount + gridRows - 1) / gridRows
                             val targetCol   = if (offsetInCol >= colStepPx / 2) firstCol + 1 else firstCol
-                            val targetIdx   = (targetCol.coerceAtMost(totalCols - 1) * 2)
+                            val targetIdx   = (targetCol.coerceAtMost(totalCols - 1) * gridRows)
                                                 .coerceIn(0, info.totalItemsCount - 1)
 
                             if (firstItem.index != targetIdx || firstItem.offset.x != 0) {
@@ -293,11 +300,11 @@ fun AddTransactionSheet(
                 }
 
                 LazyHorizontalGrid(
-                    rows                  = GridCells.Fixed(2),
+                    rows                  = GridCells.Fixed(gridRows),
                     state                 = gridState,
                     horizontalArrangement = Arrangement.spacedBy(gap.dp),
                     verticalArrangement   = Arrangement.spacedBy(gap.dp),
-                    modifier              = Modifier.width(gridWidth).height(152.dp)
+                    modifier              = Modifier.width(gridWidth).height(gridHeight)
                 ) {
                     items(categories, key = { it.id }) { cat ->
                         val selected = selectedCat == cat.name
