@@ -7,7 +7,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -46,51 +48,60 @@ fun CategoriesScreen(
                     }
                 }
             )
-        },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { showNew = true },
-                icon    = { Icon(Icons.Outlined.Add, contentDescription = "Add") },
-                text    = { Text("New Category") }
-            )
         }
     ) { padding ->
-        LazyColumn(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(vertical = 8.dp)
         ) {
-            item {
-                Text(
-                    "Expense (${expenseCats.size})",
-                    style    = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                    color    = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(vertical = 4.dp)
-                )
-            }
-            items(expenseCats) { cat ->
-                CategoryRow(cat, onClick = { editTarget = cat; showEdit = true })
+            // ── Sticky "New Category" button ──────────────────────────────────
+            Button(
+                onClick  = { showNew = true },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
+                    .height(52.dp),
+                shape = MaterialTheme.shapes.large
+            ) {
+                Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("New Category", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
             }
 
-            if (incomeCats.isNotEmpty()) {
+            // ── Scrollable category list ──────────────────────────────────────
+            LazyColumn(
+                modifier            = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding      = PaddingValues(bottom = 16.dp)
+            ) {
                 item {
-                    Spacer(Modifier.height(8.dp))
                     Text(
-                        "Income (${incomeCats.size})",
+                        "Expense (${expenseCats.size})",
                         style    = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                         color    = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(vertical = 4.dp)
                     )
                 }
-                items(incomeCats) { cat ->
+                items(expenseCats) { cat ->
                     CategoryRow(cat, onClick = { editTarget = cat; showEdit = true })
                 }
-            }
 
-            item { Spacer(Modifier.height(80.dp)) }
+                if (incomeCats.isNotEmpty()) {
+                    item {
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "Income (${incomeCats.size})",
+                            style    = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                            color    = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                    }
+                    items(incomeCats) { cat ->
+                        CategoryRow(cat, onClick = { editTarget = cat; showEdit = true })
+                    }
+                }
+            }
         }
     }
 
