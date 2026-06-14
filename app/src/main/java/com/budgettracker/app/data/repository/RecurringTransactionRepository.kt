@@ -5,49 +5,44 @@ import com.budgettracker.app.data.db.toEntity
 import com.budgettracker.app.data.db.toRecurring
 import com.budgettracker.app.data.model.*
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.LocalTime
-import java.util.UUID
 
 class RecurringTransactionRepository(
     private val dao: RecurringTransactionDao
 ) {
-    private val _recurring = MutableStateFlow<List<RecurringTransaction>>(emptyList())
-    val recurring: StateFlow<List<RecurringTransaction>> = _recurring.asStateFlow()
-
-    suspend fun load() = withContext(Dispatchers.IO) {
-        _recurring.value = dao.getAll().map { it.toRecurring() }
-    }
+    val recurring: Flow<List<RecurringTransaction>> = dao.observeAll()
+        .map { entities -> entities.map { it.toRecurring() } }
 
     suspend fun add(rec: RecurringTransaction) = withContext(Dispatchers.IO) {
         dao.insert(rec.toEntity())
-        _recurring.value = (_recurring.value + rec).sortedBy { it.nextDueDate }
     }
 
     suspend fun update(rec: RecurringTransaction) = withContext(Dispatchers.IO) {
         dao.update(rec.toEntity())
-        _recurring.value = _recurring.value
-            .map { if (it.id == rec.id) rec else it }
-            .sortedBy { it.nextDueDate }
     }
 
     suspend fun delete(id: String) = withContext(Dispatchers.IO) {
         dao.deleteById(id)
-        _recurring.value = _recurring.value.filter { it.id != id }
     }
 
     /**
      * Generates Transaction rows for all active recurring transactions whose
      * nextDueDate is on or before today. Uses a deterministic transaction ID
      * (recurringId + epochDay) so re-processing after a crash is idempotent.
+     *
+     * All generated transactions and recurring-state updates are written in two
+     * single batch operations instead of one DB call per recurring rule.
      */
     suspend fun processRecurring(transactionRepo: TransactionRepository) = withContext(Dispatchers.IO) {
         val today = LocalDate.now()
         val due   = dao.getDue(today.toEpochDay()).map { it.toRecurring() }
+
+        val allGenerated = mutableListOf<Transaction>()
+        val updatedRecs  = mutableListOf<com.budgettracker.app.data.db.RecurringTransactionEntity>()
 
         for (rec in due) {
             var nextDue   = rec.nextDueDate
@@ -81,15 +76,17 @@ class RecurringTransactionRepository(
                 nextDue = rec.advanceDate(nextDue)
             }
 
-            if (generated.isNotEmpty()) transactionRepo.addAll(generated)
-
-            dao.update(rec.copy(
+            allGenerated += generated
+            updatedRecs  += rec.copy(
                 nextDueDate          = nextDue,
                 occurrencesGenerated = count,
                 status               = newStatus
-            ).toEntity())
+            ).toEntity()
         }
 
-        _recurring.value = dao.getAll().map { it.toRecurring() }
+        // Two batch writes instead of N individual writes per recurring rule.
+        if (allGenerated.isNotEmpty()) transactionRepo.addAll(allGenerated)
+        if (updatedRecs.isNotEmpty())  dao.updateAll(updatedRecs)
+        // Room's observeAll() Flow emits the updated recurring list automatically.
     }
 }
