@@ -11,8 +11,7 @@ import com.pardonmyspending.app.data.repository.CategoryRepository
 import com.pardonmyspending.app.data.repository.PreferencesRepository
 import com.pardonmyspending.app.data.repository.RecurringTransactionRepository
 import com.pardonmyspending.app.data.repository.TransactionRepository
-import java.time.DayOfWeek
-import java.time.temporal.TemporalAdjusters
+import com.pardonmyspending.app.util.budgetSpentAmount
 import com.pardonmyspending.app.util.dailyExpenses
 import com.pardonmyspending.app.util.monthTotal
 import com.pardonmyspending.app.util.monthlyExpensesForYear
@@ -263,21 +262,8 @@ class TransactionViewModel(
 
     val budgetSpent: StateFlow<Map<String, Double>> =
         combine(transactions, budgets) { txns, bgets ->
-            val today     = LocalDate.now()
-            val weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-            val nowYM     = YearMonth.now()
-            bgets.associate { b ->
-                val spent = txns.filter { t ->
-                    t.type == TransactionType.EXPENSE && t.category == b.categoryName &&
-                    when (b.period) {
-                        BudgetPeriod.ONE_TIME -> t.date.toEpochDay() >= b.createdEpochDay
-                        BudgetPeriod.WEEKLY  -> !t.date.isBefore(weekStart) && !t.date.isAfter(today)
-                        BudgetPeriod.MONTHLY -> YearMonth.from(t.date) == nowYM
-                        BudgetPeriod.YEARLY  -> t.date.year == today.year
-                    }
-                }.sumOf { it.amount }
-                b.id to spent
-            }
+            val today = LocalDate.now()
+            bgets.associate { b -> b.id to budgetSpentAmount(txns, b, today) }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyMap())
 
     fun addBudget(budget: Budget)              = viewModelScope.launch { budgetRepo.add(budget) }

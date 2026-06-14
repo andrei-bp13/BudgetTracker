@@ -44,7 +44,6 @@ import kotlin.math.roundToInt
 
 private val Green = Color(0xFF4CAF50)
 private val monthFmt = DateTimeFormatter.ofPattern("MMMM yyyy")
-private val shortMonthFmt = DateTimeFormatter.ofPattern("MMM yyyy")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,16 +80,18 @@ fun BudgetScreen(viewModel: TransactionViewModel) {
 
     val handleDrag: (Float) -> Unit = { delta ->
         dragOffsetY += delta
-        val dragged = draggedId ?: return@handleDrag
-        val idx = localList.indexOfFirst { it.id == dragged }
-        if (dragOffsetY > 0f && idx < localList.lastIndex) {
-            val nextId    = localList[idx + 1].id
-            val threshold = (cardHeights[nextId] ?: 0) / 2f
-            if (dragOffsetY > threshold) { swap(dragged, nextId); dragOffsetY -= (cardHeights[nextId] ?: 0).toFloat() }
-        } else if (dragOffsetY < 0f && idx > 0) {
-            val prevId    = localList[idx - 1].id
-            val threshold = (cardHeights[prevId] ?: 0) / 2f
-            if (-dragOffsetY > threshold) { swap(dragged, prevId); dragOffsetY += (cardHeights[prevId] ?: 0).toFloat() }
+        val dragged = draggedId
+        if (dragged != null) {
+            val idx = localList.indexOfFirst { it.id == dragged }
+            if (dragOffsetY > 0f && idx < localList.lastIndex) {
+                val nextId    = localList[idx + 1].id
+                val threshold = (cardHeights[nextId] ?: 0) / 2f
+                if (dragOffsetY > threshold) { swap(dragged, nextId); dragOffsetY -= (cardHeights[nextId] ?: 0).toFloat() }
+            } else if (dragOffsetY < 0f && idx > 0) {
+                val prevId    = localList[idx - 1].id
+                val threshold = (cardHeights[prevId] ?: 0) / 2f
+                if (-dragOffsetY > threshold) { swap(dragged, prevId); dragOffsetY += (cardHeights[prevId] ?: 0).toFloat() }
+            }
         }
     }
 

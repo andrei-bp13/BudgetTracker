@@ -1,11 +1,15 @@
 package com.pardonmyspending.app.util
 
+import com.pardonmyspending.app.data.model.Budget
+import com.pardonmyspending.app.data.model.BudgetPeriod
 import com.pardonmyspending.app.data.model.Transaction
 import com.pardonmyspending.app.data.model.TransactionType
 import com.pardonmyspending.app.viewmodel.ChartBar
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.TextStyle
+import java.time.temporal.TemporalAdjusters
 import java.util.Locale
 
 // ── Shared data class for category-period chips ───────────────────────────────
@@ -252,3 +256,24 @@ fun computeCategoryTotals(transactions: List<Transaction>): List<Pair<String, Do
         .mapValues { (_, v) -> v.sumOf { it.amount } }
         .entries.sortedByDescending { it.value }
         .map { it.key to it.value }
+
+
+// ── Budget spent ──────────────────────────────────────────────────────────────
+
+fun budgetSpentAmount(
+    transactions: List<Transaction>,
+    budget: Budget,
+    referenceDate: LocalDate = LocalDate.now()
+): Double {
+    val weekStart = referenceDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+    val nowYM     = YearMonth.from(referenceDate)
+    return transactions.filter { t ->
+        t.type == TransactionType.EXPENSE && t.category == budget.categoryName &&
+        when (budget.period) {
+            BudgetPeriod.ONE_TIME -> t.date.toEpochDay() >= budget.createdEpochDay
+            BudgetPeriod.WEEKLY  -> !t.date.isBefore(weekStart) && !t.date.isAfter(referenceDate)
+            BudgetPeriod.MONTHLY -> YearMonth.from(t.date) == nowYM
+            BudgetPeriod.YEARLY  -> t.date.year == referenceDate.year
+        }
+    }.sumOf { it.amount }
+}

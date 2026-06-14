@@ -1,5 +1,7 @@
 package com.pardonmyspending.app
 
+import com.pardonmyspending.app.data.model.Budget
+import com.pardonmyspending.app.data.model.BudgetPeriod
 import com.pardonmyspending.app.data.model.PaymentType
 import com.pardonmyspending.app.data.model.Transaction
 import com.pardonmyspending.app.data.model.TransactionType
@@ -336,5 +338,104 @@ class BudgetCalculationsTest {
     @Test fun `defaultCatPeriodIndex unknown granularity returns 0`() {
         val idx = defaultCatPeriodIndex("unknown", emptyList(), 2025, 6)
         assertEquals(0, idx)
+    }
+
+    // ── dailyExpenses with maxDay ─────────────────────────────────────────────
+
+    @Test fun `dailyExpenses with maxDay clips to that day`() {
+        val result = dailyExpenses(emptyList(), YearMonth.of(2025, 1), maxDay = 10)
+        assertEquals(10, result.size)
+        assertEquals(10, result.last().first)
+    }
+
+    @Test fun `dailyExpenses maxDay coerces to month length when too large`() {
+        val result = dailyExpenses(emptyList(), YearMonth.of(2025, 2), maxDay = 99)
+        assertEquals(28, result.size)
+    }
+
+    @Test fun `dailyExpenses maxDay 1 returns single entry`() {
+        val txns   = listOf(expense(42.0, "2025-03-01"))
+        val result = dailyExpenses(txns, YearMonth.of(2025, 3), maxDay = 1)
+        assertEquals(1, result.size)
+        assertEquals(42.0, result[0].second)
+    }
+
+    // ── budgetSpentAmount ─────────────────────────────────────────────────────
+
+    private fun budget(
+        period: BudgetPeriod,
+        category: String = "Food",
+        createdDate: String = "2025-01-01"
+    ) = Budget(
+        id              = "b1",
+        title           = "Test",
+        categoryName    = category,
+        amount          = 500.0,
+        period          = period,
+        createdEpochDay = LocalDate.parse(createdDate).toEpochDay(),
+        sortOrder       = 0
+    )
+
+    @Test fun `budgetSpentAmount MONTHLY sums only current month expenses`() {
+        val ref  = LocalDate.of(2025, 6, 15)
+        val txns = listOf(
+            expense(100.0, "2025-06-01"),
+            expense(50.0,  "2025-06-20"),
+            expense(200.0, "2025-05-31"), // previous month — excluded
+            income(999.0,  "2025-06-10"), // income — excluded
+        )
+        val result = budgetSpentAmount(txns, budget(BudgetPeriod.MONTHLY), ref)
+        assertEquals(150.0, result)
+    }
+
+    @Test fun `budgetSpentAmount WEEKLY sums only current week Mon–today`() {
+        // ref = Wednesday 2025-06-11 → week Mon 2025-06-09 .. Wed 2025-06-11
+        val ref  = LocalDate.of(2025, 6, 11)
+        val txns = listOf(
+            expense(10.0, "2025-06-09"), // Monday — in
+            expense(20.0, "2025-06-11"), // Wednesday — in
+            expense(30.0, "2025-06-08"), // Sunday before — excluded
+            expense(40.0, "2025-06-12"), // Thursday after ref — excluded
+        )
+        val result = budgetSpentAmount(txns, budget(BudgetPeriod.WEEKLY), ref)
+        assertEquals(30.0, result)
+    }
+
+    @Test fun `budgetSpentAmount YEARLY sums only current year expenses`() {
+        val ref  = LocalDate.of(2025, 6, 1)
+        val txns = listOf(
+            expense(100.0, "2025-01-01"),
+            expense(200.0, "2025-12-31"),
+            expense(999.0, "2024-12-31"), // previous year — excluded
+        )
+        val result = budgetSpentAmount(txns, budget(BudgetPeriod.YEARLY), ref)
+        assertEquals(300.0, result)
+    }
+
+    @Test fun `budgetSpentAmount ONE_TIME sums all expenses since creation`() {
+        val created = "2025-03-01"
+        val ref     = LocalDate.of(2025, 6, 1)
+        val txns    = listOf(
+            expense(100.0, "2025-03-01"), // on creation day — in
+            expense(200.0, "2025-05-15"), // after — in
+            expense(50.0,  "2025-02-28"), // before creation — excluded
+        )
+        val result = budgetSpentAmount(txns, budget(BudgetPeriod.ONE_TIME, createdDate = created), ref)
+        assertEquals(300.0, result)
+    }
+
+    @Test fun `budgetSpentAmount ignores different category`() {
+        val ref  = LocalDate.of(2025, 6, 1)
+        val txns = listOf(
+            expense(100.0, "2025-06-01", "Food"),
+            expense(999.0, "2025-06-01", "Shopping"),
+        )
+        val result = budgetSpentAmount(txns, budget(BudgetPeriod.MONTHLY, category = "Food"), ref)
+        assertEquals(100.0, result)
+    }
+
+    @Test fun `budgetSpentAmount returns 0 for empty transaction list`() {
+        val result = budgetSpentAmount(emptyList(), budget(BudgetPeriod.MONTHLY))
+        assertEquals(0.0, result)
     }
 }
