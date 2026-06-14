@@ -137,12 +137,20 @@ class TransactionViewModel(
     fun updateRecurring(rec: RecurringTransaction) = viewModelScope.launch { recurringRepo.update(rec) }
     fun deleteRecurring(id: String)                = viewModelScope.launch { recurringRepo.delete(id) }
 
+    private val _dataLoaded = MutableStateFlow(false)
+    val dataLoaded: StateFlow<Boolean> = _dataLoaded.asStateFlow()
+
     init {
         viewModelScope.launch {
+            // Wait for theme prefs to emit their real DataStore values before
+            // signalling ready — prevents the theme-colour flash on first frame.
+            prefs.themeMode.first()
             repo.load()
             recurringRepo.load()
-            recurringRepo.processRecurring(repo)
+            _dataLoaded.value = true
         }
+        // processRecurring runs independently so it never delays the UI.
+        viewModelScope.launch { recurringRepo.processRecurring(repo) }
     }
 
     fun addTransaction(t: Transaction)    = viewModelScope.launch { repo.add(t) }

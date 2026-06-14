@@ -7,7 +7,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.ViewModelProvider
 import com.budgettracker.app.ui.navigation.BudgetTrackerNavGraph
 import com.budgettracker.app.ui.theme.BudgetTrackerTheme
 import com.budgettracker.app.viewmodel.TransactionViewModel
@@ -32,9 +33,14 @@ class MainActivity : ComponentActivity() {
             app.recurringRepository
         )
 
-        setContent {
-            val vm: TransactionViewModel = viewModel(factory = factory)
+        // Create VM before setContent so the splash condition can observe it.
+        val vm = ViewModelProvider(this, factory)[TransactionViewModel::class.java]
 
+        // Hold the splash until theme prefs + repo data are ready.
+        // processRecurring runs in its own coroutine and does not block dataLoaded.
+        installSplashScreen().setKeepOnScreenCondition { !vm.dataLoaded.value }
+
+        setContent {
             val themeFlow = remember(vm) {
                 combine(vm.themeMode, vm.accentIndex, vm.customAccentHex) { mode, accent, hex ->
                     AppThemeState(mode, accent, hex)
