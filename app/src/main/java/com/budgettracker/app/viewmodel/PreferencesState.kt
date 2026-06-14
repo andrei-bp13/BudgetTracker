@@ -1,6 +1,6 @@
-package com.budgettracker.app.viewmodel
+package com.pardonmyspending.app.viewmodel
 
-import com.budgettracker.app.data.repository.PreferencesRepository
+import com.pardonmyspending.app.data.repository.PreferencesRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow

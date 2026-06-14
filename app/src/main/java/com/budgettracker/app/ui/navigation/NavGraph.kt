@@ -1,4 +1,4 @@
-package com.budgettracker.app.ui.navigation
+package com.pardonmyspending.app.ui.navigation
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
@@ -24,12 +24,12 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.*
 import androidx.compose.runtime.CompositionLocalProvider
 import kotlinx.coroutines.launch
-import com.budgettracker.app.data.model.PaymentType
-import com.budgettracker.app.data.model.TransactionType
-import com.budgettracker.app.ui.screens.*
-import com.budgettracker.app.ui.theme.LocalCurrencySymbol
-import com.budgettracker.app.viewmodel.ChartBar
-import com.budgettracker.app.viewmodel.TransactionViewModel
+import com.pardonmyspending.app.data.model.PaymentType
+import com.pardonmyspending.app.data.model.TransactionType
+import com.pardonmyspending.app.ui.screens.*
+import com.pardonmyspending.app.ui.theme.LocalCurrencySymbol
+import com.pardonmyspending.app.viewmodel.ChartBar
+import com.pardonmyspending.app.viewmodel.TransactionViewModel
 import java.time.LocalDate
 
 sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
@@ -58,8 +58,8 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
     val drawerState         = rememberDrawerState(DrawerValue.Closed)
     var showAddSheet          by remember { mutableStateOf(false) }
     var showAddRecurringSheet by remember { mutableStateOf(false) }
-    var editingTransaction    by remember { mutableStateOf<com.budgettracker.app.data.model.Transaction?>(null) }
-    var editingRecurring      by remember { mutableStateOf<com.budgettracker.app.data.model.RecurringTransaction?>(null) }
+    var editingTransaction    by remember { mutableStateOf<com.pardonmyspending.app.data.model.Transaction?>(null) }
+    var editingRecurring      by remember { mutableStateOf<com.pardonmyspending.app.data.model.RecurringTransaction?>(null) }
     var fabExpanded           by remember { mutableStateOf(false) }
 
     BackHandler(enabled = fabExpanded) { fabExpanded = false }

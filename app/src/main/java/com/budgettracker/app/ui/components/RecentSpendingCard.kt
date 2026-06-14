@@ -1,4 +1,4 @@
-package com.budgettracker.app.ui.components
+package com.pardonmyspending.app.ui.components
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -17,11 +17,11 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.budgettracker.app.data.model.CategoryItem
-import com.budgettracker.app.data.model.Transaction
-import com.budgettracker.app.data.model.TransactionType
-import com.budgettracker.app.ui.icons.iconById
-import com.budgettracker.app.ui.theme.LocalCurrencySymbol
+import com.pardonmyspending.app.data.model.CategoryItem
+import com.pardonmyspending.app.data.model.Transaction
+import com.pardonmyspending.app.data.model.TransactionType
+import com.pardonmyspending.app.ui.icons.iconById
+import com.pardonmyspending.app.ui.theme.LocalCurrencySymbol
 import java.time.format.DateTimeFormatter
 
 private val dateFmt = DateTimeFormatter.ofPattern("MMM d")

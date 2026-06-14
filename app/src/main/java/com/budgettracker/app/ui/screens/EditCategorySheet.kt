@@ -1,4 +1,4 @@
-package com.budgettracker.app.ui.screens
+package com.pardonmyspending.app.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -16,13 +16,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.budgettracker.app.data.model.CategoryColorOptions
-import com.budgettracker.app.data.model.CategoryItem
-import com.budgettracker.app.data.model.colorToHex
-import com.budgettracker.app.ui.components.RainbowColorSwatch
-import com.budgettracker.app.ui.components.RgbColorPickerDialog
-import com.budgettracker.app.ui.icons.AppIcons
-import com.budgettracker.app.ui.icons.iconById
+import com.pardonmyspending.app.data.model.CategoryColorOptions
+import com.pardonmyspending.app.data.model.CategoryItem
+import com.pardonmyspending.app.data.model.colorToHex
+import com.pardonmyspending.app.ui.components.RainbowColorSwatch
+import com.pardonmyspending.app.ui.components.RgbColorPickerDialog
+import com.pardonmyspending.app.ui.icons.AppIcons
+import com.pardonmyspending.app.ui.icons.iconById
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

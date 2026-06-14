@@ -1,4 +1,4 @@
-package com.budgettracker.app.ui.screens
+package com.pardonmyspending.app.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -16,8 +16,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.budgettracker.app.ui.icons.AppIcon
-import com.budgettracker.app.ui.icons.AppIcons
+import com.pardonmyspending.app.ui.icons.AppIcon
+import com.pardonmyspending.app.ui.icons.AppIcons
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

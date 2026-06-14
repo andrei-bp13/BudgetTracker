@@ -1,4 +1,4 @@
-package com.budgettracker.app.data.model
+package com.pardonmyspending.app.data.model
 
 import androidx.compose.ui.graphics.Color
 

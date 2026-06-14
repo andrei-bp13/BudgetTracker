@@ -1,4 +1,4 @@
-package com.budgettracker.app.data.model
+package com.pardonmyspending.app.data.model
 
 // Legacy helpers kept for CSV compatibility — resolved at runtime via CategoryRepository
 object LegacyCategories {

@@ -1,4 +1,4 @@
-package com.budgettracker.app.ui.screens
+package com.pardonmyspending.app.ui.screens
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -35,12 +35,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.budgettracker.app.data.model.*
-import com.budgettracker.app.ui.components.PaymentTypeIcon
-import com.budgettracker.app.ui.components.displayName
-import com.budgettracker.app.ui.icons.iconById
-import com.budgettracker.app.ui.theme.LocalCurrencySymbol
-import com.budgettracker.app.viewmodel.TransactionViewModel
+import com.pardonmyspending.app.data.model.*
+import com.pardonmyspending.app.ui.components.PaymentTypeIcon
+import com.pardonmyspending.app.ui.components.displayName
+import com.pardonmyspending.app.ui.icons.iconById
+import com.pardonmyspending.app.ui.theme.LocalCurrencySymbol
+import com.pardonmyspending.app.viewmodel.TransactionViewModel
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter

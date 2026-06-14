@@ -1,4 +1,4 @@
-package com.budgettracker.app.ui.components
+package com.pardonmyspending.app.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -19,7 +19,7 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import com.budgettracker.app.data.model.Transaction
+import com.pardonmyspending.app.data.model.Transaction
 import kotlin.math.roundToInt
 
 /**

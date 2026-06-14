@@ -1,4 +1,4 @@
-package com.budgettracker.app.ui.screens
+package com.pardonmyspending.app.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons

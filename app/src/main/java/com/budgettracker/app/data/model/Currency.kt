@@ -1,4 +1,4 @@
-package com.budgettracker.app.data.model
+package com.pardonmyspending.app.data.model
 
 data class CurrencyOption(val code: String, val name: String, val symbol: String)
 

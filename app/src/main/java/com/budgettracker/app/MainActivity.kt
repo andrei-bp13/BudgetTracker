@@ -1,4 +1,4 @@
-package com.budgettracker.app
+package com.pardonmyspending.app
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -9,9 +9,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.ViewModelProvider
-import com.budgettracker.app.ui.navigation.BudgetTrackerNavGraph
-import com.budgettracker.app.ui.theme.BudgetTrackerTheme
-import com.budgettracker.app.viewmodel.TransactionViewModel
+import com.pardonmyspending.app.ui.navigation.BudgetTrackerNavGraph
+import com.pardonmyspending.app.ui.theme.BudgetTrackerTheme
+import com.pardonmyspending.app.viewmodel.TransactionViewModel
 import kotlinx.coroutines.flow.combine
 
 private data class AppThemeState(

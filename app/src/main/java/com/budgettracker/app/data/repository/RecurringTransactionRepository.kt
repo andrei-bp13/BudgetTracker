@@ -1,9 +1,9 @@
-package com.budgettracker.app.data.repository
+package com.pardonmyspending.app.data.repository
 
-import com.budgettracker.app.data.db.RecurringTransactionDao
-import com.budgettracker.app.data.db.toEntity
-import com.budgettracker.app.data.db.toRecurring
-import com.budgettracker.app.data.model.*
+import com.pardonmyspending.app.data.db.RecurringTransactionDao
+import com.pardonmyspending.app.data.db.toEntity
+import com.pardonmyspending.app.data.db.toRecurring
+import com.pardonmyspending.app.data.model.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -42,7 +42,7 @@ class RecurringTransactionRepository(
         val due   = dao.getDue(today.toEpochDay()).map { it.toRecurring() }
 
         val allGenerated = mutableListOf<Transaction>()
-        val updatedRecs  = mutableListOf<com.budgettracker.app.data.db.RecurringTransactionEntity>()
+        val updatedRecs  = mutableListOf<com.pardonmyspending.app.data.db.RecurringTransactionEntity>()
 
         for (rec in due) {
             var nextDue   = rec.nextDueDate

@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "com.budgettracker.app"
+    namespace = "com.pardonmyspending.app"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.budgettracker.app"
+        applicationId = "com.pardonmyspending.app"
         minSdk = 26
         targetSdk = 35
         versionCode = 1

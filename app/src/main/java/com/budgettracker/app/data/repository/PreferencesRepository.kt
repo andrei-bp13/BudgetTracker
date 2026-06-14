@@ -1,4 +1,4 @@
-package com.budgettracker.app.data.repository
+package com.pardonmyspending.app.data.repository
 
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey

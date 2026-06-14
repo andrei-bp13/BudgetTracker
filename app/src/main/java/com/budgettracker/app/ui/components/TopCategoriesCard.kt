@@ -1,4 +1,4 @@
-package com.budgettracker.app.ui.components
+package com.pardonmyspending.app.ui.components
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -13,9 +13,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.budgettracker.app.data.model.CategoryItem
-import com.budgettracker.app.ui.icons.iconById
-import com.budgettracker.app.ui.theme.LocalCurrencySymbol
+import com.pardonmyspending.app.data.model.CategoryItem
+import com.pardonmyspending.app.ui.icons.iconById
+import com.pardonmyspending.app.ui.theme.LocalCurrencySymbol
 
 @Composable
 fun TopCategoriesCard(

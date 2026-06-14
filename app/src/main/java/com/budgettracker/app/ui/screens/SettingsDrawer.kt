@@ -1,4 +1,4 @@
-package com.budgettracker.app.ui.screens
+package com.pardonmyspending.app.ui.screens
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -15,14 +15,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import com.budgettracker.app.ui.components.RainbowColorSwatch
-import com.budgettracker.app.ui.components.RgbColorPickerDialog
+import com.pardonmyspending.app.ui.components.RainbowColorSwatch
+import com.pardonmyspending.app.ui.components.RgbColorPickerDialog
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.budgettracker.app.data.model.AllCurrencies
-import com.budgettracker.app.ui.theme.AccentColors
-import com.budgettracker.app.viewmodel.TransactionViewModel
+import com.pardonmyspending.app.data.model.AllCurrencies
+import com.pardonmyspending.app.ui.theme.AccentColors
+import com.pardonmyspending.app.viewmodel.TransactionViewModel
 import java.time.LocalDate
 
 @Composable

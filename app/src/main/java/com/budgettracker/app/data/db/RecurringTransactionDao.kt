@@ -1,4 +1,4 @@
-package com.budgettracker.app.data.db
+package com.pardonmyspending.app.data.db
 
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow

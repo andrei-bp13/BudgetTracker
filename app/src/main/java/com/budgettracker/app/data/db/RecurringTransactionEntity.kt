@@ -1,8 +1,8 @@
-package com.budgettracker.app.data.db
+package com.pardonmyspending.app.data.db
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.budgettracker.app.data.model.*
+import com.pardonmyspending.app.data.model.*
 import java.time.LocalDate
 
 @Entity(tableName = "recurring_transactions")

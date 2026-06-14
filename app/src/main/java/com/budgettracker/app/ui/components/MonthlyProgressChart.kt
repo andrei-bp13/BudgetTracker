@@ -1,4 +1,4 @@
-package com.budgettracker.app.ui.components
+package com.pardonmyspending.app.ui.components
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas

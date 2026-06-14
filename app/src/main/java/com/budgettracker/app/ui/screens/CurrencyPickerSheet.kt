@@ -1,4 +1,4 @@
-package com.budgettracker.app.ui.screens
+package com.pardonmyspending.app.ui.screens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -13,8 +13,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.budgettracker.app.data.model.AllCurrencies
-import com.budgettracker.app.data.model.CurrencyOption
+import com.pardonmyspending.app.data.model.AllCurrencies
+import com.pardonmyspending.app.data.model.CurrencyOption
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

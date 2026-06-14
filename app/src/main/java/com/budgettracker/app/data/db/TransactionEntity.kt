@@ -1,11 +1,11 @@
-package com.budgettracker.app.data.db
+package com.pardonmyspending.app.data.db
 
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.budgettracker.app.data.model.PaymentType
-import com.budgettracker.app.data.model.Transaction
-import com.budgettracker.app.data.model.TransactionType
+import com.pardonmyspending.app.data.model.PaymentType
+import com.pardonmyspending.app.data.model.Transaction
+import com.pardonmyspending.app.data.model.TransactionType
 import java.time.LocalDate
 import java.time.LocalTime
 

@@ -1,4 +1,4 @@
-package com.budgettracker.app.ui.theme
+package com.pardonmyspending.app.ui.theme
 
 import androidx.compose.runtime.compositionLocalOf
 
