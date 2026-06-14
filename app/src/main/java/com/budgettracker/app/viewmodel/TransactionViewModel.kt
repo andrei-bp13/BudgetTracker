@@ -84,7 +84,7 @@ class TransactionViewModel(
             val now    = YearMonth.now()
             val lastMo = now.minusMonths(1)
             ProcessedTransactions(
-                thisMonthDailyExpenses       = dailyExpenses(txns, now),
+                thisMonthDailyExpenses       = dailyExpenses(txns, now, today.dayOfMonth),
                 lastMonthDailyExpenses       = dailyExpenses(txns, lastMo),
                 recentExpenses               = txns.filter { it.type == TransactionType.EXPENSE }.take(5),
                 recentTransactions           = txns.take(5),

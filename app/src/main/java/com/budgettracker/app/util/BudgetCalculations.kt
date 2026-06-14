@@ -127,8 +127,8 @@ fun defaultCatPeriodIndex(
 
 // ── ViewModel helpers ─────────────────────────────────────────────────────────
 
-fun dailyExpenses(list: List<Transaction>, month: YearMonth): List<Pair<Int, Double>> {
-    val days  = month.lengthOfMonth()
+fun dailyExpenses(list: List<Transaction>, month: YearMonth, maxDay: Int? = null): List<Pair<Int, Double>> {
+    val days  = (maxDay ?: month.lengthOfMonth()).coerceIn(1, month.lengthOfMonth())
     val byDay = list
         .filter { it.type == TransactionType.EXPENSE && YearMonth.from(it.date) == month }
         .groupBy { it.date.dayOfMonth }
