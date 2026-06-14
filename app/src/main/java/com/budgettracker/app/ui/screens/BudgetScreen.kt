@@ -42,7 +42,8 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAdjusters
 import kotlin.math.roundToInt
 
-private val Green = Color(0xFF4CAF50)
+private val Green   = Color(0xFF4CAF50)
+private val DarkRed = Color(0xFFB71C1C)
 private val monthFmt = DateTimeFormatter.ofPattern("MMMM yyyy")
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -260,10 +261,11 @@ private fun BudgetCard(
     onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
+    var showDeleteConfirm by remember { mutableStateOf(false) }
     val exceeded  = spent >= budget.amount
     val progress  = if (budget.amount > 0) (spent / budget.amount).toFloat().coerceIn(0f, 1f) else 0f
-    val spentColor = if (exceeded) MaterialTheme.colorScheme.error else Green
-    val barColor   = if (exceeded) MaterialTheme.colorScheme.error else categoryColor
+    val spentColor = if (exceeded) DarkRed else Green
+    val barColor   = if (exceeded) DarkRed else categoryColor
 
     Card(
         onClick = onClick,
@@ -310,9 +312,9 @@ private fun BudgetCard(
                         )
                     }
                 }
-                IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                IconButton(onClick = { showDeleteConfirm = true }, modifier = Modifier.size(32.dp)) {
                     Icon(Icons.Outlined.Delete, contentDescription = "Delete",
-                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f), modifier = Modifier.size(18.dp))
+                        tint = DarkRed.copy(alpha = 0.7f), modifier = Modifier.size(18.dp))
                 }
             }
 
@@ -342,7 +344,7 @@ private fun BudgetCard(
                     Text(
                         " / $currencySymbol ${"%.0f".format(budget.amount)}",
                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold, fontSize = 15.sp),
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = if (exceeded) DarkRed else MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
@@ -358,6 +360,23 @@ private fun BudgetCard(
                 strokeCap        = androidx.compose.ui.graphics.StrokeCap.Round
             )
         }
+    }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title            = { Text("Delete Budget?") },
+            text             = { Text("\"${budget.title}\" will be permanently removed. Past transactions are not affected.") },
+            confirmButton    = {
+                Button(
+                    onClick = { onDelete(); showDeleteConfirm = false },
+                    colors  = ButtonDefaults.buttonColors(containerColor = DarkRed)
+                ) { Text("Delete") }
+            },
+            dismissButton    = {
+                TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel") }
+            }
+        )
     }
 }
 
@@ -375,7 +394,7 @@ private fun PastBudgetsSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState       = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        modifier         = Modifier.fillMaxHeight(0.85f)
+        modifier         = Modifier.fillMaxHeight()
     ) {
         Column(
             modifier = Modifier
@@ -442,8 +461,8 @@ private fun PastPeriodRow(
 ) {
     val exceeded   = spent >= budgetAmount
     val progress   = if (budgetAmount > 0) (spent / budgetAmount).toFloat().coerceIn(0f, 1f) else 0f
-    val spentColor = if (exceeded) MaterialTheme.colorScheme.error else Green
-    val barColor   = if (exceeded) MaterialTheme.colorScheme.error else categoryColor
+    val spentColor = if (exceeded) DarkRed else Green
+    val barColor   = if (exceeded) DarkRed else categoryColor
 
     Card(
         colors   = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
