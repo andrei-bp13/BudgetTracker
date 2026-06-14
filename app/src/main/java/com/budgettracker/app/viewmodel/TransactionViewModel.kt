@@ -141,6 +141,7 @@ class TransactionViewModel(
         viewModelScope.launch {
             repo.load()
             recurringRepo.load()
+            recurringRepo.processRecurring(repo)
         }
     }
 
