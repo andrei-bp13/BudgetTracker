@@ -27,6 +27,12 @@ interface TransactionDao {
     @Query("DELETE FROM transactions")
     suspend fun deleteAll()
 
+    @Transaction
+    suspend fun replaceAll(entities: List<TransactionEntity>) {
+        deleteAll()
+        insertAll(entities)
+    }
+
     @Query("SELECT * FROM transactions ORDER BY dateEpochDay DESC")
     suspend fun getAll(): List<TransactionEntity>
 

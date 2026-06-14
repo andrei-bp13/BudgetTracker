@@ -1,6 +1,7 @@
 package com.budgettracker.app.data.db
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.budgettracker.app.data.model.PaymentType
 import com.budgettracker.app.data.model.Transaction
@@ -8,7 +9,7 @@ import com.budgettracker.app.data.model.TransactionType
 import java.time.LocalDate
 import java.time.LocalTime
 
-@Entity(tableName = "transactions")
+@Entity(tableName = "transactions", indices = [Index(value = ["dateEpochDay"])])
 data class TransactionEntity(
     @PrimaryKey val id: String,
     val title: String,
