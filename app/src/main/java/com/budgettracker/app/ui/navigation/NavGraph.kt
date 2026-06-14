@@ -135,7 +135,7 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                                     onClick         = { fabExpanded = false; showAddRecurringSheet = true },
                                     shape           = RoundedCornerShape(percent = 50),
                                     color           = MaterialTheme.colorScheme.primaryContainer,
-                                    contentColor    = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    contentColor    = androidx.compose.ui.graphics.Color.White,
                                     shadowElevation = 2.dp
                                 ) {
                                     Row(
@@ -151,7 +151,7 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                                     onClick         = { fabExpanded = false; showAddSheet = true },
                                     shape           = RoundedCornerShape(percent = 50),
                                     color           = MaterialTheme.colorScheme.primaryContainer,
-                                    contentColor    = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    contentColor    = androidx.compose.ui.graphics.Color.White,
                                     shadowElevation = 2.dp
                                 ) {
                                     Row(
