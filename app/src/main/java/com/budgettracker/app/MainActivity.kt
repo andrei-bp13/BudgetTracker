@@ -30,7 +30,8 @@ class MainActivity : ComponentActivity() {
             app.transactionRepository,
             app.preferencesRepository,
             app.categoryRepository,
-            app.recurringRepository
+            app.recurringRepository,
+            app.budgetRepository
         )
 
         // Create VM before setContent so the splash condition can observe it.

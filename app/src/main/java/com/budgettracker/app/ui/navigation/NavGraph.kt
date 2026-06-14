@@ -393,7 +393,7 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                         )
                     }
                     composable(Screen.Budget.route) {
-                        BudgetScreen()
+                        BudgetScreen(viewModel = viewModel)
                     }
                     composable(Screen.Recurring.route) {
                         RecurringScreen(

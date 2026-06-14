@@ -6,10 +6,13 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.pardonmyspending.app.data.model.*
 import com.pardonmyspending.app.data.model.CategoryType
+import com.pardonmyspending.app.data.repository.BudgetRepository
 import com.pardonmyspending.app.data.repository.CategoryRepository
 import com.pardonmyspending.app.data.repository.PreferencesRepository
 import com.pardonmyspending.app.data.repository.RecurringTransactionRepository
 import com.pardonmyspending.app.data.repository.TransactionRepository
+import java.time.DayOfWeek
+import java.time.temporal.TemporalAdjusters
 import com.pardonmyspending.app.util.dailyExpenses
 import com.pardonmyspending.app.util.monthTotal
 import com.pardonmyspending.app.util.monthlyExpensesForYear
@@ -36,7 +39,8 @@ class TransactionViewModel(
     private val repo: TransactionRepository,
     private val prefs: PreferencesRepository,
     private val catRepo: CategoryRepository,
-    private val recurringRepo: RecurringTransactionRepository
+    private val recurringRepo: RecurringTransactionRepository,
+    private val budgetRepo: BudgetRepository
 ) : ViewModel() {
 
     private val prefsState = PreferencesState(prefs, viewModelScope)
@@ -252,6 +256,35 @@ class TransactionViewModel(
         catRepo.save(emptyList())
     }
 
+    // ── Budgets ───────────────────────────────────────────────────────────────
+
+    val budgets: StateFlow<List<Budget>> = budgetRepo.budgets
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyList())
+
+    val budgetSpent: StateFlow<Map<String, Double>> =
+        combine(transactions, budgets) { txns, bgets ->
+            val today     = LocalDate.now()
+            val weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+            val nowYM     = YearMonth.now()
+            bgets.associate { b ->
+                val spent = txns.filter { t ->
+                    t.type == TransactionType.EXPENSE && t.category == b.categoryName &&
+                    when (b.period) {
+                        BudgetPeriod.ONE_TIME -> t.date.toEpochDay() >= b.createdEpochDay
+                        BudgetPeriod.WEEKLY  -> !t.date.isBefore(weekStart) && !t.date.isAfter(today)
+                        BudgetPeriod.MONTHLY -> YearMonth.from(t.date) == nowYM
+                        BudgetPeriod.YEARLY  -> t.date.year == today.year
+                    }
+                }.sumOf { it.amount }
+                b.id to spent
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyMap())
+
+    fun addBudget(budget: Budget)              = viewModelScope.launch { budgetRepo.add(budget) }
+    fun updateBudget(budget: Budget)           = viewModelScope.launch { budgetRepo.update(budget) }
+    fun deleteBudget(id: String)               = viewModelScope.launch { budgetRepo.delete(id) }
+    fun updateBudgetOrder(ordered: List<Budget>) = viewModelScope.launch { budgetRepo.updateOrder(ordered) }
+
     fun categoryFor(name: String): CategoryItem? =
         categories.value.firstOrNull { it.name == name }
 
@@ -277,11 +310,12 @@ class TransactionViewModel(
         private val repo: TransactionRepository,
         private val prefs: PreferencesRepository,
         private val catRepo: CategoryRepository,
-        private val recurringRepo: RecurringTransactionRepository
+        private val recurringRepo: RecurringTransactionRepository,
+        private val budgetRepo: BudgetRepository
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             @Suppress("UNCHECKED_CAST")
-            return TransactionViewModel(repo, prefs, catRepo, recurringRepo) as T
+            return TransactionViewModel(repo, prefs, catRepo, recurringRepo, budgetRepo) as T
         }
     }
 }

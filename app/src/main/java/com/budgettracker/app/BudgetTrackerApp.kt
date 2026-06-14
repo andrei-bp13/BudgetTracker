@@ -3,6 +3,7 @@ package com.pardonmyspending.app
 import android.app.Application
 import com.pardonmyspending.app.data.csv.CsvManager
 import com.pardonmyspending.app.data.db.AppDatabase
+import com.pardonmyspending.app.data.repository.BudgetRepository
 import com.pardonmyspending.app.data.repository.CategoryRepository
 import com.pardonmyspending.app.data.repository.PreferencesRepository
 import com.pardonmyspending.app.data.repository.RecurringTransactionRepository
@@ -15,4 +16,5 @@ class BudgetTrackerApp : Application() {
     val recurringRepository    by lazy { RecurringTransactionRepository(database.recurringTransactionDao()) }
     val preferencesRepository  by lazy { PreferencesRepository(this) }
     val categoryRepository     by lazy { CategoryRepository(this) }
+    val budgetRepository       by lazy { BudgetRepository(database.budgetDao()) }
 }
