@@ -138,7 +138,10 @@ class TransactionViewModel(
     fun deleteRecurring(id: String)                = viewModelScope.launch { }
 
     init {
-        viewModelScope.launch { repo.load() }
+        viewModelScope.launch {
+            repo.load()
+            recurringRepo.load()
+        }
     }
 
     fun addTransaction(t: Transaction)    = viewModelScope.launch { repo.add(t) }
