@@ -181,6 +181,7 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
 
                         FloatingActionButton(
                             onClick        = { fabExpanded = !fabExpanded },
+                            shape          = CircleShape,
                             containerColor = MaterialTheme.colorScheme.primary,
                             contentColor   = MaterialTheme.colorScheme.onPrimary
                         ) {
