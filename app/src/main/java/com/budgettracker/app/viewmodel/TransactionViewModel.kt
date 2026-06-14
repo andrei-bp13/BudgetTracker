@@ -248,6 +248,10 @@ class TransactionViewModel(
         catRepo.save(categories.value.filter { it.id != item.id })
     }
 
+    fun resetCategories() = viewModelScope.launch {
+        catRepo.save(emptyList())
+    }
+
     fun categoryFor(name: String): CategoryItem? =
         categories.value.firstOrNull { it.name == name }
 

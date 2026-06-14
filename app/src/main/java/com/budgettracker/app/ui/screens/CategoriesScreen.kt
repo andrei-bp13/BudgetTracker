@@ -10,6 +10,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Restore
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,9 +33,10 @@ fun CategoriesScreen(
     val categories  by viewModel.categories.collectAsState()
     val accentColor = MaterialTheme.colorScheme.primary
 
-    var editTarget by remember { mutableStateOf<CategoryItem?>(null) }
-    var showNew    by remember { mutableStateOf(false) }
-    var showEdit   by remember { mutableStateOf(false) }
+    var editTarget       by remember { mutableStateOf<CategoryItem?>(null) }
+    var showNew          by remember { mutableStateOf(false) }
+    var showEdit         by remember { mutableStateOf(false) }
+    var showResetConfirm by remember { mutableStateOf(false) }
 
     val expenseCats = remember(categories) { categories.filter { it.type == CategoryType.EXPENSE } }
     val incomeCats  = remember(categories) { categories.filter { it.type == CategoryType.INCOME } }
@@ -71,9 +74,11 @@ fun CategoriesScreen(
 
             // ── Scrollable category list ──────────────────────────────────────
             LazyColumn(
-                modifier            = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                modifier            = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding      = PaddingValues(bottom = 16.dp)
+                contentPadding      = PaddingValues(bottom = 8.dp)
             ) {
                 item {
                     Text(
@@ -84,7 +89,11 @@ fun CategoriesScreen(
                     )
                 }
                 items(expenseCats) { cat ->
-                    CategoryRow(cat, onClick = { editTarget = cat; showEdit = true })
+                    CategoryRow(
+                        category = cat,
+                        onClick  = { editTarget = cat; showEdit = true },
+                        onDelete = if (!cat.isDefault) ({ viewModel.deleteCategory(cat) }) else null
+                    )
                 }
 
                 if (incomeCats.isNotEmpty()) {
@@ -98,11 +107,57 @@ fun CategoriesScreen(
                         )
                     }
                     items(incomeCats) { cat ->
-                        CategoryRow(cat, onClick = { editTarget = cat; showEdit = true })
+                        CategoryRow(
+                            category = cat,
+                            onClick  = { editTarget = cat; showEdit = true },
+                            onDelete = if (!cat.isDefault) ({ viewModel.deleteCategory(cat) }) else null
+                        )
                     }
                 }
             }
+
+            // ── Sticky "Restore Defaults" button ──────────────────────────────
+            OutlinedButton(
+                onClick  = { showResetConfirm = true },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
+                    .height(52.dp),
+                shape  = MaterialTheme.shapes.large,
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f))
+            ) {
+                Icon(Icons.Outlined.Restore, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Restore Defaults", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
+            }
         }
+    }
+
+    // ── Restore confirmation dialog ───────────────────────────────────────────
+    if (showResetConfirm) {
+        AlertDialog(
+            onDismissRequest = { showResetConfirm = false },
+            icon  = { Icon(Icons.Outlined.Restore, contentDescription = null) },
+            title = { Text("Restore Default Categories?") },
+            text  = {
+                Text(
+                    "This will remove all custom categories and restore any deleted default " +
+                    "categories back to their original state. Your existing transactions will " +
+                    "keep their category names, but those categories won't appear in the list " +
+                    "unless you re-create them."
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = { viewModel.resetCategories(); showResetConfirm = false },
+                    colors  = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) { Text("Restore") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResetConfirm = false }) { Text("Cancel") }
+            }
+        )
     }
 
     if (showNew) {
@@ -129,7 +184,11 @@ fun CategoriesScreen(
 }
 
 @Composable
-private fun CategoryRow(category: CategoryItem, onClick: () -> Unit) {
+private fun CategoryRow(
+    category: CategoryItem,
+    onClick:  () -> Unit,
+    onDelete: (() -> Unit)?
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -138,8 +197,8 @@ private fun CategoryRow(category: CategoryItem, onClick: () -> Unit) {
         shape  = MaterialTheme.shapes.large
     ) {
         Row(
-            modifier             = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment    = Alignment.CenterVertically,
+            modifier              = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment     = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Box(
@@ -168,8 +227,26 @@ private fun CategoryRow(category: CategoryItem, onClick: () -> Unit) {
                 }
             }
 
-            Icon(Icons.Outlined.ChevronRight, contentDescription = "Edit",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (onDelete != null) {
+                IconButton(
+                    onClick  = onDelete,
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        Icons.Outlined.Delete,
+                        contentDescription = "Delete category",
+                        tint     = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+
+            Icon(
+                Icons.Outlined.ChevronRight,
+                contentDescription = "Edit",
+                tint     = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp)
+            )
         }
     }
 }
