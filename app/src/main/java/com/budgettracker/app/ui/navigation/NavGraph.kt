@@ -49,9 +49,9 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
     val navController       = rememberNavController()
     val drawerState         = rememberDrawerState(DrawerValue.Closed)
     var showAddSheet          by remember { mutableStateOf(false) }
-//    var showAddRecurringSheet by remember { mutableStateOf(false) }
+    var showAddRecurringSheet by remember { mutableStateOf(false) }
     var editingTransaction    by remember { mutableStateOf<com.budgettracker.app.data.model.Transaction?>(null) }
-//    var editingRecurring      by remember { mutableStateOf<com.budgettracker.app.data.model.RecurringTransaction?>(null) }
+    var editingRecurring      by remember { mutableStateOf<com.budgettracker.app.data.model.RecurringTransaction?>(null) }
     val scope               = rememberCoroutineScope()
     val currencySymbol      by viewModel.currencySymbol.collectAsState()
     val snackbarHostState   = remember { SnackbarHostState() }
@@ -70,7 +70,7 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
     // Track current route at the top level — used for both topBar visibility and bottomBar selection
     val currentEntry by navController.currentBackStackEntryAsState()
     val route = currentEntry?.destination?.route
-    val isTopLevel = route == null || route in setOf(Screen.Home.route, Screen.Reports.route, Screen.Calendar.route, Screen.Budget.route/*, Screen.Recurring.route*/)
+    val isTopLevel = route == null || route in setOf(Screen.Home.route, Screen.Reports.route, Screen.Calendar.route, Screen.Budget.route, Screen.Recurring.route)
 
     // Reset edit modes when navigating away from their screens
     LaunchedEffect(route) {
@@ -97,9 +97,8 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                 floatingActionButton = {
                     FloatingActionButton(
                         onClick = {
-//                            if (route == Screen.Recurring.route) showAddRecurringSheet = true
-//                            else showAddSheet = true
-                            showAddSheet = true
+                            if (route == Screen.Recurring.route) showAddRecurringSheet = true
+                            else showAddSheet = true
                         },
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor   = MaterialTheme.colorScheme.onPrimary
@@ -119,7 +118,7 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                                         Screen.Reports.route   -> "Reports"
                                         Screen.Calendar.route  -> "Calendar"
                                         Screen.Budget.route    -> "Budget"
-                                        //Screen.Recurring.route -> "Recurring"
+                                        Screen.Recurring.route -> "Recurring"
                                         else                   -> ""
                                     },
                                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black)
@@ -209,13 +208,13 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                             label    = { Text(Screen.Calendar.label) }
                         )
 
-                        // 5 — Recurring payments (commented out for diagnostics)
-//                        NavigationBarItem(
-//                            selected = current?.hierarchy?.any { it.route == Screen.Recurring.route } == true,
-//                            onClick  = { navController.navigate(Screen.Recurring.route) { launchSingleTop = true; restoreState = true } },
-//                            icon     = { Icon(Screen.Recurring.icon, contentDescription = Screen.Recurring.label) },
-//                            label    = { Text(Screen.Recurring.label) }
-//                        )
+                        // 5 — Recurring payments
+                        NavigationBarItem(
+                            selected = current?.hierarchy?.any { it.route == Screen.Recurring.route } == true,
+                            onClick  = { navController.navigate(Screen.Recurring.route) { launchSingleTop = true; restoreState = true } },
+                            icon     = { Icon(Screen.Recurring.icon, contentDescription = Screen.Recurring.label) },
+                            label    = { Text(Screen.Recurring.label) }
+                        )
                     }
                 }
             ) { padding ->
@@ -321,12 +320,12 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                     composable(Screen.Budget.route) {
                         BudgetScreen()
                     }
-                    // composable(Screen.Recurring.route) {
-                    //     RecurringScreen(
-                    //         viewModel       = viewModel,
-                    //         onEditRecurring = { rec -> editingRecurring = rec }
-                    //     )
-                    // }
+                    composable(Screen.Recurring.route) {
+                        RecurringScreen(
+                            viewModel       = viewModel,
+                            onEditRecurring = { rec -> editingRecurring = rec }
+                        )
+                    }
                 }
             }
         }
@@ -342,15 +341,15 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
             )
         }
 
-        // if (showAddRecurringSheet || editingRecurring != null) {
-        //     AddRecurringTransactionSheet(
-        //         viewModel        = viewModel,
-        //         initialRecurring = editingRecurring,
-        //         onDismiss        = {
-        //             showAddRecurringSheet = false
-        //             editingRecurring      = null
-        //         }
-        //     )
-        // }
+        if (showAddRecurringSheet || editingRecurring != null) {
+            AddRecurringTransactionSheet(
+                viewModel        = viewModel,
+                initialRecurring = editingRecurring,
+                onDismiss        = {
+                    showAddRecurringSheet = false
+                    editingRecurring      = null
+                }
+            )
+        }
     } // end CompositionLocalProvider
 }

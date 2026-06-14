@@ -131,11 +131,11 @@ class TransactionViewModel(
 
     // ── Recurring transactions (commented out for diagnostics) ────────────────
 
-    val recurringTransactions: StateFlow<List<RecurringTransaction>> = MutableStateFlow(emptyList())
+    val recurringTransactions: StateFlow<List<RecurringTransaction>> = recurringRepo.recurring
 
-    fun addRecurring(rec: RecurringTransaction)    = viewModelScope.launch { }
-    fun updateRecurring(rec: RecurringTransaction) = viewModelScope.launch { }
-    fun deleteRecurring(id: String)                = viewModelScope.launch { }
+    fun addRecurring(rec: RecurringTransaction)    = viewModelScope.launch { recurringRepo.add(rec) }
+    fun updateRecurring(rec: RecurringTransaction) = viewModelScope.launch { recurringRepo.update(rec) }
+    fun deleteRecurring(id: String)                = viewModelScope.launch { recurringRepo.delete(id) }
 
     init {
         viewModelScope.launch {
