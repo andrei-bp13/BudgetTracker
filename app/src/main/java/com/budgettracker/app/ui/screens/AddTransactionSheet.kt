@@ -5,29 +5,23 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material.icons.rounded.SwapVert
 import androidx.compose.material3.*
-import androidx.compose.ui.platform.LocalDensity
-import kotlinx.coroutines.flow.filter
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.Canvas
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -49,7 +43,7 @@ import java.util.UUID
 private val dateFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy")
 private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun AddTransactionSheet(
     viewModel: TransactionViewModel,
@@ -71,13 +65,11 @@ fun AddTransactionSheet(
     var sortByMostUsed by remember { mutableStateOf(false) }
     var selectedDate   by remember { mutableStateOf(initialTransaction?.date ?: LocalDate.now()) }
     var selectedTime   by remember {
-        mutableStateOf(
-            initialTransaction?.time
-                ?: LocalTime.now().withSecond(0).withNano(0)
-        )
+        mutableStateOf(initialTransaction?.time ?: LocalTime.now().withSecond(0).withNano(0))
     }
-    var showDatePicker by remember { mutableStateOf(false) }
-    var showTimePicker by remember { mutableStateOf(false) }
+    var showDatePicker   by remember { mutableStateOf(false) }
+    var showTimePicker   by remember { mutableStateOf(false) }
+    var showNewCatSheet  by remember { mutableStateOf(false) }
 
     val baseCategories = if (transactionType == TransactionType.EXPENSE) expenseCategories else incomeCategories
 
@@ -90,7 +82,6 @@ fun AddTransactionSheet(
         else                baseCategories.sortedBy { it.name.lowercase() }
     }
 
-    // ── Save action (shared by the fixed button) ──────────────────────────────
     val onSave: () -> Unit = save@{
         val titleVal  = title.trim()
         val amountVal = amount.toDoubleOrNull() ?: return@save
@@ -255,10 +246,7 @@ fun AddTransactionSheet(
                                 )
                             }
                         ) {
-                            Text(
-                                pt.displayName(),
-                                style = MaterialTheme.typography.labelMedium
-                            )
+                            Text(pt.displayName(), style = MaterialTheme.typography.labelMedium)
                         }
                     }
                 }
@@ -268,20 +256,13 @@ fun AddTransactionSheet(
                     modifier              = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // Date field
                     Box(modifier = Modifier.weight(1f)) {
                         OutlinedTextField(
                             value         = selectedDate.format(dateFormatter),
                             onValueChange = {},
                             readOnly      = true,
                             label         = { Text("Date") },
-                            trailingIcon  = {
-                                Icon(
-                                    Icons.Rounded.CalendarMonth,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            },
+                            trailingIcon  = { Icon(Icons.Rounded.CalendarMonth, null, modifier = Modifier.size(18.dp)) },
                             textStyle     = MaterialTheme.typography.bodyMedium,
                             modifier      = Modifier.fillMaxWidth(),
                             singleLine    = true,
@@ -289,20 +270,13 @@ fun AddTransactionSheet(
                         )
                         Box(modifier = Modifier.matchParentSize().clickable { showDatePicker = true })
                     }
-                    // Time field
                     Box(modifier = Modifier.weight(1f)) {
                         OutlinedTextField(
                             value         = selectedTime.format(timeFormatter),
                             onValueChange = {},
                             readOnly      = true,
                             label         = { Text("Time") },
-                            trailingIcon  = {
-                                Icon(
-                                    Icons.Rounded.Schedule,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            },
+                            trailingIcon  = { Icon(Icons.Rounded.Schedule, null, modifier = Modifier.size(18.dp)) },
                             textStyle     = MaterialTheme.typography.bodyMedium,
                             modifier      = Modifier.fillMaxWidth(),
                             singleLine    = true,
@@ -323,90 +297,34 @@ fun AddTransactionSheet(
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    TextButton(
-                        onClick        = { sortByMostUsed = !sortByMostUsed },
-                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
-                    ) {
-                        Icon(Icons.Rounded.SwapVert, contentDescription = "Sort", modifier = Modifier.size(14.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text(if (sortByMostUsed) "Most Used" else "A–Z", style = MaterialTheme.typography.labelSmall)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(
+                            onClick        = { sortByMostUsed = !sortByMostUsed },
+                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
+                        ) {
+                            Icon(Icons.Rounded.SwapVert, contentDescription = "Sort", modifier = Modifier.size(14.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text(if (sortByMostUsed) "Most Used" else "A–Z", style = MaterialTheme.typography.labelSmall)
+                        }
+                        TextButton(
+                            onClick        = { showNewCatSheet = true },
+                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
+                        ) {
+                            Icon(Icons.Rounded.Add, contentDescription = "Add category", modifier = Modifier.size(14.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Add", style = MaterialTheme.typography.labelSmall)
+                        }
                     }
                 }
 
-                // ── Category grid ──────────────────────────────────────────────
-                // 4×4 = 16 icons fit before scrollbar appears.
-                // Income with ≤4 items: single row. Everything else: 4 rows.
-                val gridRows   = if (transactionType == TransactionType.INCOME && categories.size <= 4) 1 else 4
-                val gridHeight = if (gridRows == 1) 76.dp else 304.dp
-
-                val gridState = rememberLazyGridState()
-
-                val thumbStartFraction by remember {
-                    derivedStateOf {
-                        val info       = gridState.layoutInfo
-                        val totalItems = info.totalItemsCount
-                        if (totalItems == 0) return@derivedStateOf 0f
-                        val firstCol  = (info.visibleItemsInfo.firstOrNull()?.index ?: 0) / gridRows
-                        val totalCols = (totalItems + gridRows - 1) / gridRows
-                        val visCols   = ((info.visibleItemsInfo.lastOrNull()?.index ?: 0) / gridRows) - firstCol + 1
-                        val maxScroll = (totalCols - visCols).coerceAtLeast(1)
-                        (firstCol.toFloat() / maxScroll) * (1f - visCols.toFloat() / totalCols)
-                    }
-                }
-                val thumbWidthFraction by remember {
-                    derivedStateOf {
-                        val info       = gridState.layoutInfo
-                        val totalItems = info.totalItemsCount
-                        if (totalItems == 0) return@derivedStateOf 1f
-                        val totalCols = (totalItems + gridRows - 1) / gridRows
-                        val firstCol  = (info.visibleItemsInfo.firstOrNull()?.index ?: 0) / gridRows
-                        val visCols   = ((info.visibleItemsInfo.lastOrNull()?.index ?: 0) / gridRows) - firstCol + 1
-                        (visCols.toFloat() / totalCols).coerceIn(0f, 1f)
-                    }
-                }
-
-                val trackColor = MaterialTheme.colorScheme.surfaceVariant
-                val thumbColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-
-                // Item width 72dp so exactly 4 columns fit on a typical phone screen
-                val itemW = 72f
-                val gap   = 8f
-                BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-                    val cols      = ((maxWidth.value + gap) / (itemW + gap)).toInt().coerceAtLeast(1)
-                    val gridWidth = (itemW * cols + gap * (cols - 1)).dp
-                    val density   = LocalDensity.current
-
-                    LaunchedEffect(gridState) {
-                        snapshotFlow { gridState.isScrollInProgress }
-                            .filter { !it }
-                            .collect {
-                                val info      = gridState.layoutInfo
-                                val firstItem = info.visibleItemsInfo.firstOrNull() ?: return@collect
-                                if (info.totalItemsCount == 0) return@collect
-
-                                val gapPx       = with(density) { gap.dp.roundToPx() }
-                                val colStepPx   = firstItem.size.width + gapPx
-                                val offsetInCol = (-firstItem.offset.x).coerceAtLeast(0)
-                                val firstCol    = firstItem.index / gridRows
-                                val totalCols   = (info.totalItemsCount + gridRows - 1) / gridRows
-                                val targetCol   = if (offsetInCol >= colStepPx / 2) firstCol + 1 else firstCol
-                                val targetIdx   = (targetCol.coerceAtMost(totalCols - 1) * gridRows)
-                                                    .coerceIn(0, info.totalItemsCount - 1)
-
-                                if (firstItem.index != targetIdx || firstItem.offset.x != 0) {
-                                    gridState.animateScrollToItem(targetIdx)
-                                }
-                            }
-                    }
-
-                    LazyHorizontalGrid(
-                        rows                  = GridCells.Fixed(gridRows),
-                        state                 = gridState,
-                        horizontalArrangement = Arrangement.spacedBy(gap.dp),
-                        verticalArrangement   = Arrangement.spacedBy(gap.dp),
-                        modifier              = Modifier.width(gridWidth).height(gridHeight)
-                    ) {
-                        items(categories, key = { it.id }) { cat ->
+                // ── Category grid — centered FlowRow, scrolls with the outer column ──
+                FlowRow(
+                    modifier              = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                    verticalArrangement   = Arrangement.spacedBy(8.dp)
+                ) {
+                    categories.forEach { cat ->
+                        key(cat.id) {
                             val selected = selectedCat == cat.name
                             val scale by animateFloatAsState(
                                 targetValue   = if (selected) 1.12f else 1f,
@@ -448,30 +366,8 @@ fun AddTransactionSheet(
                             }
                         }
                     }
-                } // BoxWithConstraints
-
-                // Scrollbar — only shown when content overflows (>16 icons)
-                if (thumbWidthFraction < 1f) {
-                    Canvas(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(3.dp)
-                            .padding(horizontal = 8.dp)
-                    ) {
-                        val trackW = size.width
-                        val trackH = size.height
-                        val radius = CornerRadius(trackH / 2)
-                        drawRoundRect(color = trackColor, cornerRadius = radius)
-                        val thumbW = trackW * thumbWidthFraction
-                        val thumbX = trackW * thumbStartFraction
-                        drawRoundRect(
-                            color        = thumbColor,
-                            topLeft      = Offset(thumbX, 0f),
-                            size         = Size(thumbW, trackH),
-                            cornerRadius = radius
-                        )
-                    }
                 }
+
             } // scrollable Column
 
             // ── Fixed save button ─────────────────────────────────────────────
@@ -495,7 +391,7 @@ fun AddTransactionSheet(
 
         } // outer Column
 
-        // ── Date picker dialog ────────────────────────────────────────────────
+        // ── Date picker ───────────────────────────────────────────────────────
         if (showDatePicker) {
             val datePickerState = rememberDatePickerState(
                 initialSelectedDateMillis = selectedDate.toEpochDay() * 86_400_000L
@@ -518,7 +414,7 @@ fun AddTransactionSheet(
             }
         }
 
-        // ── Time picker dialog ────────────────────────────────────────────────
+        // ── Time picker ───────────────────────────────────────────────────────
         if (showTimePicker) {
             val timePickerState = rememberTimePickerState(
                 initialHour   = selectedTime.hour,
@@ -529,10 +425,7 @@ fun AddTransactionSheet(
                 onDismissRequest = { showTimePicker = false },
                 title            = { Text("Select time") },
                 text             = {
-                    Box(
-                        modifier         = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                         TimePicker(state = timePickerState)
                     }
                 },
@@ -545,6 +438,23 @@ fun AddTransactionSheet(
                 dismissButton = {
                     TextButton(onClick = { showTimePicker = false }) { Text("Cancel") }
                 }
+            )
+        }
+
+        // ── Add category shortcut ─────────────────────────────────────────────
+        if (showNewCatSheet) {
+            val newCatType = if (transactionType == TransactionType.EXPENSE) CategoryType.EXPENSE else CategoryType.INCOME
+            EditCategorySheet(
+                category    = null,
+                initialType = newCatType,
+                accentColor = MaterialTheme.colorScheme.primary,
+                onSave      = { item ->
+                    viewModel.saveCategory(item)
+                    selectedCat = item.name
+                    showNewCatSheet = false
+                },
+                onDelete    = null,
+                onDismiss   = { showNewCatSheet = false }
             )
         }
 

@@ -16,6 +16,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.pardonmyspending.app.data.model.CategoryItem
+import com.pardonmyspending.app.data.model.CategoryType
 import com.pardonmyspending.app.ui.icons.iconById
 import com.pardonmyspending.app.viewmodel.TransactionViewModel
 
@@ -25,12 +26,15 @@ fun CategoriesScreen(
     viewModel: TransactionViewModel,
     onBack: () -> Unit
 ) {
-    val categories by viewModel.categories.collectAsState()
+    val categories  by viewModel.categories.collectAsState()
     val accentColor = MaterialTheme.colorScheme.primary
 
-    var editTarget  by remember { mutableStateOf<CategoryItem?>(null) }
-    var showNew     by remember { mutableStateOf(false) }
-    var showEdit    by remember { mutableStateOf(false) }
+    var editTarget by remember { mutableStateOf<CategoryItem?>(null) }
+    var showNew    by remember { mutableStateOf(false) }
+    var showEdit   by remember { mutableStateOf(false) }
+
+    val expenseCats = remember(categories) { categories.filter { it.type == CategoryType.EXPENSE } }
+    val incomeCats  = remember(categories) { categories.filter { it.type == CategoryType.INCOME } }
 
     Scaffold(
         topBar = {
@@ -61,28 +65,27 @@ fun CategoriesScreen(
         ) {
             item {
                 Text(
-                    "Default (${categories.count { it.isDefault }})",
-                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.primary,
+                    "Expense (${expenseCats.size})",
+                    style    = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                    color    = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(vertical = 4.dp)
                 )
             }
-            items(categories.filter { it.isDefault }) { cat ->
+            items(expenseCats) { cat ->
                 CategoryRow(cat, onClick = { editTarget = cat; showEdit = true })
             }
 
-            val custom = categories.filter { !it.isDefault }
-            if (custom.isNotEmpty()) {
+            if (incomeCats.isNotEmpty()) {
                 item {
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "Custom (${custom.size})",
-                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.primary,
+                        "Income (${incomeCats.size})",
+                        style    = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                        color    = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(vertical = 4.dp)
                     )
                 }
-                items(custom) { cat ->
+                items(incomeCats) { cat ->
                     CategoryRow(cat, onClick = { editTarget = cat; showEdit = true })
                 }
             }
@@ -94,6 +97,7 @@ fun CategoriesScreen(
     if (showNew) {
         EditCategorySheet(
             category    = null,
+            initialType = CategoryType.EXPENSE,
             accentColor = accentColor,
             onSave      = { viewModel.saveCategory(it); showNew = false },
             onDelete    = null,
@@ -104,6 +108,7 @@ fun CategoriesScreen(
     if (showEdit && editTarget != null) {
         EditCategorySheet(
             category    = editTarget,
+            initialType = editTarget!!.type,
             accentColor = accentColor,
             onSave      = { viewModel.saveCategory(it); showEdit = false },
             onDelete    = { viewModel.deleteCategory(it); showEdit = false },
@@ -119,11 +124,11 @@ private fun CategoryRow(category: CategoryItem, onClick: () -> Unit) {
             .fillMaxWidth()
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-        shape = MaterialTheme.shapes.large
+        shape  = MaterialTheme.shapes.large
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            modifier             = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment    = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Box(
@@ -134,18 +139,21 @@ private fun CategoryRow(category: CategoryItem, onClick: () -> Unit) {
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = iconById(category.iconId),
+                    imageVector        = iconById(category.iconId),
                     contentDescription = null,
-                    tint = category.color,
-                    modifier = Modifier.size(24.dp)
+                    tint               = category.color,
+                    modifier           = Modifier.size(24.dp)
                 )
             }
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(category.name, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold))
                 if (!category.isDefault) {
-                    Text("Custom", style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary)
+                    Text(
+                        "Custom · ${category.type.name.lowercase().replaceFirstChar { it.titlecase() }}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
 

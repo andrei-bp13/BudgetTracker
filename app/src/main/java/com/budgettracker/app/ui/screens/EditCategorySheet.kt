@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.pardonmyspending.app.data.model.CategoryColorOptions
 import com.pardonmyspending.app.data.model.CategoryItem
+import com.pardonmyspending.app.data.model.CategoryType
 import com.pardonmyspending.app.data.model.colorToHex
 import com.pardonmyspending.app.ui.components.RainbowColorSwatch
 import com.pardonmyspending.app.ui.components.RgbColorPickerDialog
@@ -28,16 +29,18 @@ import com.pardonmyspending.app.ui.icons.iconById
 @Composable
 fun EditCategorySheet(
     category: CategoryItem?,    // null = new category
+    initialType: CategoryType = CategoryType.EXPENSE,
     accentColor: Color,
     onSave: (CategoryItem) -> Unit,
     onDelete: ((CategoryItem) -> Unit)?,
     onDismiss: () -> Unit
 ) {
-    var name    by remember { mutableStateOf(category?.name    ?: "") }
-    var iconId  by remember { mutableStateOf(category?.iconId  ?: "more_horiz") }
-    var colorHex by remember { mutableStateOf(category?.colorHex ?: "#4361EE") }
-    var showIconPicker    by remember { mutableStateOf(false) }
-    var showColorPicker   by remember { mutableStateOf(false) }
+    var name          by remember { mutableStateOf(category?.name     ?: "") }
+    var iconId        by remember { mutableStateOf(category?.iconId   ?: "more_horiz") }
+    var colorHex      by remember { mutableStateOf(category?.colorHex ?: "#4361EE") }
+    var catType       by remember { mutableStateOf(category?.type     ?: initialType) }
+    var showIconPicker  by remember { mutableStateOf(false) }
+    var showColorPicker by remember { mutableStateOf(false) }
 
     val selectedColor = runCatching {
         Color(android.graphics.Color.parseColor(colorHex))
@@ -104,6 +107,23 @@ fun EditCategorySheet(
                 shape = MaterialTheme.shapes.medium
             )
 
+            // Type selector — locked for default categories
+            Text("Type", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            val typeEnabled = category == null || !category.isDefault
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                listOf(CategoryType.EXPENSE to "Expense", CategoryType.INCOME to "Income")
+                    .forEachIndexed { idx, (type, label) ->
+                        SegmentedButton(
+                            selected = catType == type,
+                            onClick  = { if (typeEnabled) catType = type },
+                            shape    = SegmentedButtonDefaults.itemShape(idx, 2),
+                            enabled  = typeEnabled
+                        ) {
+                            Text(label, style = MaterialTheme.typography.labelMedium)
+                        }
+                    }
+            }
+
             // Icon picker trigger
             Text("Icon", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             OutlinedCard(
@@ -164,7 +184,7 @@ fun EditCategorySheet(
                 onClick = {
                     if (name.isBlank()) return@Button
                     val id = category?.id ?: "custom_${System.currentTimeMillis()}"
-                    onSave(CategoryItem(id, name.trim(), iconId, colorHex, isDefault = category?.isDefault ?: false))
+                    onSave(CategoryItem(id, name.trim(), iconId, colorHex, isDefault = category?.isDefault ?: false, type = catType))
                 },
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = MaterialTheme.shapes.large

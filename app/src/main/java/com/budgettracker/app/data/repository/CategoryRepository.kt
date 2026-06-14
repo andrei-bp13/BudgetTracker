@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.pardonmyspending.app.data.model.CategoryItem
+import com.pardonmyspending.app.data.model.CategoryType
 import com.pardonmyspending.app.data.model.DefaultCategories
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -40,14 +41,25 @@ class CategoryRepository(private val context: Context) {
     // ── Serialization ─────────────────────────────────────────────────────────
 
     private fun List<CategoryItem>.serialize(): String =
-        joinToString(RECORD_SEP) { "${it.id}${FIELD_SEP}${it.name}${FIELD_SEP}${it.iconId}${FIELD_SEP}${it.colorHex}${FIELD_SEP}${it.isDefault}" }
+        joinToString(RECORD_SEP) {
+            "${it.id}${FIELD_SEP}${it.name}${FIELD_SEP}${it.iconId}${FIELD_SEP}${it.colorHex}${FIELD_SEP}${it.isDefault}${FIELD_SEP}${it.type.name}"
+        }
 
     private fun String.deserialize(): List<CategoryItem> =
         if (isBlank()) emptyList()
         else split(RECORD_SEP).mapNotNull { record ->
             val f = record.split(FIELD_SEP)
             if (f.size < 5) null
-            else CategoryItem(f[0], f[1], f[2], f[3], f[4].toBooleanStrictOrNull() ?: true)
+            else CategoryItem(
+                id        = f[0],
+                name      = f[1],
+                iconId    = f[2],
+                colorHex  = f[3],
+                isDefault = f[4].toBooleanStrictOrNull() ?: true,
+                // field 6 added in v2; fall back to EXPENSE for older serialized data
+                type      = if (f.size >= 6) runCatching { CategoryType.valueOf(f[5]) }.getOrDefault(CategoryType.EXPENSE)
+                            else CategoryType.EXPENSE
+            )
         }
 
     /** Replaces or appends [item] in [currentList] and persists the result. */
@@ -62,7 +74,11 @@ class CategoryRepository(private val context: Context) {
         val savedById  = saved.associateBy { it.id }
         val defaultIds = DefaultCategories.map { it.id }.toSet()
         return buildList {
-            DefaultCategories.forEach { def -> add(savedById[def.id] ?: def) }
+            // Always inherit type from DefaultCategories so stale serialized data
+            // (written before the type field existed) gets the correct type.
+            DefaultCategories.forEach { def ->
+                add(savedById[def.id]?.copy(type = def.type) ?: def)
+            }
             saved.filter { it.id !in defaultIds }.forEach { add(it) }
         }
     }

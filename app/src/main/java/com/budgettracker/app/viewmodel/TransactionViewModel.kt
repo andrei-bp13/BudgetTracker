@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.pardonmyspending.app.data.model.*
+import com.pardonmyspending.app.data.model.CategoryType
 import com.pardonmyspending.app.data.repository.CategoryRepository
 import com.pardonmyspending.app.data.repository.PreferencesRepository
 import com.pardonmyspending.app.data.repository.RecurringTransactionRepository
@@ -224,7 +225,7 @@ class TransactionViewModel(
 
     // Single partition pass instead of two separate filter passes.
     private val partitionedCategories: StateFlow<Pair<List<CategoryItem>, List<CategoryItem>>> =
-        categories.map { list -> list.partition { it.name in incomeNames } }
+        categories.map { list -> list.partition { it.type == CategoryType.INCOME } }
             .stateIn(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(5_000L),
@@ -262,8 +263,6 @@ class TransactionViewModel(
     fun setCustomAccentHex(hex: String)    = prefsState.setCustomAccentHex(hex)
 
     private companion object {
-        val incomeNames = setOf("Salary", "Freelance", "Investment", "Savings", "Other Income")
-
         // Pre-built lookup avoids a linear scan of AllCurrencies on every currencyCode emission.
         val currencyCodeToSymbol: Map<String, String> by lazy {
             AllCurrencies.associate { it.code to it.symbol }

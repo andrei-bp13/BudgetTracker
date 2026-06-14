@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -17,7 +16,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -36,7 +34,7 @@ import java.util.UUID
 
 private val dateFmt = DateTimeFormatter.ofPattern("MMM d, yyyy")
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun AddRecurringTransactionSheet(
     viewModel: TransactionViewModel,
@@ -49,24 +47,25 @@ fun AddRecurringTransactionSheet(
     val currencySymbol    = LocalCurrencySymbol.current
     val isEditing         = initialRecurring != null
 
-    var transactionType  by remember { mutableStateOf(initialRecurring?.type        ?: TransactionType.EXPENSE) }
-    var title            by remember { mutableStateOf(initialRecurring?.title        ?: "") }
-    var amount           by remember { mutableStateOf(initialRecurring?.amount?.toString() ?: "") }
-    var note             by remember { mutableStateOf(initialRecurring?.note         ?: "") }
-    var paymentType      by remember { mutableStateOf(initialRecurring?.paymentType  ?: PaymentType.DEBIT) }
-    var selectedCat      by remember { mutableStateOf(initialRecurring?.category     ?: "Food & Dining") }
-    var sortByMostUsed   by remember { mutableStateOf(false) }
-    var startDate        by remember { mutableStateOf(initialRecurring?.startDate    ?: LocalDate.now()) }
-    var frequency        by remember { mutableStateOf(initialRecurring?.frequency    ?: RecurringFrequency.MONTHLY) }
-    var interval         by remember { mutableStateOf(initialRecurring?.interval     ?: 1) }
-    var intervalUnit     by remember { mutableStateOf(initialRecurring?.intervalUnit ?: IntervalUnit.MONTHS) }
-    var endCondition     by remember { mutableStateOf(initialRecurring?.endCondition ?: EndCondition.NEVER) }
-    var endDate          by remember { mutableStateOf(initialRecurring?.endDate      ?: LocalDate.now().plusMonths(12)) }
-    var endOccurrences   by remember { mutableStateOf(initialRecurring?.endAfterOccurrences?.toString() ?: "12") }
+    var transactionType by remember { mutableStateOf(initialRecurring?.type        ?: TransactionType.EXPENSE) }
+    var title           by remember { mutableStateOf(initialRecurring?.title        ?: "") }
+    var amount          by remember { mutableStateOf(initialRecurring?.amount?.toString() ?: "") }
+    var note            by remember { mutableStateOf(initialRecurring?.note         ?: "") }
+    var paymentType     by remember { mutableStateOf(initialRecurring?.paymentType  ?: PaymentType.DEBIT) }
+    var selectedCat     by remember { mutableStateOf(initialRecurring?.category     ?: "Food & Dining") }
+    var sortByMostUsed  by remember { mutableStateOf(false) }
+    var startDate       by remember { mutableStateOf(initialRecurring?.startDate    ?: LocalDate.now()) }
+    var frequency       by remember { mutableStateOf(initialRecurring?.frequency    ?: RecurringFrequency.MONTHLY) }
+    var interval        by remember { mutableStateOf(initialRecurring?.interval     ?: 1) }
+    var intervalUnit    by remember { mutableStateOf(initialRecurring?.intervalUnit ?: IntervalUnit.MONTHS) }
+    var endCondition    by remember { mutableStateOf(initialRecurring?.endCondition ?: EndCondition.NEVER) }
+    var endDate         by remember { mutableStateOf(initialRecurring?.endDate      ?: LocalDate.now().plusMonths(12)) }
+    var endOccurrences  by remember { mutableStateOf(initialRecurring?.endAfterOccurrences?.toString() ?: "12") }
 
     var showStartDatePicker by remember { mutableStateOf(false) }
     var showEndDatePicker   by remember { mutableStateOf(false) }
     var showUnitMenu        by remember { mutableStateOf(false) }
+    var showNewCatSheet     by remember { mutableStateOf(false) }
 
     val baseCategories = if (transactionType == TransactionType.EXPENSE) expenseCategories else incomeCategories
     val usageCount     = remember(allTransactions) { allTransactions.groupingBy { it.category }.eachCount() }
@@ -254,9 +253,7 @@ fun AddRecurringTransactionSheet(
                             Icon(Icons.Rounded.Remove, contentDescription = "Less", modifier = Modifier.size(16.dp))
                         }
                         Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(MaterialTheme.shapes.small)
+                            modifier = Modifier.size(40.dp).clip(MaterialTheme.shapes.small)
                                 .background(MaterialTheme.colorScheme.surfaceContainerHigh),
                             contentAlignment = Alignment.Center
                         ) {
@@ -265,7 +262,6 @@ fun AddRecurringTransactionSheet(
                         IconButton(onClick = { interval++ }, modifier = Modifier.size(32.dp)) {
                             Icon(Icons.Rounded.Add, contentDescription = "More", modifier = Modifier.size(16.dp))
                         }
-
                         ExposedDropdownMenuBox(
                             expanded = showUnitMenu,
                             onExpandedChange = { showUnitMenu = it },
@@ -343,31 +339,41 @@ fun AddRecurringTransactionSheet(
                     )
                 }
 
-                // ── Category ──────────────────────────────────────────────────
-                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                // ── Category header ───────────────────────────────────────────
+                Row(
+                    modifier              = Modifier.fillMaxWidth(),
+                    verticalAlignment     = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
                     Text("Category", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    TextButton(onClick = { sortByMostUsed = !sortByMostUsed }, contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)) {
-                        Icon(Icons.Rounded.SwapVert, contentDescription = "Sort", modifier = Modifier.size(14.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text(if (sortByMostUsed) "Most Used" else "A–Z", style = MaterialTheme.typography.labelSmall)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(
+                            onClick        = { sortByMostUsed = !sortByMostUsed },
+                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
+                        ) {
+                            Icon(Icons.Rounded.SwapVert, contentDescription = "Sort", modifier = Modifier.size(14.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text(if (sortByMostUsed) "Most Used" else "A–Z", style = MaterialTheme.typography.labelSmall)
+                        }
+                        TextButton(
+                            onClick        = { showNewCatSheet = true },
+                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
+                        ) {
+                            Icon(Icons.Rounded.Add, contentDescription = "Add category", modifier = Modifier.size(14.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Add", style = MaterialTheme.typography.labelSmall)
+                        }
                     }
                 }
 
-                val gridRows   = if (transactionType == TransactionType.INCOME) 1 else 4
-                val gridHeight = if (gridRows == 1) 76.dp else 304.dp
-                val itemW = 72f; val gap = 8f
-
-                BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-                    val cols      = ((maxWidth.value + gap) / (itemW + gap)).toInt().coerceAtLeast(1)
-                    val gridWidth = (itemW * cols + gap * (cols - 1)).dp
-
-                    LazyHorizontalGrid(
-                        rows                  = GridCells.Fixed(gridRows),
-                        horizontalArrangement = Arrangement.spacedBy(gap.dp),
-                        verticalArrangement   = Arrangement.spacedBy(gap.dp),
-                        modifier              = Modifier.width(gridWidth).height(gridHeight)
-                    ) {
-                        items(categories, key = { it.id }) { cat ->
+                // ── Category grid — centered FlowRow, scrolls with the outer column ──
+                FlowRow(
+                    modifier              = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                    verticalArrangement   = Arrangement.spacedBy(8.dp)
+                ) {
+                    categories.forEach { cat ->
+                        key(cat.id) {
                             val selected = selectedCat == cat.name
                             Column(
                                 modifier            = Modifier.width(72.dp).clickable { selectedCat = cat.name },
@@ -432,6 +438,23 @@ fun AddRecurringTransactionSheet(
                 },
                 dismissButton = { TextButton(onClick = { showEndDatePicker = false }) { Text("Cancel") } }
             ) { DatePicker(state = state) }
+        }
+
+        // ── Add category shortcut ─────────────────────────────────────────────
+        if (showNewCatSheet) {
+            val newCatType = if (transactionType == TransactionType.EXPENSE) CategoryType.EXPENSE else CategoryType.INCOME
+            EditCategorySheet(
+                category    = null,
+                initialType = newCatType,
+                accentColor = MaterialTheme.colorScheme.primary,
+                onSave      = { item ->
+                    viewModel.saveCategory(item)
+                    selectedCat = item.name
+                    showNewCatSheet = false
+                },
+                onDelete    = null,
+                onDismiss   = { showNewCatSheet = false }
+            )
         }
     }
 }
