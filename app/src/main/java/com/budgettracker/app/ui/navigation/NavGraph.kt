@@ -1,6 +1,11 @@
 package com.budgettracker.app.ui.navigation
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -9,7 +14,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -52,6 +59,9 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
     var showAddRecurringSheet by remember { mutableStateOf(false) }
     var editingTransaction    by remember { mutableStateOf<com.budgettracker.app.data.model.Transaction?>(null) }
     var editingRecurring      by remember { mutableStateOf<com.budgettracker.app.data.model.RecurringTransaction?>(null) }
+    var fabExpanded           by remember { mutableStateOf(false) }
+
+    BackHandler(enabled = fabExpanded) { fabExpanded = false }
     val scope               = rememberCoroutineScope()
     val currencySymbol      by viewModel.currencySymbol.collectAsState()
     val snackbarHostState   = remember { SnackbarHostState() }
@@ -72,8 +82,9 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
     val route = currentEntry?.destination?.route
     val isTopLevel = route == null || route in setOf(Screen.Home.route, Screen.Reports.route, Screen.Calendar.route, Screen.Budget.route, Screen.Recurring.route)
 
-    // Reset edit modes when navigating away from their screens
+    // Reset edit modes and FAB when navigating away from their screens
     LaunchedEffect(route) {
+        fabExpanded = false
         if (route != Screen.Reports.route) reportsEditMode = false
         if (route != Screen.Home.route)    homeEditMode    = false
     }
@@ -95,15 +106,90 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
             Scaffold(
                 snackbarHost = { SnackbarHost(snackbarHostState) },
                 floatingActionButton = {
-                    FloatingActionButton(
-                        onClick = {
-                            if (route == Screen.Recurring.route) showAddRecurringSheet = true
-                            else showAddSheet = true
-                        },
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor   = MaterialTheme.colorScheme.onPrimary
+                    val fabRotation by animateFloatAsState(
+                        targetValue    = if (fabExpanded) 45f else 0f,
+                        animationSpec  = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness    = Spring.StiffnessMedium
+                        ),
+                        label = "fabRotation"
+                    )
+
+                    Column(
+                        horizontalAlignment = Alignment.End,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Icon(Icons.Rounded.Add, contentDescription = "Add")
+                        AnimatedVisibility(
+                            visible = fabExpanded,
+                            enter = fadeIn(spring(stiffness = Spring.StiffnessMediumLow)) +
+                                    slideInVertically(spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow)) { it / 2 },
+                            exit  = fadeOut(spring(stiffness = Spring.StiffnessMedium)) +
+                                    slideOutVertically(spring(stiffness = Spring.StiffnessMedium)) { it / 2 }
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.End,
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment     = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Surface(
+                                        shape           = MaterialTheme.shapes.small,
+                                        color           = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                        shadowElevation = 2.dp
+                                    ) {
+                                        Text(
+                                            "Recurring Transaction",
+                                            style    = MaterialTheme.typography.labelLarge,
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                                        )
+                                    }
+                                    SmallFloatingActionButton(
+                                        onClick        = { fabExpanded = false; showAddRecurringSheet = true },
+                                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                        contentColor   = MaterialTheme.colorScheme.onSecondaryContainer
+                                    ) {
+                                        Icon(Icons.Rounded.Repeat, contentDescription = "Add recurring transaction")
+                                    }
+                                }
+                                Row(
+                                    verticalAlignment     = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Surface(
+                                        shape           = MaterialTheme.shapes.small,
+                                        color           = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                        shadowElevation = 2.dp
+                                    ) {
+                                        Text(
+                                            "Transaction",
+                                            style    = MaterialTheme.typography.labelLarge,
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                                        )
+                                    }
+                                    SmallFloatingActionButton(
+                                        onClick        = { fabExpanded = false; showAddSheet = true },
+                                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                        contentColor   = MaterialTheme.colorScheme.onSecondaryContainer
+                                    ) {
+                                        Icon(Icons.Rounded.Add, contentDescription = "Add transaction")
+                                    }
+                                }
+                            }
+                        }
+
+                        FloatingActionButton(
+                            onClick        = { fabExpanded = !fabExpanded },
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor   = MaterialTheme.colorScheme.onPrimary
+                        ) {
+                            Icon(
+                                imageVector        = Icons.Rounded.Add,
+                                contentDescription = if (fabExpanded) "Close" else "Add",
+                                modifier           = Modifier.rotate(fabRotation)
+                            )
+                        }
                     }
                 },
                 topBar = {
@@ -218,10 +304,11 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                     }
                 }
             ) { padding ->
+                Box(modifier = Modifier.padding(padding)) {
                 NavHost(
                     navController    = navController,
                     startDestination = Screen.Home.route,
-                    modifier         = Modifier.padding(padding)
+                    modifier         = Modifier.fillMaxSize()
                 ) {
                     composable(Screen.Home.route) {
                         HomeScreen(
@@ -327,6 +414,16 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                         )
                     }
                 }
+
+                // Dismiss speed-dial when tapping outside the FAB
+                if (fabExpanded) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .pointerInput(Unit) { detectTapGestures { fabExpanded = false } }
+                    )
+                }
+                } // end Box
             }
         }
 
