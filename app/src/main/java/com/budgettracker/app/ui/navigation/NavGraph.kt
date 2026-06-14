@@ -68,6 +68,7 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
     val snackbarHostState   = remember { SnackbarHostState() }
     var reportsEditMode     by remember { mutableStateOf(false) }
     var homeEditMode        by remember { mutableStateOf(false) }
+    var budgetEditMode      by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.importErrorEvent.collect {
@@ -88,6 +89,7 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
         fabExpanded = false
         if (route != Screen.Reports.route) reportsEditMode = false
         if (route != Screen.Home.route)    homeEditMode    = false
+        if (route != Screen.Budget.route)  budgetEditMode  = false
     }
 
     CompositionLocalProvider(LocalCurrencySymbol provides currencySymbol) {
@@ -204,13 +206,15 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                                 }
                             },
                             actions = {
-                                if (route == Screen.Home.route || route == Screen.Reports.route) {
-                                    val isEditMode = (route == Screen.Home.route && homeEditMode) ||
-                                                     (route == Screen.Reports.route && reportsEditMode)
+                                if (route == Screen.Home.route || route == Screen.Reports.route || route == Screen.Budget.route) {
+                                    val isEditMode = (route == Screen.Home.route    && homeEditMode)   ||
+                                                     (route == Screen.Reports.route && reportsEditMode) ||
+                                                     (route == Screen.Budget.route  && budgetEditMode)
                                     IconButton(onClick = {
                                         when (route) {
                                             Screen.Home.route    -> homeEditMode    = !homeEditMode
                                             Screen.Reports.route -> reportsEditMode = !reportsEditMode
+                                            Screen.Budget.route  -> budgetEditMode  = !budgetEditMode
                                         }
                                     }) {
                                         Icon(
@@ -393,7 +397,7 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                         )
                     }
                     composable(Screen.Budget.route) {
-                        BudgetScreen(viewModel = viewModel)
+                        BudgetScreen(viewModel = viewModel, editMode = budgetEditMode)
                     }
                     composable(Screen.Recurring.route) {
                         RecurringScreen(

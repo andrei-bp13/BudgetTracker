@@ -48,7 +48,7 @@ private val monthFmt = DateTimeFormatter.ofPattern("MMMM yyyy")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BudgetScreen(viewModel: TransactionViewModel) {
+fun BudgetScreen(viewModel: TransactionViewModel, editMode: Boolean = false) {
     val budgets      by viewModel.budgets.collectAsState()
     val budgetSpent  by viewModel.budgetSpent.collectAsState()
     val transactions by viewModel.transactions.collectAsState()
@@ -133,7 +133,7 @@ fun BudgetScreen(viewModel: TransactionViewModel) {
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 contentPadding      = PaddingValues(bottom = 8.dp)
             ) {
-                if (localList.size > 1) {
+                if (editMode && localList.size > 1) {
                     item {
                         Text(
                             "Hold and drag to reorder",
@@ -149,6 +149,7 @@ fun BudgetScreen(viewModel: TransactionViewModel) {
                     val isDragged = draggedId == budget.id
 
                     BudgetCardWrapper(
+                        editMode        = editMode,
                         isDragged       = isDragged,
                         dragOffsetY     = if (isDragged) dragOffsetY else 0f,
                         onDragStart     = { draggedId = budget.id; dragOffsetY = 0f; isDragging = true },
@@ -164,10 +165,11 @@ fun BudgetScreen(viewModel: TransactionViewModel) {
                         BudgetCard(
                             budget         = budget,
                             spent          = spent,
+                            editMode       = editMode,
                             categoryColor  = cat?.color ?: MaterialTheme.colorScheme.primary,
                             categoryIconId = cat?.iconId ?: "savings",
                             currencySymbol = currencySymbol,
-                            onClick        = { editTarget = budget },
+                            onClick        = { if (!editMode) editTarget = budget },
                             onDelete       = { viewModel.deleteBudget(budget.id) }
                         )
                     }
@@ -211,6 +213,7 @@ fun BudgetScreen(viewModel: TransactionViewModel) {
 
 @Composable
 private fun BudgetCardWrapper(
+    editMode: Boolean,
     isDragged: Boolean,
     dragOffsetY: Float,
     onDragStart: () -> Unit,
@@ -229,6 +232,17 @@ private fun BudgetCardWrapper(
         else           scale.animateTo(1f,    spring(dampingRatio = 0.6f, stiffness = 500f))
     }
 
+    val dragMod = if (editMode) {
+        Modifier.pointerInput(editMode) {
+            detectDragGesturesAfterLongPress(
+                onDragStart  = { latestStart() },
+                onDrag       = { change, delta -> change.consume(); latestDrag(delta.y) },
+                onDragEnd    = { latestEnd() },
+                onDragCancel = { latestEnd() }
+            )
+        }
+    } else Modifier
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -236,14 +250,7 @@ private fun BudgetCardWrapper(
             .zIndex(if (isDragged) 1f else 0f)
             .onGloballyPositioned { onHeightChanged(it.size.height) }
             .offset { IntOffset(0, if (isDragged) dragOffsetY.roundToInt() else 0) }
-            .pointerInput(Unit) {
-                detectDragGesturesAfterLongPress(
-                    onDragStart  = { latestStart() },
-                    onDrag       = { change, delta -> change.consume(); latestDrag(delta.y) },
-                    onDragEnd    = { latestEnd() },
-                    onDragCancel = { latestEnd() }
-                )
-            }
+            .then(dragMod)
     ) {
         content()
     }
@@ -255,6 +262,7 @@ private fun BudgetCardWrapper(
 private fun BudgetCard(
     budget: Budget,
     spent: Double,
+    editMode: Boolean,
     categoryColor: Color,
     categoryIconId: String,
     currencySymbol: String,
@@ -282,12 +290,14 @@ private fun BudgetCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Icon(
-                        Icons.Outlined.DragHandle,
-                        contentDescription = "Drag to reorder",
-                        modifier = Modifier.size(16.dp),
-                        tint     = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                    )
+                    if (editMode) {
+                        Icon(
+                            Icons.Outlined.DragHandle,
+                            contentDescription = "Drag to reorder",
+                            modifier = Modifier.size(16.dp),
+                            tint     = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                        )
+                    }
                     Text(
                         budget.title,
                         style    = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
@@ -401,11 +411,19 @@ private fun PastBudgetsSheet(
                 .fillMaxSize()
                 .padding(horizontal = 24.dp)
         ) {
-            Text(
-                "Past Budgets",
-                style    = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
+            Row(
+                modifier              = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment     = Alignment.CenterVertically
+            ) {
+                Text(
+                    "Past Budgets",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black)
+                )
+                IconButton(onClick = onDismiss) {
+                    Icon(Icons.Outlined.Close, contentDescription = "Close")
+                }
+            }
 
             val periodicBudgets = budgets.filter { it.period != BudgetPeriod.ONE_TIME }
 
