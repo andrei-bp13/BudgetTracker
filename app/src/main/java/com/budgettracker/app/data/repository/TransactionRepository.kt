@@ -7,64 +7,44 @@ import com.budgettracker.app.data.db.toEntity
 import com.budgettracker.app.data.db.toTransaction
 import com.budgettracker.app.data.model.Transaction
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 class TransactionRepository(
     private val csvManager: CsvManager,
     private val dao: TransactionDao
 ) {
-
-    private val _transactions = MutableStateFlow<List<Transaction>>(emptyList())
-    val transactions: StateFlow<List<Transaction>> = _transactions.asStateFlow()
-
-    suspend fun load() = withContext(Dispatchers.IO) {
-        _transactions.value = dao.getAll().map { it.toTransaction() }
-            .sortedByDescending { it.date.atTime(it.time) }
-    }
+    // Room drives updates reactively — no manual in-memory mirror needed.
+    val transactions: Flow<List<Transaction>> = dao.observeAll()
+        .map { entities -> entities.map { it.toTransaction() } }
 
     suspend fun add(transaction: Transaction) = withContext(Dispatchers.IO) {
         dao.insert(transaction.toEntity())
-        _transactions.value = (_transactions.value + transaction)
-            .sortedByDescending { it.date.atTime(it.time) }
     }
 
     suspend fun update(transaction: Transaction) = withContext(Dispatchers.IO) {
-        dao.insert(transaction.toEntity())
-        _transactions.value = _transactions.value
-            .map { if (it.id == transaction.id) transaction else it }
-            .sortedByDescending { it.date.atTime(it.time) }
+        dao.update(transaction.toEntity())
     }
 
     suspend fun delete(id: String) = withContext(Dispatchers.IO) {
         dao.deleteById(id)
-        _transactions.value = _transactions.value.filter { it.id != id }
     }
 
     suspend fun addAll(transactions: List<Transaction>) = withContext(Dispatchers.IO) {
         if (transactions.isEmpty()) return@withContext
         dao.insertAll(transactions.map { it.toEntity() })
-        val existingIds = _transactions.value.map { it.id }.toSet()
-        val newOnes     = transactions.filter { it.id !in existingIds }
-        if (newOnes.isNotEmpty()) {
-            _transactions.value = (_transactions.value + newOnes)
-                .sortedByDescending { it.date.atTime(it.time) }
-        }
     }
 
     suspend fun exportCsv(uri: Uri) = withContext(Dispatchers.IO) {
-        csvManager.exportTo(uri, _transactions.value)
+        csvManager.exportTo(uri, dao.getAll().map { it.toTransaction() })
     }
 
     /** Returns the number of rows that failed to parse (0 = clean import). */
     suspend fun importCsv(uri: Uri): Int = withContext(Dispatchers.IO) {
         val result = csvManager.importFrom(uri)
         val sorted = result.transactions.sortedByDescending { it.date.atTime(it.time) }
-        dao.deleteAll()
-        dao.insertAll(sorted.map { it.toEntity() })
-        _transactions.value = sorted
+        dao.replaceAll(sorted.map { it.toEntity() })
         result.failedLines.size
     }
 }
