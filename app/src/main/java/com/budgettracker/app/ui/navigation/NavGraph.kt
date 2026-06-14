@@ -8,6 +8,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
@@ -128,52 +129,38 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                         ) {
                             Column(
                                 horizontalAlignment = Alignment.End,
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Row(
-                                    verticalAlignment     = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                Surface(
+                                    onClick         = { fabExpanded = false; showAddRecurringSheet = true },
+                                    shape           = RoundedCornerShape(percent = 50),
+                                    color           = MaterialTheme.colorScheme.primaryContainer,
+                                    contentColor    = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    shadowElevation = 2.dp
                                 ) {
-                                    Surface(
-                                        shape           = MaterialTheme.shapes.small,
-                                        color           = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                        shadowElevation = 2.dp
+                                    Row(
+                                        modifier              = Modifier.padding(start = 16.dp, end = 20.dp, top = 14.dp, bottom = 14.dp),
+                                        verticalAlignment     = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                                     ) {
-                                        Text(
-                                            "Recurring Transaction",
-                                            style    = MaterialTheme.typography.labelLarge,
-                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                                        )
-                                    }
-                                    SmallFloatingActionButton(
-                                        onClick        = { fabExpanded = false; showAddRecurringSheet = true },
-                                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                        contentColor   = MaterialTheme.colorScheme.onSecondaryContainer
-                                    ) {
-                                        Icon(Icons.Rounded.Repeat, contentDescription = "Add recurring transaction")
+                                        Icon(Icons.Rounded.Repeat, contentDescription = null, modifier = Modifier.size(20.dp))
+                                        Text("Recurring Transaction", style = MaterialTheme.typography.labelLarge)
                                     }
                                 }
-                                Row(
-                                    verticalAlignment     = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                Surface(
+                                    onClick         = { fabExpanded = false; showAddSheet = true },
+                                    shape           = RoundedCornerShape(percent = 50),
+                                    color           = MaterialTheme.colorScheme.primaryContainer,
+                                    contentColor    = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    shadowElevation = 2.dp
                                 ) {
-                                    Surface(
-                                        shape           = MaterialTheme.shapes.small,
-                                        color           = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                        shadowElevation = 2.dp
+                                    Row(
+                                        modifier              = Modifier.padding(start = 16.dp, end = 20.dp, top = 14.dp, bottom = 14.dp),
+                                        verticalAlignment     = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                                     ) {
-                                        Text(
-                                            "Transaction",
-                                            style    = MaterialTheme.typography.labelLarge,
-                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                                        )
-                                    }
-                                    SmallFloatingActionButton(
-                                        onClick        = { fabExpanded = false; showAddSheet = true },
-                                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                        contentColor   = MaterialTheme.colorScheme.onSecondaryContainer
-                                    ) {
-                                        Icon(Icons.Rounded.Add, contentDescription = "Add transaction")
+                                        Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(20.dp))
+                                        Text("Transaction", style = MaterialTheme.typography.labelLarge)
                                     }
                                 }
                             }
