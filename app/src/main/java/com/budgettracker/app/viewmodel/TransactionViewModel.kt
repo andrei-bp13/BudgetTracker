@@ -4,14 +4,10 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.budgettracker.app.data.model.AllCurrencies
-import com.budgettracker.app.data.model.CategoryItem
-import com.budgettracker.app.data.model.DefaultCategories
-import com.budgettracker.app.data.model.PaymentType
-import com.budgettracker.app.data.model.Transaction
-import com.budgettracker.app.data.model.TransactionType
+import com.budgettracker.app.data.model.*
 import com.budgettracker.app.data.repository.CategoryRepository
 import com.budgettracker.app.data.repository.PreferencesRepository
+import com.budgettracker.app.data.repository.RecurringTransactionRepository
 import com.budgettracker.app.data.repository.TransactionRepository
 import com.budgettracker.app.util.dailyExpenses
 import com.budgettracker.app.util.monthTotal
@@ -36,7 +32,8 @@ data class ChartBar(
 class TransactionViewModel(
     private val repo: TransactionRepository,
     private val prefs: PreferencesRepository,
-    private val catRepo: CategoryRepository
+    private val catRepo: CategoryRepository,
+    private val recurringRepo: RecurringTransactionRepository
 ) : ViewModel() {
 
     private val prefsState = PreferencesState(prefs, viewModelScope)
@@ -132,8 +129,29 @@ class TransactionViewModel(
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
+    // ── Recurring transactions (commented out for diagnostics) ────────────────
+
+    val recurringTransactions: StateFlow<List<RecurringTransaction>> = MutableStateFlow(emptyList())
+
+    fun addRecurring(rec: RecurringTransaction)    = viewModelScope.launch { }
+    fun updateRecurring(rec: RecurringTransaction) = viewModelScope.launch { }
+    fun deleteRecurring(id: String)                = viewModelScope.launch { }
+
+    // ── Startup readiness ─────────────────────────────────────────────────────
+
+    private val _dataLoaded = MutableStateFlow(false)
+    val dataLoaded: StateFlow<Boolean> = _dataLoaded.asStateFlow()
+
     init {
-        viewModelScope.launch { repo.load() }
+        viewModelScope.launch {
+            try {
+                repo.load()
+//                recurringRepo.load()
+//                recurringRepo.processRecurring(repo)
+            } finally {
+                _dataLoaded.value = true
+            }
+        }
     }
 
     fun addTransaction(t: Transaction)    = viewModelScope.launch { repo.add(t) }
@@ -153,7 +171,7 @@ class TransactionViewModel(
     // ── Categories ────────────────────────────────────────────────────────────
 
     private companion object {
-        val incomeNames = setOf("Salary", "Freelance", "Investment", "Other Income")
+        val incomeNames = setOf("Salary", "Freelance", "Investment", "Savings", "Other Income")
     }
 
     val categories: StateFlow<List<CategoryItem>> = catRepo.categories
@@ -192,11 +210,12 @@ class TransactionViewModel(
     class Factory(
         private val repo: TransactionRepository,
         private val prefs: PreferencesRepository,
-        private val catRepo: CategoryRepository
+        private val catRepo: CategoryRepository,
+        private val recurringRepo: RecurringTransactionRepository
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             @Suppress("UNCHECKED_CAST")
-            return TransactionViewModel(repo, prefs, catRepo) as T
+            return TransactionViewModel(repo, prefs, catRepo, recurringRepo) as T
         }
     }
 }

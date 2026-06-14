@@ -17,6 +17,7 @@ import androidx.navigation.compose.*
 import androidx.compose.runtime.CompositionLocalProvider
 import kotlinx.coroutines.launch
 import com.budgettracker.app.data.model.PaymentType
+import com.budgettracker.app.data.model.TransactionType
 import com.budgettracker.app.ui.screens.*
 import com.budgettracker.app.ui.theme.LocalCurrencySymbol
 import com.budgettracker.app.viewmodel.ChartBar
@@ -31,14 +32,15 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
     object CategoryDetail : Screen("category/{name}", "Category", Icons.Rounded.BarChart) {
         fun route(name: String) = "category/${java.net.URLEncoder.encode(name, "UTF-8")}"
     }
-    object DrillDown : Screen("drilldown/{title}/{startDate}/{endDate}", "Detail", Icons.Rounded.BarChart) {
-        fun route(title: String, startDate: LocalDate, endDate: LocalDate) =
-            "drilldown/${java.net.URLEncoder.encode(title, "UTF-8")}/$startDate/$endDate"
+    object DrillDown : Screen("drilldown/{title}/{startDate}/{endDate}/{transactionType}", "Detail", Icons.Rounded.BarChart) {
+        fun route(title: String, startDate: LocalDate, endDate: LocalDate, transactionType: TransactionType = TransactionType.EXPENSE) =
+            "drilldown/${java.net.URLEncoder.encode(title, "UTF-8")}/$startDate/$endDate/${transactionType.name}"
     }
     object PaymentTypeDetail : Screen("payment/{typeName}", "Payment", Icons.Rounded.Home) {
         fun route(type: PaymentType) = "payment/${type.name}"
     }
-    object Budget : Screen("budget", "Budget", Icons.Rounded.Savings)
+    object Budget     : Screen("budget",    "Budget",    Icons.Rounded.Savings)
+    object Recurring  : Screen("recurring", "Recurring", Icons.Rounded.Repeat)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,11 +48,15 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
 fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
     val navController       = rememberNavController()
     val drawerState         = rememberDrawerState(DrawerValue.Closed)
-    var showAddSheet        by remember { mutableStateOf(false) }
-    var editingTransaction  by remember { mutableStateOf<com.budgettracker.app.data.model.Transaction?>(null) }
+    var showAddSheet          by remember { mutableStateOf(false) }
+//    var showAddRecurringSheet by remember { mutableStateOf(false) }
+    var editingTransaction    by remember { mutableStateOf<com.budgettracker.app.data.model.Transaction?>(null) }
+//    var editingRecurring      by remember { mutableStateOf<com.budgettracker.app.data.model.RecurringTransaction?>(null) }
     val scope               = rememberCoroutineScope()
     val currencySymbol      by viewModel.currencySymbol.collectAsState()
     val snackbarHostState   = remember { SnackbarHostState() }
+    var reportsEditMode     by remember { mutableStateOf(false) }
+    var homeEditMode        by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.importErrorEvent.collect {
@@ -64,7 +70,13 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
     // Track current route at the top level — used for both topBar visibility and bottomBar selection
     val currentEntry by navController.currentBackStackEntryAsState()
     val route = currentEntry?.destination?.route
-    val isTopLevel = route == null || route in setOf(Screen.Home.route, Screen.Reports.route, Screen.Calendar.route, Screen.Budget.route)
+    val isTopLevel = route == null || route in setOf(Screen.Home.route, Screen.Reports.route, Screen.Calendar.route, Screen.Budget.route/*, Screen.Recurring.route*/)
+
+    // Reset edit modes when navigating away from their screens
+    LaunchedEffect(route) {
+        if (route != Screen.Reports.route) reportsEditMode = false
+        if (route != Screen.Home.route)    homeEditMode    = false
+    }
 
     CompositionLocalProvider(LocalCurrencySymbol provides currencySymbol) {
         ModalNavigationDrawer(
@@ -84,11 +96,15 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                 snackbarHost = { SnackbarHost(snackbarHostState) },
                 floatingActionButton = {
                     FloatingActionButton(
-                        onClick        = { showAddSheet = true },
+                        onClick = {
+//                            if (route == Screen.Recurring.route) showAddRecurringSheet = true
+//                            else showAddSheet = true
+                            showAddSheet = true
+                        },
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor   = MaterialTheme.colorScheme.onPrimary
                     ) {
-                        Icon(Icons.Rounded.Add, contentDescription = "Add transaction")
+                        Icon(Icons.Rounded.Add, contentDescription = "Add")
                     }
                 },
                 topBar = {
@@ -99,11 +115,12 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                             title = {
                                 Text(
                                     when (route) {
-                                        Screen.Home.route     -> "Dashboard"
-                                        Screen.Reports.route  -> "Reports"
-                                        Screen.Calendar.route -> "Calendar"
-                                        Screen.Budget.route   -> "Budget"
-                                        else                  -> ""
+                                        Screen.Home.route      -> "Dashboard"
+                                        Screen.Reports.route   -> "Reports"
+                                        Screen.Calendar.route  -> "Calendar"
+                                        Screen.Budget.route    -> "Budget"
+                                        //Screen.Recurring.route -> "Recurring"
+                                        else                   -> ""
                                     },
                                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black)
                                 )
@@ -114,6 +131,23 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                                 }
                             },
                             actions = {
+                                if (route == Screen.Home.route || route == Screen.Reports.route) {
+                                    val isEditMode = (route == Screen.Home.route && homeEditMode) ||
+                                                     (route == Screen.Reports.route && reportsEditMode)
+                                    IconButton(onClick = {
+                                        when (route) {
+                                            Screen.Home.route    -> homeEditMode    = !homeEditMode
+                                            Screen.Reports.route -> reportsEditMode = !reportsEditMode
+                                        }
+                                    }) {
+                                        Icon(
+                                            imageVector        = if (isEditMode) Icons.Rounded.Done else Icons.Rounded.Edit,
+                                            contentDescription = if (isEditMode) "Done editing" else "Edit layout",
+                                            tint               = if (isEditMode) MaterialTheme.colorScheme.primary
+                                                                  else MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                }
                                 IconButton(onClick = { /* TODO: account screen */ }) {
                                     Surface(
                                         shape    = CircleShape,
@@ -175,28 +209,25 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                             label    = { Text(Screen.Calendar.label) }
                         )
 
-                        // 5 — Recurring payments
-                        NavigationBarItem(
-                            selected = false,
-                            onClick  = { /* TODO: recurring payments screen */ },
-                            icon     = { Icon(Icons.Rounded.Repeat, contentDescription = "Recurring") },
-                            label    = { Text("Recurring") }
-                        )
+                        // 5 — Recurring payments (commented out for diagnostics)
+//                        NavigationBarItem(
+//                            selected = current?.hierarchy?.any { it.route == Screen.Recurring.route } == true,
+//                            onClick  = { navController.navigate(Screen.Recurring.route) { launchSingleTop = true; restoreState = true } },
+//                            icon     = { Icon(Screen.Recurring.icon, contentDescription = Screen.Recurring.label) },
+//                            label    = { Text(Screen.Recurring.label) }
+//                        )
                     }
                 }
             ) { padding ->
                 NavHost(
                     navController    = navController,
                     startDestination = Screen.Home.route,
-                    modifier         = Modifier.padding(padding),
-                    enterTransition  = { slideInHorizontally { it } + fadeIn() },
-                    exitTransition   = { slideOutHorizontally { -it } + fadeOut() },
-                    popEnterTransition  = { slideInHorizontally { -it } + fadeIn() },
-                    popExitTransition   = { slideOutHorizontally { it } + fadeOut() }
+                    modifier         = Modifier.padding(padding)
                 ) {
                     composable(Screen.Home.route) {
                         HomeScreen(
                             viewModel           = viewModel,
+                            editMode            = homeEditMode,
                             onAddTransaction    = { showAddSheet = true },
                             onCategoryClick     = { name -> navController.navigate(Screen.CategoryDetail.route(name)) },
                             onPaymentTypeClick  = { pt -> navController.navigate(Screen.PaymentTypeDetail.route(pt)) },
@@ -204,7 +235,11 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                             onDeleteTransaction = { t -> viewModel.deleteTransaction(t.id) }
                         )
                     }
-                    composable(Screen.CategoryDetail.route) { backStack ->
+                    composable(
+                        Screen.CategoryDetail.route,
+                        enterTransition    = { slideInHorizontally { it } + fadeIn() },
+                        popExitTransition  = { slideOutHorizontally { it } + fadeOut() }
+                    ) { backStack ->
                         val raw  = backStack.arguments?.getString("name") ?: ""
                         val name = java.net.URLDecoder.decode(raw, "UTF-8")
                         CategoryTransactionsScreen(
@@ -215,25 +250,38 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                     }
                     composable(Screen.Reports.route) {
                         ReportsScreen(
-                            viewModel  = viewModel,
-                            onBarClick = { bar ->
+                            viewModel        = viewModel,
+                            editMode         = reportsEditMode,
+                            onBarClick       = { bar ->
                                 navController.navigate(
                                     Screen.DrillDown.route(bar.title, bar.startDate, bar.endDate)
+                                )
+                            },
+                            onIncomeBarClick = { bar ->
+                                navController.navigate(
+                                    Screen.DrillDown.route(bar.title, bar.startDate, bar.endDate, TransactionType.INCOME)
                                 )
                             }
                         )
                     }
-                    composable(Screen.DrillDown.route) { backStack ->
+                    composable(
+                        Screen.DrillDown.route,
+                        enterTransition    = { slideInHorizontally { it } + fadeIn() },
+                        popExitTransition  = { slideOutHorizontally { it } + fadeOut() }
+                    ) { backStack ->
                         val rawTitle = backStack.arguments?.getString("title") ?: ""
                         val title    = java.net.URLDecoder.decode(rawTitle, "UTF-8")
                         val start    = backStack.arguments?.getString("startDate")
                             ?.let { LocalDate.parse(it) } ?: LocalDate.now()
                         val end      = backStack.arguments?.getString("endDate")
                             ?.let { LocalDate.parse(it) } ?: LocalDate.now()
+                        val typeName = backStack.arguments?.getString("transactionType") ?: "EXPENSE"
+                        val txType   = runCatching { TransactionType.valueOf(typeName) }.getOrDefault(TransactionType.EXPENSE)
                         DrillDownScreen(
                             title               = title,
                             startDate           = start,
                             endDate             = end,
+                            transactionType     = txType,
                             viewModel           = viewModel,
                             onBack              = { navController.popBackStack() },
                             onEditTransaction   = { t -> editingTransaction = t },
@@ -247,7 +295,11 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                             onDeleteTransaction = { t -> viewModel.deleteTransaction(t.id) }
                         )
                     }
-                    composable(Screen.PaymentTypeDetail.route) { backStack ->
+                    composable(
+                        Screen.PaymentTypeDetail.route,
+                        enterTransition    = { slideInHorizontally { it } + fadeIn() },
+                        popExitTransition  = { slideOutHorizontally { it } + fadeOut() }
+                    ) { backStack ->
                         val typeName    = backStack.arguments?.getString("typeName") ?: "DEBIT"
                         val paymentType = runCatching { PaymentType.valueOf(typeName) }.getOrDefault(PaymentType.DEBIT)
                         PaymentTypeTransactionsScreen(
@@ -256,7 +308,11 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                             onBack      = { navController.popBackStack() }
                         )
                     }
-                    composable(Screen.Categories.route) {
+                    composable(
+                        Screen.Categories.route,
+                        enterTransition    = { slideInHorizontally { it } + fadeIn() },
+                        popExitTransition  = { slideOutHorizontally { it } + fadeOut() }
+                    ) {
                         CategoriesScreen(
                             viewModel = viewModel,
                             onBack    = { navController.popBackStack() }
@@ -265,6 +321,12 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                     composable(Screen.Budget.route) {
                         BudgetScreen()
                     }
+                    // composable(Screen.Recurring.route) {
+                    //     RecurringScreen(
+                    //         viewModel       = viewModel,
+                    //         onEditRecurring = { rec -> editingRecurring = rec }
+                    //     )
+                    // }
                 }
             }
         }
@@ -279,5 +341,16 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                 }
             )
         }
+
+        // if (showAddRecurringSheet || editingRecurring != null) {
+        //     AddRecurringTransactionSheet(
+        //         viewModel        = viewModel,
+        //         initialRecurring = editingRecurring,
+        //         onDismiss        = {
+        //             showAddRecurringSheet = false
+        //             editingRecurring      = null
+        //         }
+        //     )
+        // }
     } // end CompositionLocalProvider
 }

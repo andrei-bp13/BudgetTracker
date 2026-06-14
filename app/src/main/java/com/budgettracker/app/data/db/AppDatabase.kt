@@ -7,9 +7,14 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [TransactionEntity::class], version = 2, exportSchema = false)
+@Database(
+    entities = [TransactionEntity::class, RecurringTransactionEntity::class],
+    version  = 3,
+    exportSchema = false
+)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun transactionDao(): TransactionDao
+    abstract fun recurringTransactionDao(): RecurringTransactionDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
@@ -22,13 +27,42 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS recurring_transactions (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        title TEXT NOT NULL,
+                        amount REAL NOT NULL,
+                        type TEXT NOT NULL,
+                        category TEXT NOT NULL,
+                        paymentType TEXT NOT NULL,
+                        note TEXT NOT NULL,
+                        frequency TEXT NOT NULL,
+                        interval INTEGER NOT NULL,
+                        intervalUnit TEXT NOT NULL,
+                        startDateEpochDay INTEGER NOT NULL,
+                        nextDueDateEpochDay INTEGER NOT NULL,
+                        status TEXT NOT NULL,
+                        endCondition TEXT NOT NULL,
+                        endDateEpochDay INTEGER,
+                        endAfterOccurrences INTEGER,
+                        occurrencesGenerated INTEGER NOT NULL
+                    )
+                """.trimIndent())
+            }
+        }
+
         fun getInstance(context: Context): AppDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
                     "budget_tracker.db"
-                ).addMigrations(MIGRATION_1_2).build().also { INSTANCE = it }
+                )
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .build()
+                .also { INSTANCE = it }
             }
     }
 }

@@ -43,6 +43,17 @@ class TransactionRepository(
         _transactions.value = _transactions.value.filter { it.id != id }
     }
 
+    suspend fun addAll(transactions: List<Transaction>) = withContext(Dispatchers.IO) {
+        if (transactions.isEmpty()) return@withContext
+        dao.insertAll(transactions.map { it.toEntity() })
+        val existingIds = _transactions.value.map { it.id }.toSet()
+        val newOnes     = transactions.filter { it.id !in existingIds }
+        if (newOnes.isNotEmpty()) {
+            _transactions.value = (_transactions.value + newOnes)
+                .sortedByDescending { it.date.atTime(it.time) }
+        }
+    }
+
     suspend fun exportCsv(uri: Uri) = withContext(Dispatchers.IO) {
         csvManager.exportTo(uri, _transactions.value)
     }

@@ -12,14 +12,28 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.VisibilityOff
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.zIndex
+import kotlin.math.roundToInt
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -33,8 +47,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.shape.CircleShape
 import com.budgettracker.app.data.model.Transaction
 import com.budgettracker.app.data.model.TransactionType
+import com.budgettracker.app.ui.components.PaymentTypeIcon
+import com.budgettracker.app.ui.components.displayName
+import com.budgettracker.app.ui.icons.iconById
 import com.budgettracker.app.ui.theme.LocalCurrencySymbol
 import com.budgettracker.app.util.CatPeriod
 import com.budgettracker.app.util.catPeriods
@@ -68,7 +86,9 @@ private val granularityOptions = listOf(
 @Composable
 fun ReportsScreen(
     viewModel: TransactionViewModel,
-    onBarClick: (ChartBar) -> Unit = {}
+    onBarClick: (ChartBar) -> Unit = {},
+    onIncomeBarClick: (ChartBar) -> Unit = {},
+    editMode: Boolean = false
 ) {
     val granularity     by viewModel.chartGranularity.collectAsState()
     val allTransactions by viewModel.transactions.collectAsState()
@@ -231,6 +251,362 @@ fun ReportsScreen(
     val incomeCatTitle = selectedIncomeCatPeriod?.let { "Income by Category — ${it.title}" }
         ?: "Income by Category"
 
+    // ── Highlight & total summaries ───────────────────────────────────────────
+    var expenseHighlightFilter by remember { mutableStateOf("all") }
+    var incomeHighlightFilter  by remember { mutableStateOf("all") }
+    var totalSpentFilter       by remember { mutableStateOf("all") }
+    var totalEarnedFilter      by remember { mutableStateOf("all") }
+
+    val weekStart = remember(today) { today.with(java.time.DayOfWeek.MONDAY) }
+    val weekEnd   = remember(today) { weekStart.plusDays(6) }
+
+    fun List<Transaction>.applyHighlightFilter(filter: String): List<Transaction> = when (filter) {
+        "year"  -> filter { it.date.year == today.year }
+        "month" -> filter { YearMonth.from(it.date) == YearMonth.now() }
+        else    -> this
+    }
+
+    fun List<Transaction>.applyTotalFilter(filter: String): List<Transaction> = when (filter) {
+        "year"  -> filter { it.date.year == today.year }
+        "month" -> filter { YearMonth.from(it.date) == YearMonth.now() }
+        "week"  -> filter { !it.date.isBefore(weekStart) && !it.date.isAfter(weekEnd) }
+        else    -> this
+    }
+
+    val highestExpense = remember(allTransactions, expenseHighlightFilter) {
+        allTransactions.filter { it.type == TransactionType.EXPENSE }
+            .applyHighlightFilter(expenseHighlightFilter)
+            .maxByOrNull { it.amount }
+    }
+    val highestIncome = remember(allTransactions, incomeHighlightFilter) {
+        allTransactions.filter { it.type == TransactionType.INCOME }
+            .applyHighlightFilter(incomeHighlightFilter)
+            .maxByOrNull { it.amount }
+    }
+    val totalSpent = remember(allTransactions, totalSpentFilter) {
+        allTransactions.filter { it.type == TransactionType.EXPENSE }
+            .applyTotalFilter(totalSpentFilter)
+            .sumOf { it.amount }
+    }
+    val totalEarned = remember(allTransactions, totalEarnedFilter) {
+        allTransactions.filter { it.type == TransactionType.INCOME }
+            .applyTotalFilter(totalEarnedFilter)
+            .sumOf { it.amount }
+    }
+
+    // ── Total savings ─────────────────────────────────────────────────────────
+    var totalSavingsFilter by remember { mutableStateOf("all") }
+    val savingsCategories = remember { setOf("Savings", "Investment") }
+
+    val savingsTransactions = remember(allTransactions, totalSavingsFilter) {
+        allTransactions
+            .filter { it.category in savingsCategories }
+            .applyHighlightFilter(totalSavingsFilter)
+            .sortedByDescending { it.date.atTime(it.time) }
+    }
+    val totalSavings     = remember(savingsTransactions) { savingsTransactions.sumOf { it.amount } }
+    val latestSavingsTxn = remember(savingsTransactions) { savingsTransactions.firstOrNull() }
+
+    // ── Card order & visibility ───────────────────────────────────────────────
+    val cardOrder   = remember { mutableStateListOf(
+        "expense_chart", "spending_category", "income_chart", "income_category",
+        "highest_expense", "highest_income", "total_spent", "total_earned", "total_savings"
+    ) }
+    val cardVisible = remember { mutableStateMapOf(
+        "expense_chart"     to true,
+        "spending_category" to true,
+        "income_chart"      to true,
+        "income_category"   to true,
+        "highest_expense"   to false,
+        "highest_income"    to false,
+        "total_spent"       to false,
+        "total_earned"      to false,
+        "total_savings"     to false
+    ) }
+    fun swapCards(a: String, b: String) {
+        val i = cardOrder.indexOf(a); val j = cardOrder.indexOf(b)
+        if (i >= 0 && j >= 0) { cardOrder[i] = b; cardOrder[j] = a }
+    }
+    val visibleCards = cardOrder.filter { cardVisible[it] == true }
+    val hiddenCards  = cardOrder.filter { cardVisible[it] != true }
+
+    // ── Drag-to-reorder state ─────────────────────────────────────────────────
+    var draggedCardId by remember { mutableStateOf<String?>(null) }
+    var dragOffsetY   by remember { mutableStateOf(0f) }
+    val cardHeights   = remember { mutableStateMapOf<String, Int>() }
+
+    val handleDrag: (Float) -> Unit = handleDrag@{ delta ->
+        dragOffsetY += delta
+        val dragged = draggedCardId ?: return@handleDrag
+        val currentVisible = cardOrder.filter { cardVisible[it] == true }
+        val idx = currentVisible.indexOf(dragged)
+        if (dragOffsetY > 0f && idx < currentVisible.lastIndex) {
+            val nextId    = currentVisible[idx + 1]
+            val threshold = (cardHeights[nextId] ?: 0) / 2f
+            if (dragOffsetY > threshold) {
+                swapCards(dragged, nextId)
+                dragOffsetY -= (cardHeights[nextId] ?: 0).toFloat()
+            }
+        } else if (dragOffsetY < 0f && idx > 0) {
+            val prevId    = currentVisible[idx - 1]
+            val threshold = (cardHeights[prevId] ?: 0) / 2f
+            if (-dragOffsetY > threshold) {
+                swapCards(dragged, prevId)
+                dragOffsetY += (cardHeights[prevId] ?: 0).toFloat()
+            }
+        }
+    }
+
+    // ── Card render dispatch ──────────────────────────────────────────────────
+    val renderCard: @Composable (String) -> Unit = { cardId ->
+        when (cardId) {
+            "highest_expense" -> HighlightSummaryCard(
+                label          = "Highest Expense",
+                transaction    = highestExpense,
+                amountColor    = MaterialTheme.colorScheme.error,
+                amountPrefix   = "-",
+                currencySymbol = currencySymbol,
+                viewModel      = viewModel,
+                selectedFilter = expenseHighlightFilter,
+                onFilterChange = { expenseHighlightFilter = it },
+                modifier       = Modifier.fillMaxWidth()
+            )
+            "highest_income" -> HighlightSummaryCard(
+                label          = "Highest Income",
+                transaction    = highestIncome,
+                amountColor    = Color(0xFF4CAF50),
+                amountPrefix   = "+",
+                currencySymbol = currencySymbol,
+                viewModel      = viewModel,
+                selectedFilter = incomeHighlightFilter,
+                onFilterChange = { incomeHighlightFilter = it },
+                modifier       = Modifier.fillMaxWidth()
+            )
+            "total_spent" -> TotalSummaryCard(
+                label          = "Total Spent",
+                total          = totalSpent,
+                amountColor    = MaterialTheme.colorScheme.error,
+                amountPrefix   = "-",
+                currencySymbol = currencySymbol,
+                selectedFilter = totalSpentFilter,
+                onFilterChange = { totalSpentFilter = it },
+                modifier       = Modifier.fillMaxWidth()
+            )
+            "total_earned" -> TotalSummaryCard(
+                label          = "Total Earned",
+                total          = totalEarned,
+                amountColor    = Color(0xFF4CAF50),
+                amountPrefix   = "+",
+                currencySymbol = currencySymbol,
+                selectedFilter = totalEarnedFilter,
+                onFilterChange = { totalEarnedFilter = it },
+                modifier       = Modifier.fillMaxWidth()
+            )
+            "total_savings" -> SavingsSummaryCard(
+                total          = totalSavings,
+                latestTxn      = latestSavingsTxn,
+                currencySymbol = currencySymbol,
+                viewModel      = viewModel,
+                selectedFilter = totalSavingsFilter,
+                onFilterChange = { totalSavingsFilter = it },
+                modifier       = Modifier.fillMaxWidth()
+            )
+            "expense_chart" -> Card(
+                colors   = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                shape    = MaterialTheme.shapes.extraLarge,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Row(
+                        modifier              = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment     = Alignment.CenterVertically
+                    ) {
+                        Text(chartTitle, style = MaterialTheme.typography.titleMedium.copy(fontSize = 14.sp), modifier = Modifier.weight(1f))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = { chartContextYear = today.year; chartContextMonth = today.monthValue }, modifier = Modifier.size(32.dp)) {
+                                Icon(Icons.Outlined.Refresh, contentDescription = "Reset to current period", modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Box {
+                                IconButton(onClick = { showGranularityMenu = true }, modifier = Modifier.size(32.dp)) {
+                                    Icon(Icons.Outlined.Tune, contentDescription = "Chart settings", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                GranularityDropdownMenu(expanded = showGranularityMenu, selectedKey = granularity, onDismiss = { showGranularityMenu = false }, onSelect = { viewModel.setChartGranularity(it) })
+                            }
+                        }
+                    }
+                    if (granularity == "monthly" || granularity == "weekly") {
+                        Spacer(Modifier.height(8.dp))
+                        Row(modifier = Modifier.fillMaxWidth().horizontalScroll(chartChipScrollState), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            if (granularity == "monthly") {
+                                availableChartYears.forEach { y -> FilterChip(selected = y == chartContextYear, onClick = { chartContextYear = y }, label = { Text("$y", style = MaterialTheme.typography.labelSmall) }) }
+                            } else {
+                                (1..12).forEach { m ->
+                                    val abbr = YearMonth.of(chartContextYear, m).month.getDisplayName(JTextStyle.SHORT, Locale.getDefault())
+                                    FilterChip(selected = m == chartContextMonth, onClick = { chartContextMonth = m }, label = { Text(abbr, style = MaterialTheme.typography.labelSmall) })
+                                }
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    ExpenseBarChart(
+                        bars           = chartBars,
+                        currencySymbol = currencySymbol,
+                        onBarClick     = { bar ->
+                            when (granularity) {
+                                "yearly"  -> chartContextYear = bar.startDate.year
+                                "monthly" -> { chartContextYear = bar.startDate.year; chartContextMonth = bar.startDate.monthValue }
+                            }
+                            onBarClick(bar)
+                        }
+                    )
+                }
+            }
+            "spending_category" -> Card(
+                colors   = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                shape    = MaterialTheme.shapes.extraLarge,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text(catTitle, style = MaterialTheme.typography.titleMedium.copy(fontSize = 14.sp), modifier = Modifier.weight(1f))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = { catContextYear = today.year; catContextMonth = today.monthValue; catPeriodIndex = defaultCatPeriodIndex(catGranularity, catPeriods, today.year, today.monthValue) }, modifier = Modifier.size(32.dp)) {
+                                Icon(Icons.Outlined.Refresh, contentDescription = "Reset to current period", modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Box {
+                                IconButton(onClick = { showCatGranMenu = true }, modifier = Modifier.size(32.dp)) {
+                                    Icon(Icons.Outlined.Tune, contentDescription = "Period settings", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                GranularityDropdownMenu(expanded = showCatGranMenu, selectedKey = catGranularity, onDismiss = { showCatGranMenu = false }, onSelect = { catGranularity = it })
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Row(modifier = Modifier.fillMaxWidth().horizontalScroll(catChipScrollState), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        catPeriods.forEachIndexed { i, period ->
+                            FilterChip(
+                                selected = i == catPeriodIndex,
+                                onClick  = {
+                                    catPeriodIndex = i
+                                    when (catGranularity) {
+                                        "yearly"  -> catContextYear = period.startDate.year
+                                        "monthly", "weekly" -> { catContextYear = period.startDate.year; catContextMonth = period.startDate.monthValue }
+                                    }
+                                },
+                                label = { Text(period.label, style = MaterialTheme.typography.labelSmall) }
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    if (catDisplay.isEmpty()) {
+                        Text("No data for this period", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    } else {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            DonutChart(categories = catDisplay, viewModel = viewModel, modifier = Modifier.size(140.dp))
+                            CategoryLegend(categories = catDisplay, viewModel = viewModel, onCategoryClick = { if (it != "Other") catDetailCategory = it }, modifier = Modifier.weight(1f))
+                        }
+                    }
+                }
+            }
+            "income_chart" -> Card(
+                colors   = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                shape    = MaterialTheme.shapes.extraLarge,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text(incomeChartTitle, style = MaterialTheme.typography.titleMedium.copy(fontSize = 14.sp), modifier = Modifier.weight(1f))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = { incomeChartContextYear = today.year; incomeChartContextMonth = today.monthValue }, modifier = Modifier.size(32.dp)) {
+                                Icon(Icons.Outlined.Refresh, contentDescription = "Reset", modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Box {
+                                IconButton(onClick = { showIncomeGranularityMenu = true }, modifier = Modifier.size(32.dp)) {
+                                    Icon(Icons.Outlined.Tune, contentDescription = "Chart settings", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                GranularityDropdownMenu(expanded = showIncomeGranularityMenu, selectedKey = incomeGranularity, onDismiss = { showIncomeGranularityMenu = false }, onSelect = { incomeGranularity = it })
+                            }
+                        }
+                    }
+                    if (incomeGranularity == "monthly" || incomeGranularity == "weekly") {
+                        Spacer(Modifier.height(8.dp))
+                        Row(modifier = Modifier.fillMaxWidth().horizontalScroll(incomeChipScrollState), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            if (incomeGranularity == "monthly") {
+                                availableChartYears.forEach { y -> FilterChip(selected = y == incomeChartContextYear, onClick = { incomeChartContextYear = y }, label = { Text("$y", style = MaterialTheme.typography.labelSmall) }) }
+                            } else {
+                                (1..12).forEach { m ->
+                                    val abbr = YearMonth.of(incomeChartContextYear, m).month.getDisplayName(JTextStyle.SHORT, Locale.getDefault())
+                                    FilterChip(selected = m == incomeChartContextMonth, onClick = { incomeChartContextMonth = m }, label = { Text(abbr, style = MaterialTheme.typography.labelSmall) })
+                                }
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    ExpenseBarChart(
+                        bars           = incomeChartBars,
+                        currencySymbol = currencySymbol,
+                        barColor       = Color(0xFF4CAF50),
+                        onBarClick     = { bar ->
+                            when (incomeGranularity) {
+                                "yearly"  -> incomeChartContextYear = bar.startDate.year
+                                "monthly" -> { incomeChartContextYear = bar.startDate.year; incomeChartContextMonth = bar.startDate.monthValue }
+                            }
+                            onIncomeBarClick(bar)
+                        }
+                    )
+                }
+            }
+            "income_category" -> Card(
+                colors   = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                shape    = MaterialTheme.shapes.extraLarge,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text(incomeCatTitle, style = MaterialTheme.typography.titleMedium.copy(fontSize = 14.sp), modifier = Modifier.weight(1f))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = { incomeCatContextYear = today.year; incomeCatContextMonth = today.monthValue; incomeCatPeriodIndex = defaultCatPeriodIndex(incomeCatGranularity, incomeCatPeriods, today.year, today.monthValue) }, modifier = Modifier.size(32.dp)) {
+                                Icon(Icons.Outlined.Refresh, contentDescription = "Reset", modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Box {
+                                IconButton(onClick = { showIncomeCatGranMenu = true }, modifier = Modifier.size(32.dp)) {
+                                    Icon(Icons.Outlined.Tune, contentDescription = "Period settings", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                GranularityDropdownMenu(expanded = showIncomeCatGranMenu, selectedKey = incomeCatGranularity, onDismiss = { showIncomeCatGranMenu = false }, onSelect = { incomeCatGranularity = it })
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Row(modifier = Modifier.fillMaxWidth().horizontalScroll(incomeCatChipScrollState), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        incomeCatPeriods.forEachIndexed { i, period ->
+                            FilterChip(
+                                selected = i == incomeCatPeriodIndex,
+                                onClick  = {
+                                    incomeCatPeriodIndex = i
+                                    when (incomeCatGranularity) {
+                                        "yearly"  -> incomeCatContextYear = period.startDate.year
+                                        "monthly", "weekly" -> { incomeCatContextYear = period.startDate.year; incomeCatContextMonth = period.startDate.monthValue }
+                                    }
+                                },
+                                label = { Text(period.label, style = MaterialTheme.typography.labelSmall) }
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    if (incomeCatDisplay.isEmpty()) {
+                        Text("No income data for this period", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    } else {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            DonutChart(categories = incomeCatDisplay, viewModel = viewModel, modifier = Modifier.size(140.dp))
+                            CategoryLegend(categories = incomeCatDisplay, viewModel = viewModel, onCategoryClick = { if (it != "Other") incomeCatDetailCategory = it }, modifier = Modifier.weight(1f))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -238,423 +614,55 @@ fun ReportsScreen(
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // ── Expenses bar chart ────────────────────────────────────────────────
-        Card(
-            colors   = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-            shape    = MaterialTheme.shapes.extraLarge,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(modifier = Modifier.padding(20.dp)) {
+        if (editMode) {
+            Text(
+                "Hold and drag to reorder",
+                style    = MaterialTheme.typography.labelMedium,
+                color    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+                modifier = Modifier.padding(horizontal = 4.dp)
+            )
+        }
 
-                // Header
-                Row(
-                    modifier              = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment     = Alignment.CenterVertically
-                ) {
-                    Text(
-                        chartTitle,
-                        style    = MaterialTheme.typography.titleMedium.copy(fontSize = 14.sp),
-                        modifier = Modifier.weight(1f)
-                    )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(
-                            onClick  = {
-                                chartContextYear  = today.year
-                                chartContextMonth = today.monthValue
-                            },
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Icon(
-                                Icons.Outlined.Refresh,
-                                contentDescription = "Reset to current period",
-                                modifier = Modifier.size(16.dp),
-                                tint     = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Box {
-                            IconButton(
-                                onClick  = { showGranularityMenu = true },
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Icon(
-                                    Icons.Outlined.Tune,
-                                    contentDescription = "Chart settings",
-                                    modifier = Modifier.size(18.dp),
-                                    tint     = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            GranularityDropdownMenu(
-                                expanded    = showGranularityMenu,
-                                selectedKey = granularity,
-                                onDismiss   = { showGranularityMenu = false },
-                                onSelect    = { viewModel.setChartGranularity(it) }
-                            )
-                        }
-                    }
-                }
-
-                // Context chips — year selector (monthly) or month selector (weekly)
-                if (granularity == "monthly" || granularity == "weekly") {
-                    Spacer(Modifier.height(8.dp))
-                    Row(
-                        modifier              = Modifier.fillMaxWidth().horizontalScroll(chartChipScrollState),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        if (granularity == "monthly") {
-                            availableChartYears.forEach { y ->
-                                FilterChip(
-                                    selected = y == chartContextYear,
-                                    onClick  = { chartContextYear = y },
-                                    label    = { Text("$y", style = MaterialTheme.typography.labelSmall) }
-                                )
-                            }
-                        } else { // weekly
-                            (1..12).forEach { m ->
-                                val abbr = YearMonth.of(chartContextYear, m)
-                                    .month.getDisplayName(JTextStyle.SHORT, Locale.getDefault())
-                                FilterChip(
-                                    selected = m == chartContextMonth,
-                                    onClick  = { chartContextMonth = m },
-                                    label    = { Text(abbr, style = MaterialTheme.typography.labelSmall) }
-                                )
-                            }
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(12.dp))
-                ExpenseBarChart(
-                    bars           = chartBars,
-                    currencySymbol = currencySymbol,
-                    onBarClick     = { bar ->
-                        // Carry context forward before navigating
-                        when (granularity) {
-                            "yearly"  -> chartContextYear = bar.startDate.year
-                            "monthly" -> {
-                                chartContextYear  = bar.startDate.year
-                                chartContextMonth = bar.startDate.monthValue
-                            }
-                        }
-                        onBarClick(bar)
-                    }
-                )
+        visibleCards.forEach { cardId ->
+            key(cardId) {
+                EditableCardWrapper(
+                    editMode        = editMode,
+                    visible         = true,
+                    isDragged       = draggedCardId == cardId,
+                    dragOffsetY     = if (draggedCardId == cardId) dragOffsetY else 0f,
+                    onDragStart     = { draggedCardId = cardId; dragOffsetY = 0f },
+                    onDrag          = handleDrag,
+                    onDragEnd       = { draggedCardId = null; dragOffsetY = 0f },
+                    onToggleVisible = { cardVisible[cardId] = false },
+                    onHeightChanged = { cardHeights[cardId] = it }
+                ) { renderCard(cardId) }
             }
         }
 
-        // ── Spending by category ──────────────────────────────────────────────
-        Card(
-            colors   = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-            shape    = MaterialTheme.shapes.extraLarge,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(modifier = Modifier.padding(20.dp)) {
-
-                // Header
-                Row(
-                    modifier              = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment     = Alignment.CenterVertically
-                ) {
-                    Text(
-                        catTitle,
-                        style    = MaterialTheme.typography.titleMedium.copy(fontSize = 14.sp),
-                        modifier = Modifier.weight(1f)
-                    )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(
-                            onClick  = {
-                                catContextYear  = today.year
-                                catContextMonth = today.monthValue
-                                catPeriodIndex  = defaultCatPeriodIndex(
-                                    catGranularity, catPeriods, today.year, today.monthValue
-                                )
-                            },
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Icon(
-                                Icons.Outlined.Refresh,
-                                contentDescription = "Reset to current period",
-                                modifier = Modifier.size(16.dp),
-                                tint     = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Box {
-                            IconButton(
-                                onClick  = { showCatGranMenu = true },
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Icon(
-                                    Icons.Outlined.Tune,
-                                    contentDescription = "Period settings",
-                                    modifier = Modifier.size(18.dp),
-                                    tint     = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            GranularityDropdownMenu(
-                                expanded    = showCatGranMenu,
-                                selectedKey = catGranularity,
-                                onDismiss   = { showCatGranMenu = false },
-                                onSelect    = { catGranularity = it }
-                            )
-                        }
-                    }
-                }
-
-                // Period chip selector
-                Spacer(Modifier.height(8.dp))
-                Row(
-                    modifier              = Modifier.fillMaxWidth().horizontalScroll(catChipScrollState),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    catPeriods.forEachIndexed { i, period ->
-                        FilterChip(
-                            selected = i == catPeriodIndex,
-                            onClick  = {
-                                catPeriodIndex = i
-                                when (catGranularity) {
-                                    "yearly"  -> catContextYear  = period.startDate.year
-                                    "monthly" -> {
-                                        catContextYear  = period.startDate.year
-                                        catContextMonth = period.startDate.monthValue
-                                    }
-                                    "weekly"  -> {
-                                        catContextYear  = period.startDate.year
-                                        catContextMonth = period.startDate.monthValue
-                                    }
-                                }
-                            },
-                            label = { Text(period.label, style = MaterialTheme.typography.labelSmall) }
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(12.dp))
-
-                if (catDisplay.isEmpty()) {
-                    Text(
-                        "No data for this period",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                } else {
-                    Row(
-                        modifier              = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalAlignment     = Alignment.CenterVertically
-                    ) {
-                        DonutChart(
-                            categories = catDisplay,
-                            viewModel  = viewModel,
-                            modifier   = Modifier.size(140.dp)
-                        )
-                        CategoryLegend(
-                            categories      = catDisplay,
-                            viewModel       = viewModel,
-                            onCategoryClick = { if (it != "Other") catDetailCategory = it },
-                            modifier        = Modifier.weight(1f)
-                        )
-                    }
-                }
+        if (editMode && hiddenCards.isNotEmpty()) {
+            Spacer(Modifier.height(4.dp))
+            Row(
+                modifier              = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                verticalAlignment     = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                Text("Hidden", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
             }
-        }
-
-        // ── Income bar chart ──────────────────────────────────────────────────
-        Card(
-            colors   = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-            shape    = MaterialTheme.shapes.extraLarge,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(modifier = Modifier.padding(20.dp)) {
-
-                Row(
-                    modifier              = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment     = Alignment.CenterVertically
-                ) {
-                    Text(
-                        incomeChartTitle,
-                        style    = MaterialTheme.typography.titleMedium.copy(fontSize = 14.sp),
-                        modifier = Modifier.weight(1f)
-                    )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(
-                            onClick  = {
-                                incomeChartContextYear  = today.year
-                                incomeChartContextMonth = today.monthValue
-                            },
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Icon(Icons.Outlined.Refresh, contentDescription = "Reset",
-                                modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        Box {
-                            IconButton(
-                                onClick  = { showIncomeGranularityMenu = true },
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Icon(Icons.Outlined.Tune, contentDescription = "Chart settings",
-                                    modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                            GranularityDropdownMenu(
-                                expanded    = showIncomeGranularityMenu,
-                                selectedKey = incomeGranularity,
-                                onDismiss   = { showIncomeGranularityMenu = false },
-                                onSelect    = { incomeGranularity = it }
-                            )
-                        }
-                    }
-                }
-
-                if (incomeGranularity == "monthly" || incomeGranularity == "weekly") {
-                    Spacer(Modifier.height(8.dp))
-                    Row(
-                        modifier              = Modifier.fillMaxWidth().horizontalScroll(incomeChipScrollState),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        if (incomeGranularity == "monthly") {
-                            availableChartYears.forEach { y ->
-                                FilterChip(
-                                    selected = y == incomeChartContextYear,
-                                    onClick  = { incomeChartContextYear = y },
-                                    label    = { Text("$y", style = MaterialTheme.typography.labelSmall) }
-                                )
-                            }
-                        } else {
-                            (1..12).forEach { m ->
-                                val abbr = YearMonth.of(incomeChartContextYear, m)
-                                    .month.getDisplayName(JTextStyle.SHORT, Locale.getDefault())
-                                FilterChip(
-                                    selected = m == incomeChartContextMonth,
-                                    onClick  = { incomeChartContextMonth = m },
-                                    label    = { Text(abbr, style = MaterialTheme.typography.labelSmall) }
-                                )
-                            }
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(12.dp))
-                ExpenseBarChart(
-                    bars           = incomeChartBars,
-                    currencySymbol = currencySymbol,
-                    barColor       = Color(0xFF4CAF50),
-                    onBarClick     = { bar ->
-                        when (incomeGranularity) {
-                            "yearly"  -> incomeChartContextYear = bar.startDate.year
-                            "monthly" -> {
-                                incomeChartContextYear  = bar.startDate.year
-                                incomeChartContextMonth = bar.startDate.monthValue
-                            }
-                        }
-                    }
-                )
-            }
-        }
-
-        // ── Income by category ────────────────────────────────────────────────
-        Card(
-            colors   = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-            shape    = MaterialTheme.shapes.extraLarge,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(modifier = Modifier.padding(20.dp)) {
-
-                Row(
-                    modifier              = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment     = Alignment.CenterVertically
-                ) {
-                    Text(
-                        incomeCatTitle,
-                        style    = MaterialTheme.typography.titleMedium.copy(fontSize = 14.sp),
-                        modifier = Modifier.weight(1f)
-                    )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(
-                            onClick  = {
-                                incomeCatContextYear  = today.year
-                                incomeCatContextMonth = today.monthValue
-                                incomeCatPeriodIndex  = defaultCatPeriodIndex(
-                                    incomeCatGranularity, incomeCatPeriods, today.year, today.monthValue
-                                )
-                            },
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Icon(Icons.Outlined.Refresh, contentDescription = "Reset",
-                                modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        Box {
-                            IconButton(
-                                onClick  = { showIncomeCatGranMenu = true },
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Icon(Icons.Outlined.Tune, contentDescription = "Period settings",
-                                    modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                            GranularityDropdownMenu(
-                                expanded    = showIncomeCatGranMenu,
-                                selectedKey = incomeCatGranularity,
-                                onDismiss   = { showIncomeCatGranMenu = false },
-                                onSelect    = { incomeCatGranularity = it }
-                            )
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(8.dp))
-                Row(
-                    modifier              = Modifier.fillMaxWidth().horizontalScroll(incomeCatChipScrollState),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    incomeCatPeriods.forEachIndexed { i, period ->
-                        FilterChip(
-                            selected = i == incomeCatPeriodIndex,
-                            onClick  = {
-                                incomeCatPeriodIndex = i
-                                when (incomeCatGranularity) {
-                                    "yearly"  -> incomeCatContextYear  = period.startDate.year
-                                    "monthly" -> {
-                                        incomeCatContextYear  = period.startDate.year
-                                        incomeCatContextMonth = period.startDate.monthValue
-                                    }
-                                    "weekly"  -> {
-                                        incomeCatContextYear  = period.startDate.year
-                                        incomeCatContextMonth = period.startDate.monthValue
-                                    }
-                                }
-                            },
-                            label = { Text(period.label, style = MaterialTheme.typography.labelSmall) }
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(12.dp))
-
-                if (incomeCatDisplay.isEmpty()) {
-                    Text(
-                        "No income data for this period",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                } else {
-                    Row(
-                        modifier              = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalAlignment     = Alignment.CenterVertically
-                    ) {
-                        DonutChart(
-                            categories = incomeCatDisplay,
-                            viewModel  = viewModel,
-                            modifier   = Modifier.size(140.dp)
-                        )
-                        CategoryLegend(
-                            categories      = incomeCatDisplay,
-                            viewModel       = viewModel,
-                            onCategoryClick = { if (it != "Other") incomeCatDetailCategory = it },
-                            modifier        = Modifier.weight(1f)
-                        )
-                    }
+            hiddenCards.forEach { cardId ->
+                key(cardId) {
+                    EditableCardWrapper(
+                        editMode        = true,
+                        visible         = false,
+                        isDragged       = false,
+                        dragOffsetY     = 0f,
+                        onDragStart     = {},
+                        onDrag          = {},
+                        onDragEnd       = {},
+                        onToggleVisible = { cardVisible[cardId] = true },
+                        onHeightChanged = {}
+                    ) { renderCard(cardId) }
                 }
             }
         }
@@ -1026,5 +1034,526 @@ private fun CategoryDetailSheet(
         }
 
         Spacer(Modifier.height(16.dp))
+    }
+}
+
+// ── Highlight summary card ────────────────────────────────────────────────────
+
+private val highlightDateFmt = DateTimeFormatter.ofPattern("MMM d")
+private val highlightTimeFmt = DateTimeFormatter.ofPattern("HH:mm")
+
+private val highlightFilterOptions = listOf(
+    "all"   to "All Time",
+    "year"  to "This Year",
+    "month" to "This Month"
+)
+
+private fun filterDisplayLabel(key: String): String = when (key) {
+    "year"  -> "This Year"
+    "month" -> "This Month"
+    "week"  -> "This Week"
+    else    -> "All Time"
+}
+
+@Composable
+private fun HighlightSummaryCard(
+    label: String,
+    transaction: Transaction?,
+    amountColor: Color,
+    amountPrefix: String,
+    currencySymbol: String,
+    viewModel: TransactionViewModel,
+    selectedFilter: String,
+    onFilterChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val secondary = MaterialTheme.colorScheme.onSurfaceVariant
+    var showFilterMenu by remember { mutableStateOf(false) }
+    Card(
+        colors   = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        shape    = MaterialTheme.shapes.extraLarge,
+        modifier = modifier
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 16.dp)
+        ) {
+            Row(
+                modifier              = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment     = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment     = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        label,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = secondary
+                    )
+                    Text("·", style = MaterialTheme.typography.labelMedium, color = secondary.copy(alpha = 0.5f))
+                    Text(
+                        filterDisplayLabel(selectedFilter),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = secondary.copy(alpha = 0.5f)
+                    )
+                }
+                Box {
+                    IconButton(
+                        onClick  = { showFilterMenu = true },
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            Icons.Outlined.Tune,
+                            contentDescription = "Filter",
+                            modifier = Modifier.size(16.dp),
+                            tint     = secondary
+                        )
+                    }
+                    DropdownMenu(
+                        expanded        = showFilterMenu,
+                        onDismissRequest = { showFilterMenu = false }
+                    ) {
+                        highlightFilterOptions.forEach { (key, displayLabel) ->
+                            DropdownMenuItem(
+                                text = { Text(displayLabel, style = MaterialTheme.typography.bodyMedium) },
+                                onClick = { onFilterChange(key); showFilterMenu = false },
+                                trailingIcon = {
+                                    if (selectedFilter == key) Icon(
+                                        Icons.Outlined.Check, null,
+                                        tint     = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(2.dp))
+            Text(
+                if (transaction != null) "$amountPrefix$currencySymbol ${"%.2f".format(transaction.amount)}" else "—",
+                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
+                color = if (transaction != null) amountColor else secondary
+            )
+            if (transaction != null) {
+                Spacer(Modifier.height(10.dp))
+                HorizontalDivider(
+                    color     = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                    thickness = 0.5.dp
+                )
+                Spacer(Modifier.height(10.dp))
+                val cat     = viewModel.categoryFor(transaction.category)
+                val iconId  = cat?.iconId ?: "more_horiz"
+                val color   = cat?.color ?: MaterialTheme.colorScheme.primary
+                Row(
+                    verticalAlignment     = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(color.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector        = iconById(iconId),
+                            contentDescription = null,
+                            tint               = color,
+                            modifier           = Modifier.size(18.dp)
+                        )
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            transaction.title,
+                            style    = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        )
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            transaction.category,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = secondary
+                        )
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            "${transaction.date.format(highlightDateFmt)} · ${transaction.time.format(highlightTimeFmt)}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = secondary
+                        )
+                        Spacer(Modifier.height(2.dp))
+                        Row(
+                            verticalAlignment     = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(3.dp)
+                        ) {
+                            PaymentTypeIcon(
+                                type = transaction.paymentType,
+                                tint = secondary,
+                                size = 12.dp
+                            )
+                            Text(
+                                transaction.paymentType.displayName(),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = secondary
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ── Total summary card ────────────────────────────────────────────────────────
+
+private val totalFilterOptions = listOf(
+    "all"   to "All Time",
+    "year"  to "This Year",
+    "month" to "This Month",
+    "week"  to "This Week"
+)
+
+@Composable
+private fun TotalSummaryCard(
+    label: String,
+    total: Double,
+    amountColor: Color,
+    amountPrefix: String,
+    currencySymbol: String,
+    selectedFilter: String,
+    onFilterChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val secondary = MaterialTheme.colorScheme.onSurfaceVariant
+    var showFilterMenu by remember { mutableStateOf(false) }
+    Card(
+        colors   = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        shape    = MaterialTheme.shapes.extraLarge,
+        modifier = modifier
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 16.dp)
+        ) {
+            Row(
+                modifier              = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment     = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment     = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        label,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = secondary
+                    )
+                    Text("·", style = MaterialTheme.typography.labelMedium, color = secondary.copy(alpha = 0.5f))
+                    Text(
+                        filterDisplayLabel(selectedFilter),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = secondary.copy(alpha = 0.5f)
+                    )
+                }
+                Box {
+                    IconButton(
+                        onClick  = { showFilterMenu = true },
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            Icons.Outlined.Tune,
+                            contentDescription = "Filter",
+                            modifier = Modifier.size(16.dp),
+                            tint     = secondary
+                        )
+                    }
+                    DropdownMenu(
+                        expanded         = showFilterMenu,
+                        onDismissRequest = { showFilterMenu = false }
+                    ) {
+                        totalFilterOptions.forEach { (key, displayLabel) ->
+                            DropdownMenuItem(
+                                text = { Text(displayLabel, style = MaterialTheme.typography.bodyMedium) },
+                                onClick = { onFilterChange(key); showFilterMenu = false },
+                                trailingIcon = {
+                                    if (selectedFilter == key) Icon(
+                                        Icons.Outlined.Check, null,
+                                        tint     = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(2.dp))
+            Text(
+                "$amountPrefix$currencySymbol ${"%.2f".format(total)}",
+                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
+                color = amountColor
+            )
+        }
+    }
+}
+
+// ── Savings summary card ──────────────────────────────────────────────────────
+
+// ── Editable card wrapper ─────────────────────────────────────────────────────
+
+@Composable
+private fun EditableCardWrapper(
+    editMode: Boolean,
+    visible: Boolean,
+    isDragged: Boolean,
+    dragOffsetY: Float,
+    onDragStart: () -> Unit,
+    onDrag: (Float) -> Unit,
+    onDragEnd: () -> Unit,
+    onToggleVisible: () -> Unit,
+    onHeightChanged: (Int) -> Unit,
+    content: @Composable () -> Unit
+) {
+    val latestOnDragStart by rememberUpdatedState(onDragStart)
+    val latestOnDrag      by rememberUpdatedState(onDrag)
+    val latestOnDragEnd   by rememberUpdatedState(onDragEnd)
+
+    val scale = remember { Animatable(1f) }
+    LaunchedEffect(isDragged) {
+        if (isDragged) scale.animateTo(1.04f, spring(dampingRatio = 0.4f, stiffness = 500f))
+        else           scale.animateTo(1f,    spring(dampingRatio = 0.6f, stiffness = 500f))
+    }
+
+    val dragMod = if (editMode && visible) {
+        Modifier.pointerInput(editMode) {
+            detectDragGesturesAfterLongPress(
+                onDragStart  = { latestOnDragStart() },
+                onDrag       = { change, delta -> change.consume(); latestOnDrag(delta.y) },
+                onDragEnd    = { latestOnDragEnd() },
+                onDragCancel = { latestOnDragEnd() }
+            )
+        }
+    } else Modifier
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .scale(scale.value)
+            .zIndex(if (isDragged) 1f else 0f)
+            .onGloballyPositioned { onHeightChanged(it.size.height) }
+            .then(dragMod)
+            .offset { IntOffset(0, if (isDragged) dragOffsetY.roundToInt() else 0) }
+    ) {
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Box(modifier = if (editMode && !visible) Modifier.fillMaxWidth().alpha(0.35f) else Modifier.fillMaxWidth()) {
+                content()
+            }
+            if (editMode) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .pointerInput(editMode) {
+                            awaitEachGesture {
+                                awaitFirstDown(requireUnconsumed = false)
+                                val up = waitForUpOrCancellation()
+                                up?.consume()
+                            }
+                        }
+                )
+            }
+        }
+        if (editMode) {
+            Row(
+                modifier              = Modifier.fillMaxWidth().padding(end = 28.dp),
+                horizontalArrangement = Arrangement.End
+            ) {
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(bottomStart = 8.dp, bottomEnd = 8.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.9f))
+                        .clickable(onClick = onToggleVisible)
+                        .padding(horizontal = 10.dp, vertical = 5.dp),
+                    verticalAlignment     = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                ) {
+                    Icon(
+                        imageVector        = if (visible) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff,
+                        contentDescription = if (visible) "Hide card" else "Show card",
+                        tint               = if (visible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier           = Modifier.size(13.dp)
+                    )
+                    Text(
+                        text  = if (visible) "visible" else "hidden",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (visible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ── Savings filter options ────────────────────────────────────────────────────
+
+private val savingsFilterOptions = listOf(
+    "all"   to "All Time",
+    "year"  to "This Year",
+    "month" to "This Month"
+)
+
+@Composable
+private fun SavingsSummaryCard(
+    total: Double,
+    latestTxn: Transaction?,
+    currencySymbol: String,
+    viewModel: TransactionViewModel,
+    selectedFilter: String,
+    onFilterChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val secondary      = MaterialTheme.colorScheme.onSurfaceVariant
+    val savingsColor   = Color(0xFF1B5E20)
+    var showFilterMenu by remember { mutableStateOf(false) }
+
+    Card(
+        colors   = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        shape    = MaterialTheme.shapes.extraLarge,
+        modifier = modifier
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 16.dp)
+        ) {
+            Row(
+                modifier              = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment     = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment     = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        "Total Savings",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = secondary
+                    )
+                    Text("·", style = MaterialTheme.typography.labelMedium, color = secondary.copy(alpha = 0.5f))
+                    Text(
+                        filterDisplayLabel(selectedFilter),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = secondary.copy(alpha = 0.5f)
+                    )
+                }
+                Box {
+                    IconButton(
+                        onClick  = { showFilterMenu = true },
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            Icons.Outlined.Tune,
+                            contentDescription = "Filter",
+                            modifier = Modifier.size(16.dp),
+                            tint     = secondary
+                        )
+                    }
+                    DropdownMenu(
+                        expanded         = showFilterMenu,
+                        onDismissRequest = { showFilterMenu = false }
+                    ) {
+                        savingsFilterOptions.forEach { (key, displayLabel) ->
+                            DropdownMenuItem(
+                                text = { Text(displayLabel, style = MaterialTheme.typography.bodyMedium) },
+                                onClick = { onFilterChange(key); showFilterMenu = false },
+                                trailingIcon = {
+                                    if (selectedFilter == key) Icon(
+                                        Icons.Outlined.Check, null,
+                                        tint     = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(2.dp))
+            Text(
+                if (total > 0) "+$currencySymbol ${"%.2f".format(total)}" else "$currencySymbol 0.00",
+                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
+                color = if (total > 0) savingsColor else secondary
+            )
+            if (latestTxn != null) {
+                Spacer(Modifier.height(10.dp))
+                HorizontalDivider(
+                    color     = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                    thickness = 0.5.dp
+                )
+                Spacer(Modifier.height(10.dp))
+                val cat    = viewModel.categoryFor(latestTxn.category)
+                val iconId = cat?.iconId ?: "account_balance"
+                val color  = cat?.color ?: savingsColor
+                Row(
+                    verticalAlignment     = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(color.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector        = iconById(iconId),
+                            contentDescription = null,
+                            tint               = color,
+                            modifier           = Modifier.size(18.dp)
+                        )
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            latestTxn.title,
+                            style    = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        )
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            latestTxn.category,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = secondary
+                        )
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            "${latestTxn.date.format(highlightDateFmt)} · ${latestTxn.time.format(highlightTimeFmt)}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = secondary
+                        )
+                        Spacer(Modifier.height(2.dp))
+                        Row(
+                            verticalAlignment     = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(3.dp)
+                        ) {
+                            PaymentTypeIcon(type = latestTxn.paymentType, tint = secondary, size = 12.dp)
+                            Text(
+                                latestTxn.paymentType.displayName(),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = secondary
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }

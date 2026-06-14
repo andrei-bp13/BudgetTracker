@@ -25,8 +25,9 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.budgettracker.app.data.model.Transaction
+import com.budgettracker.app.data.model.TransactionType
 import com.budgettracker.app.ui.components.EditDeleteOverlay
-import com.budgettracker.app.util.filterExpensesByDateRange
+import com.budgettracker.app.util.filterByTypeAndDateRange
 import com.budgettracker.app.ui.components.PaymentTypeIcon
 import com.budgettracker.app.ui.components.displayName
 import com.budgettracker.app.ui.icons.iconById
@@ -41,6 +42,7 @@ fun DrillDownScreen(
     title: String,
     startDate: LocalDate,
     endDate: LocalDate,
+    transactionType: TransactionType = TransactionType.EXPENSE,
     viewModel: TransactionViewModel,
     onBack: () -> Unit,
     onEditTransaction: (Transaction) -> Unit = {},
@@ -49,8 +51,8 @@ fun DrillDownScreen(
     val allTransactions by viewModel.transactions.collectAsState()
     val currencySymbol  = LocalCurrencySymbol.current
 
-    val filtered = remember(allTransactions, startDate, endDate) {
-        filterExpensesByDateRange(allTransactions, startDate, endDate)
+    val filtered = remember(allTransactions, startDate, endDate, transactionType) {
+        filterByTypeAndDateRange(allTransactions, startDate, endDate, transactionType)
     }
 
     val totalAmount = remember(filtered) { filtered.sumOf { it.amount } }
@@ -120,14 +122,15 @@ fun DrillDownScreen(
                         ) {
                             Column {
                                 Text(
-                                    "Total expenses",
+                                    if (transactionType == TransactionType.INCOME) "Total income" else "Total expenses",
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Text(
                                     "$currencySymbol ${"%.2f".format(totalAmount)}",
                                     style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black),
-                                    color = MaterialTheme.colorScheme.primary
+                                    color = if (transactionType == TransactionType.INCOME) Color(0xFF4CAF50)
+                                            else MaterialTheme.colorScheme.primary
                                 )
                             }
                             Column(horizontalAlignment = Alignment.End) {
@@ -172,6 +175,7 @@ fun DrillDownScreen(
                             DrillTransactionRow(
                                 txn            = txn,
                                 color          = catColor,
+                                isIncome       = transactionType == TransactionType.INCOME,
                                 currencySymbol = currencySymbol,
                                 dateFmt        = dateFmt,
                                 onLongPress    = { bounds ->
@@ -282,6 +286,7 @@ private fun CategoryDrillHeader(
 private fun DrillTransactionRow(
     txn: Transaction,
     color: Color,
+    isIncome: Boolean,
     currencySymbol: String,
     dateFmt: DateTimeFormatter,
     onLongPress: (Rect) -> Unit
@@ -323,9 +328,9 @@ private fun DrillTransactionRow(
         }
 
         Text(
-            "-$currencySymbol ${"%.2f".format(txn.amount)}",
+            "${if (isIncome) "+" else "-"}$currencySymbol ${"%.2f".format(txn.amount)}",
             style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.error
+            color = if (isIncome) Color(0xFF4CAF50) else MaterialTheme.colorScheme.error
         )
     }
 }

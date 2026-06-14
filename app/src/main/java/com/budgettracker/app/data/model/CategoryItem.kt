@@ -32,6 +32,7 @@ val DefaultCategories: List<CategoryItem> = listOf(
     CategoryItem("cat_salary",       "Salary",           "work",            "#2E7D32"),
     CategoryItem("cat_freelance",    "Freelance",        "computer",        "#1565C0"),
     CategoryItem("cat_investment",   "Investment",       "trending_up",     "#558B2F"),
+    CategoryItem("cat_savings",      "Savings",          "account_balance", "#1B5E20"),
     CategoryItem("cat_other_income", "Other Income",     "savings",         "#00695C"),
 )
 

@@ -4,9 +4,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.budgettracker.app.ui.navigation.BudgetTrackerNavGraph
 import com.budgettracker.app.ui.theme.BudgetTrackerTheme
@@ -28,11 +31,14 @@ class MainActivity : ComponentActivity() {
         val factory = TransactionViewModel.Factory(
             app.transactionRepository,
             app.preferencesRepository,
-            app.categoryRepository
+            app.categoryRepository,
+            app.recurringRepository
         )
 
         setContent {
             val vm: TransactionViewModel = viewModel(factory = factory)
+            val dataLoaded by vm.dataLoaded.collectAsState()
+
             val themeFlow = remember(vm) {
                 combine(vm.themeMode, vm.accentIndex, vm.customAccentHex) { mode, accent, hex ->
                     AppThemeState(mode, accent, hex)
@@ -45,7 +51,13 @@ class MainActivity : ComponentActivity() {
                 accentIndex     = themeState.accentIndex,
                 customAccentHex = themeState.customAccentHex
             ) {
-                BudgetTrackerNavGraph(viewModel = vm)
+                if (dataLoaded) {
+                    BudgetTrackerNavGraph(viewModel = vm)
+                } else {
+                    // Hold a solid surface while Room loads so the window never
+                    // shows as empty/black between the splash exit and first data frame.
+                    Surface(modifier = Modifier.fillMaxSize()) {}
+                }
             }
         }
     }

@@ -25,8 +25,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.budgettracker.app.data.model.Transaction
-import com.budgettracker.app.data.model.TransactionType
+import com.budgettracker.app.data.model.*
 import com.budgettracker.app.ui.components.EditDeleteOverlay
 import com.budgettracker.app.ui.components.PaymentTypeIcon
 import com.budgettracker.app.ui.components.displayName
@@ -47,10 +46,12 @@ fun CalendarScreen(
     onEditTransaction: (Transaction) -> Unit = {},
     onDeleteTransaction: (Transaction) -> Unit = {}
 ) {
-    val allTransactions by viewModel.transactions.collectAsState()
-    val currencySymbol  = LocalCurrencySymbol.current
-    val accent          = MaterialTheme.colorScheme.primary
-    val today           = LocalDate.now()
+    val allTransactions   by viewModel.transactions.collectAsState()
+    val recurringList     by viewModel.recurringTransactions.collectAsState()
+    val categories        by viewModel.categories.collectAsState()
+    val currencySymbol    = LocalCurrencySymbol.current
+    val accent            = MaterialTheme.colorScheme.primary
+    val today             = LocalDate.now()
 
     var selectedDate        by remember { mutableStateOf(today) }
     var displayedMonth      by remember { mutableStateOf(YearMonth.now()) }
@@ -68,6 +69,28 @@ fun CalendarScreen(
     val selectedDayTransactions = remember(transactionsByDate, selectedDate) {
         (transactionsByDate[selectedDate] ?: emptyList())
             .sortedByDescending { it.amount }
+    }
+
+    // Recurring dots: day → distinct category colors
+    val recurringByDay = remember(recurringList, displayedMonth, categories) {
+        recurringList
+            .filter { it.status == RecurringStatus.ACTIVE }
+            .flatMap { rec ->
+                val color = categories.firstOrNull { it.name == rec.category }?.color
+                    ?: Color.Gray
+                rec.datesInMonth(displayedMonth).map { date -> date.dayOfMonth to color }
+            }
+            .groupBy({ it.first }, { it.second })
+            .mapValues { (_, colors) -> colors.distinct() }
+    }
+
+    // Upcoming recurring transactions for the selected day (future dates not yet generated)
+    val selectedDayRecurring = remember(recurringList, selectedDate) {
+        if (!selectedDate.isAfter(today)) emptyList()
+        else recurringList.filter { rec ->
+            rec.status == RecurringStatus.ACTIVE &&
+            rec.datesInMonth(YearMonth.from(selectedDate)).contains(selectedDate)
+        }
     }
 
     val headerFmt = DateTimeFormatter.ofPattern("EEEE, MMMM d", Locale.getDefault())
@@ -158,14 +181,16 @@ fun CalendarScreen(
                                                 val date       = displayedMonth.atDay(dayNum)
                                                 val isSelected = date == selectedDate
                                                 val isToday    = date == today
-                                                val hasDot     = dayNum in daysWithTransactions
+                                                val hasDot        = dayNum in daysWithTransactions
+                                                val recurringDots = recurringByDay[dayNum] ?: emptyList()
                                                 DayCell(
-                                                    day         = dayNum,
-                                                    isSelected  = isSelected,
-                                                    isToday     = isToday,
-                                                    hasDot      = hasDot,
-                                                    accentColor = accent,
-                                                    onClick     = { selectedDate = date }
+                                                    day             = dayNum,
+                                                    isSelected      = isSelected,
+                                                    isToday         = isToday,
+                                                    hasDot          = hasDot,
+                                                    accentColor     = accent,
+                                                    recurringColors = recurringDots,
+                                                    onClick         = { selectedDate = date }
                                                 )
                                             }
                                         }
@@ -224,6 +249,41 @@ fun CalendarScreen(
                         color     = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
                         thickness = 0.5.dp
                     )
+                }
+            }
+
+            // ── Upcoming recurring preview (future dates only) ────────────────────
+            if (selectedDayRecurring.isNotEmpty()) {
+                item {
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        "Scheduled (recurring)",
+                        style    = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                        color    = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                    )
+                    Spacer(Modifier.height(4.dp))
+                }
+                items(selectedDayRecurring, key = { "rec_${it.id}" }) { rec ->
+                    val catColor  = viewModel.categoryFor(rec.category)?.color ?: accent
+                    val catIconId = viewModel.categoryFor(rec.category)?.iconId ?: "more_horiz"
+                    CalendarTransactionRow(
+                        txn = Transaction(
+                            id          = rec.id,
+                            title       = "${rec.title} (R)",
+                            amount      = rec.amount,
+                            type        = rec.type,
+                            category    = rec.category,
+                            date        = selectedDate,
+                            note        = rec.note,
+                            paymentType = rec.paymentType
+                        ),
+                        currencySymbol = currencySymbol,
+                        categoryColor  = catColor,
+                        categoryIconId = catIconId,
+                        onLongPress    = {}
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f), thickness = 0.5.dp)
                 }
             }
 
@@ -347,6 +407,7 @@ private fun DayCell(
     isToday: Boolean,
     hasDot: Boolean,
     accentColor: Color,
+    recurringColors: List<Color> = emptyList(),
     onClick: () -> Unit
 ) {
     Column(
@@ -380,18 +441,26 @@ private fun DayCell(
                 }
             )
         }
-        Box(
-            modifier = Modifier
-                .size(4.dp)
-                .clip(CircleShape)
-                .background(
-                    when {
-                        !hasDot    -> Color.Transparent
-                        isSelected -> Color.White
-                        else       -> accentColor
-                    }
-                )
-        )
+        // Dot row: accent dot for regular txns + category dots for recurring
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            verticalAlignment     = Alignment.CenterVertically
+        ) {
+            if (hasDot) {
+                Box(modifier = Modifier.size(4.dp).clip(CircleShape).background(
+                    if (isSelected) Color.White else accentColor
+                ))
+            }
+            recurringColors.take(3).forEach { color ->
+                Box(modifier = Modifier.size(3.dp).clip(CircleShape).background(
+                    if (isSelected) Color.White else color
+                ))
+            }
+            // Placeholder to keep height consistent when no dots
+            if (!hasDot && recurringColors.isEmpty()) {
+                Box(modifier = Modifier.size(4.dp))
+            }
+        }
     }
 }
 
