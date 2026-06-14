@@ -29,6 +29,10 @@ class RecurringTransactionRepository(
         dao.deleteById(id)
     }
 
+    suspend fun replaceAll(recs: List<RecurringTransaction>) = withContext(Dispatchers.IO) {
+        dao.replaceAll(recs.map { it.toEntity() })
+    }
+
     /**
      * Generates Transaction rows for all active recurring transactions whose
      * nextDueDate is on or before today. Uses a deterministic transaction ID

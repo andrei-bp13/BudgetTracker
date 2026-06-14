@@ -31,6 +31,11 @@ class TransactionRepository(
         dao.deleteById(id)
     }
 
+    suspend fun replaceAll(transactions: List<Transaction>) = withContext(Dispatchers.IO) {
+        val sorted = transactions.sortedByDescending { it.date.atTime(it.time) }
+        dao.replaceAll(sorted.map { it.toEntity() })
+    }
+
     suspend fun addAll(transactions: List<Transaction>) = withContext(Dispatchers.IO) {
         if (transactions.isEmpty()) return@withContext
         dao.insertAll(transactions.map { it.toEntity() })

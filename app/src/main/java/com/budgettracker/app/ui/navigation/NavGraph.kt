@@ -28,6 +28,7 @@ import com.pardonmyspending.app.data.model.PaymentType
 import com.pardonmyspending.app.data.model.TransactionType
 import com.pardonmyspending.app.ui.screens.*
 import com.pardonmyspending.app.ui.theme.LocalCurrencySymbol
+import com.pardonmyspending.app.viewmodel.AccountViewModel
 import com.pardonmyspending.app.viewmodel.ChartBar
 import com.pardonmyspending.app.viewmodel.TransactionViewModel
 import java.time.LocalDate
@@ -53,7 +54,7 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
+fun BudgetTrackerNavGraph(viewModel: TransactionViewModel, accountViewModel: AccountViewModel) {
     val navController       = rememberNavController()
     val drawerState         = rememberDrawerState(DrawerValue.Closed)
     var showAddSheet          by remember { mutableStateOf(false) }
@@ -69,6 +70,8 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
     var reportsEditMode     by remember { mutableStateOf(false) }
     var homeEditMode        by remember { mutableStateOf(false) }
     var budgetEditMode      by remember { mutableStateOf(false) }
+    var showAccountSheet    by remember { mutableStateOf(false) }
+    val signedInAccount     by accountViewModel.account.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.importErrorEvent.collect {
@@ -225,17 +228,21 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                                         )
                                     }
                                 }
-                                IconButton(onClick = { /* TODO: account screen */ }) {
+                                IconButton(onClick = { showAccountSheet = true }) {
                                     Surface(
                                         shape    = CircleShape,
-                                        color    = MaterialTheme.colorScheme.primaryContainer,
+                                        color    = if (signedInAccount != null)
+                                                       MaterialTheme.colorScheme.primary
+                                                   else MaterialTheme.colorScheme.primaryContainer,
                                         modifier = Modifier.size(32.dp)
                                     ) {
                                         Box(contentAlignment = Alignment.Center) {
                                             Text(
-                                                "A",
+                                                (signedInAccount?.displayName?.firstOrNull()?.uppercaseChar() ?: 'A').toString(),
                                                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black),
-                                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                                color = if (signedInAccount != null)
+                                                            MaterialTheme.colorScheme.onPrimary
+                                                        else MaterialTheme.colorScheme.onPrimaryContainer
                                             )
                                         }
                                     }
@@ -438,6 +445,13 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel) {
                     showAddRecurringSheet = false
                     editingRecurring      = null
                 }
+            )
+        }
+
+        if (showAccountSheet) {
+            AccountSheet(
+                viewModel = accountViewModel,
+                onDismiss = { showAccountSheet = false; accountViewModel.clearStatus() }
             )
         }
     } // end CompositionLocalProvider

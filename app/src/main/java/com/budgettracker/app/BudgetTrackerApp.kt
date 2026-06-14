@@ -3,8 +3,10 @@ package com.pardonmyspending.app
 import android.app.Application
 import com.pardonmyspending.app.data.csv.CsvManager
 import com.pardonmyspending.app.data.db.AppDatabase
+import com.pardonmyspending.app.data.auth.GoogleAuthManager
 import com.pardonmyspending.app.data.repository.BudgetRepository
 import com.pardonmyspending.app.data.repository.CategoryRepository
+import com.pardonmyspending.app.data.repository.DriveBackupRepository
 import com.pardonmyspending.app.data.repository.PreferencesRepository
 import com.pardonmyspending.app.data.repository.RecurringTransactionRepository
 import com.pardonmyspending.app.data.repository.TransactionRepository
@@ -17,4 +19,6 @@ class BudgetTrackerApp : Application() {
     val preferencesRepository  by lazy { PreferencesRepository(this) }
     val categoryRepository     by lazy { CategoryRepository(this) }
     val budgetRepository       by lazy { BudgetRepository(database.budgetDao()) }
+    val googleAuthManager      by lazy { GoogleAuthManager(this) }
+    val driveBackupRepository  by lazy { DriveBackupRepository() }
 }

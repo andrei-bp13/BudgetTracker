@@ -17,6 +17,18 @@ interface BudgetDao {
     @Update
     suspend fun updateAll(entities: List<BudgetEntity>)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(entities: List<BudgetEntity>)
+
+    @Query("DELETE FROM budgets")
+    suspend fun deleteAll()
+
+    @Transaction
+    suspend fun replaceAll(entities: List<BudgetEntity>) {
+        deleteAll()
+        insertAll(entities)
+    }
+
     @Query("DELETE FROM budgets WHERE id = :id")
     suspend fun delete(id: String)
 }

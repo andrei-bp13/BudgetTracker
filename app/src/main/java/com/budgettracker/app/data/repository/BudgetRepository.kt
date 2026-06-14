@@ -28,4 +28,8 @@ class BudgetRepository(private val dao: BudgetDao) {
     suspend fun updateOrder(ordered: List<Budget>) = withContext(Dispatchers.IO) {
         dao.updateAll(ordered.mapIndexed { i, b -> b.copy(sortOrder = i).toEntity() })
     }
+
+    suspend fun replaceAll(budgets: List<Budget>) = withContext(Dispatchers.IO) {
+        dao.replaceAll(budgets.map { it.toEntity() })
+    }
 }

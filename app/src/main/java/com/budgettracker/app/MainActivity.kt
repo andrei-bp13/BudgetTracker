@@ -11,6 +11,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.ViewModelProvider
 import com.pardonmyspending.app.ui.navigation.BudgetTrackerNavGraph
 import com.pardonmyspending.app.ui.theme.BudgetTrackerTheme
+import com.pardonmyspending.app.viewmodel.AccountViewModel
 import com.pardonmyspending.app.viewmodel.TransactionViewModel
 import kotlinx.coroutines.flow.combine
 
@@ -37,6 +38,16 @@ class MainActivity : ComponentActivity() {
         // Create VM before setContent so the splash condition can observe it.
         val vm = ViewModelProvider(this, factory)[TransactionViewModel::class.java]
 
+        val accountFactory = AccountViewModel.Factory(
+            app.googleAuthManager,
+            app.driveBackupRepository,
+            app.transactionRepository,
+            app.recurringRepository,
+            app.categoryRepository,
+            app.budgetRepository
+        )
+        val accountVm = ViewModelProvider(this, accountFactory)[AccountViewModel::class.java]
+
         // Hold the splash until theme prefs + repo data are ready.
         // processRecurring runs in its own coroutine and does not block dataLoaded.
         installSplashScreen().setKeepOnScreenCondition { !vm.dataLoaded.value }
@@ -54,7 +65,7 @@ class MainActivity : ComponentActivity() {
                 accentIndex     = themeState.accentIndex,
                 customAccentHex = themeState.customAccentHex
             ) {
-                BudgetTrackerNavGraph(viewModel = vm)
+                BudgetTrackerNavGraph(viewModel = vm, accountViewModel = accountVm)
             }
         }
     }
