@@ -137,21 +137,8 @@ class TransactionViewModel(
     fun updateRecurring(rec: RecurringTransaction) = viewModelScope.launch { }
     fun deleteRecurring(id: String)                = viewModelScope.launch { }
 
-    // ── Startup readiness ─────────────────────────────────────────────────────
-
-    private val _dataLoaded = MutableStateFlow(false)
-    val dataLoaded: StateFlow<Boolean> = _dataLoaded.asStateFlow()
-
     init {
-        viewModelScope.launch {
-            try {
-                repo.load()
-//                recurringRepo.load()
-//                recurringRepo.processRecurring(repo)
-            } finally {
-                _dataLoaded.value = true
-            }
-        }
+        viewModelScope.launch { repo.load() }
     }
 
     fun addTransaction(t: Transaction)    = viewModelScope.launch { repo.add(t) }
