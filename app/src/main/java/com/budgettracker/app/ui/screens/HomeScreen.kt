@@ -63,6 +63,8 @@ fun HomeScreen(
     val globalColoring      by viewModel.globalColoring.collectAsState()
     val byPaymentType       by viewModel.thisMonthByPaymentType.collectAsState()
     val byPaymentTypeIncome by viewModel.thisMonthIncomeByPaymentType.collectAsState()
+    val budgets        by viewModel.budgets.collectAsState()
+    val budgetSpent    by viewModel.budgetSpent.collectAsState()
 
     val accent = MaterialTheme.colorScheme.primary
     val resolveColor: (String) -> androidx.compose.ui.graphics.Color = remember(globalColoring, accent) {
@@ -84,19 +86,20 @@ fun HomeScreen(
             .onGloballyPositioned { homeBoxCoords = it }
     ) {
         // ── Card order & visibility ───────────────────────────────────────────
-        val cardOrder   = remember { mutableStateListOf("month_summary", "monthly_progress", "recent_transactions", "top_categories") }
+        val cardOrder   = remember { mutableStateListOf("month_summary", "monthly_progress", "recent_transactions", "top_categories", "budgets") }
         val cardVisible = remember { mutableStateMapOf(
             "month_summary"        to true,
             "monthly_progress"     to true,
             "recent_transactions"  to true,
-            "top_categories"       to true
+            "top_categories"       to true,
+            "budgets"              to false
         ) }
         fun swapCards(a: String, b: String) {
             val i = cardOrder.indexOf(a); val j = cardOrder.indexOf(b)
             if (i >= 0 && j >= 0) { cardOrder[i] = b; cardOrder[j] = a }
         }
-        val visibleCards = cardOrder.filter { cardVisible[it] == true }
-        val hiddenCards  = cardOrder.filter { cardVisible[it] != true }
+        val visibleCards = cardOrder.filter { cardVisible[it] == true && (it != "budgets" || budgets.isNotEmpty()) }
+        val hiddenCards  = cardOrder.filter { cardVisible[it] != true  && (it != "budgets" || budgets.isNotEmpty()) }
 
         // ── Drag-to-reorder state ─────────────────────────────────────────────
         var draggedCardId by remember { mutableStateOf<String?>(null) }
@@ -192,6 +195,12 @@ fun HomeScreen(
                     categoryFor     = { viewModel.categoryFor(it) },
                     onCategoryClick = onCategoryClick,
                     modifier        = Modifier.fillMaxWidth()
+                )
+                "budgets" -> BudgetOverviewCard(
+                    budgets     = budgets,
+                    budgetSpent = budgetSpent,
+                    categoryFor = { viewModel.categoryFor(it) },
+                    modifier    = Modifier.fillMaxWidth()
                 )
             }
         }
