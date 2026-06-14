@@ -29,6 +29,8 @@ data class ChartBar(
     val endDate: LocalDate
 )
 
+private val allPaymentTypes = PaymentType.values()
+
 class TransactionViewModel(
     private val repo: TransactionRepository,
     private val prefs: PreferencesRepository,
@@ -49,89 +51,138 @@ class TransactionViewModel(
     val aiMode:           StateFlow<Boolean> = prefsState.aiMode
 
     val currencySymbol: StateFlow<String> = prefsState.currencyCode
-        .map { code -> AllCurrencies.firstOrNull { it.code == code }?.symbol ?: "$" }
+        .map { code -> currencyCodeToSymbol[code] ?: "$" }
         .distinctUntilChanged()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, "$")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), "$")
 
     // ── Transaction data ──────────────────────────────────────────────────────
 
     val transactions: StateFlow<List<Transaction>> = repo.transactions
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyList())
 
-    val thisMonthDailyExpenses: StateFlow<List<Pair<Int, Double>>> = transactions
-        .map { dailyExpenses(it, YearMonth.now()) }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    // Single combine pass: all derived aggregates computed together so that one
+    // transaction change triggers one list iteration instead of 10+.
+    private data class ProcessedTransactions(
+        val thisMonthDailyExpenses: List<Pair<Int, Double>>,
+        val lastMonthDailyExpenses: List<Pair<Int, Double>>,
+        val recentExpenses: List<Transaction>,
+        val recentTransactions: List<Transaction>,
+        val topCategories: List<Pair<String, Double>>,
+        val expenseChartBars: List<ChartBar>,
+        val monthlyTotals: List<Pair<String, Double>>,
+        val categoryTotalsThisMonth: List<Pair<String, Double>>,
+        val thisMonthExpense: Double,
+        val thisMonthIncome: Double,
+        val thisMonthByPaymentType: Map<PaymentType, Double>,
+        val thisMonthIncomeByPaymentType: Map<PaymentType, Double>,
+    )
 
-    val lastMonthDailyExpenses: StateFlow<List<Pair<Int, Double>>> = transactions
-        .map { dailyExpenses(it, YearMonth.now().minusMonths(1)) }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    private val processed: StateFlow<ProcessedTransactions> =
+        combine(transactions, chartGranularity) { txns, gran ->
+            val today  = LocalDate.now()
+            val now    = YearMonth.now()
+            val lastMo = now.minusMonths(1)
+            ProcessedTransactions(
+                thisMonthDailyExpenses       = dailyExpenses(txns, now),
+                lastMonthDailyExpenses       = dailyExpenses(txns, lastMo),
+                recentExpenses               = txns.filter { it.type == TransactionType.EXPENSE }.take(5),
+                recentTransactions           = txns.take(5),
+                topCategories                = topCats(txns, now),
+                expenseChartBars             = when (gran) {
+                    "weekly" -> weeklyExpensesForMonth(txns, today.year, today.monthValue)
+                    "yearly" -> yearlyExpenses(txns, today.year)
+                    else     -> monthlyExpensesForYear(txns, today.year)
+                },
+                monthlyTotals                = monthlyExpensesLast6(txns),
+                categoryTotalsThisMonth      = topCats(txns, now, limit = 10),
+                thisMonthExpense             = monthTotal(txns, now, TransactionType.EXPENSE),
+                thisMonthIncome              = monthTotal(txns, now, TransactionType.INCOME),
+                thisMonthByPaymentType       = allPaymentTypes.associateWith { pt ->
+                    txns.sumOf {
+                        if (it.type == TransactionType.EXPENSE &&
+                            YearMonth.from(it.date) == now &&
+                            it.paymentType == pt) it.amount else 0.0
+                    }
+                },
+                thisMonthIncomeByPaymentType = allPaymentTypes.associateWith { pt ->
+                    txns.sumOf {
+                        if (it.type == TransactionType.INCOME &&
+                            YearMonth.from(it.date) == now &&
+                            it.paymentType == pt) it.amount else 0.0
+                    }
+                },
+            )
+        }.stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5_000L),
+            ProcessedTransactions(
+                thisMonthDailyExpenses       = emptyList(),
+                lastMonthDailyExpenses       = emptyList(),
+                recentExpenses               = emptyList(),
+                recentTransactions           = emptyList(),
+                topCategories                = emptyList(),
+                expenseChartBars             = emptyList(),
+                monthlyTotals                = emptyList(),
+                categoryTotalsThisMonth      = emptyList(),
+                thisMonthExpense             = 0.0,
+                thisMonthIncome              = 0.0,
+                thisMonthByPaymentType       = emptyMap(),
+                thisMonthIncomeByPaymentType = emptyMap(),
+            )
+        )
 
-    val recentExpenses: StateFlow<List<Transaction>> = transactions
-        .map { it.filter { t -> t.type == TransactionType.EXPENSE }.take(5) }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val thisMonthDailyExpenses: StateFlow<List<Pair<Int, Double>>> =
+        processed.map { it.thisMonthDailyExpenses }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyList())
 
-    val recentTransactions: StateFlow<List<Transaction>> = transactions
-        .map { it.take(5) }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val lastMonthDailyExpenses: StateFlow<List<Pair<Int, Double>>> =
+        processed.map { it.lastMonthDailyExpenses }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyList())
 
-    val topCategories: StateFlow<List<Pair<String, Double>>> = transactions
-        .map { topCats(it, YearMonth.now()) }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val recentExpenses: StateFlow<List<Transaction>> =
+        processed.map { it.recentExpenses }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyList())
+
+    val recentTransactions: StateFlow<List<Transaction>> =
+        processed.map { it.recentTransactions }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyList())
+
+    val topCategories: StateFlow<List<Pair<String, Double>>> =
+        processed.map { it.topCategories }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyList())
 
     val expenseChartBars: StateFlow<List<ChartBar>> =
-        combine(transactions, chartGranularity) { txns, gran ->
-            val today = LocalDate.now()
-            when (gran) {
-                "weekly"  -> weeklyExpensesForMonth(txns, today.year, today.monthValue)
-                "yearly"  -> yearlyExpenses(txns, today.year)
-                else      -> monthlyExpensesForYear(txns, today.year)
-            }
-        }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+        processed.map { it.expenseChartBars }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyList())
 
-    val monthlyTotals: StateFlow<List<Pair<String, Double>>> = transactions
-        .map { monthlyExpensesLast6(it) }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val monthlyTotals: StateFlow<List<Pair<String, Double>>> =
+        processed.map { it.monthlyTotals }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyList())
 
-    val categoryTotalsThisMonth: StateFlow<List<Pair<String, Double>>> = transactions
-        .map { topCats(it, YearMonth.now(), limit = 10) }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val categoryTotalsThisMonth: StateFlow<List<Pair<String, Double>>> =
+        processed.map { it.categoryTotalsThisMonth }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyList())
 
-    val thisMonthExpense: StateFlow<Double> = transactions
-        .map { monthTotal(it, YearMonth.now(), TransactionType.EXPENSE) }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, 0.0)
+    val thisMonthExpense: StateFlow<Double> =
+        processed.map { it.thisMonthExpense }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), 0.0)
 
-    val thisMonthIncome: StateFlow<Double> = transactions
-        .map { monthTotal(it, YearMonth.now(), TransactionType.INCOME) }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, 0.0)
+    val thisMonthIncome: StateFlow<Double> =
+        processed.map { it.thisMonthIncome }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), 0.0)
 
-    val thisMonthByPaymentType: StateFlow<Map<PaymentType, Double>> = transactions
-        .map { list ->
-            val now = YearMonth.now()
-            PaymentType.values().associateWith { pt ->
-                list.filter {
-                    it.type == TransactionType.EXPENSE &&
-                    YearMonth.from(it.date) == now &&
-                    it.paymentType == pt
-                }.sumOf { it.amount }
-            }
-        }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+    val thisMonthByPaymentType: StateFlow<Map<PaymentType, Double>> =
+        processed.map { it.thisMonthByPaymentType }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyMap())
 
-    val thisMonthIncomeByPaymentType: StateFlow<Map<PaymentType, Double>> = transactions
-        .map { list ->
-            val now = YearMonth.now()
-            PaymentType.values().associateWith { pt ->
-                list.filter {
-                    it.type == TransactionType.INCOME &&
-                    YearMonth.from(it.date) == now &&
-                    it.paymentType == pt
-                }.sumOf { it.amount }
-            }
-        }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+    val thisMonthIncomeByPaymentType: StateFlow<Map<PaymentType, Double>> =
+        processed.map { it.thisMonthIncomeByPaymentType }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyMap())
 
-    // ── Recurring transactions (commented out for diagnostics) ────────────────
+    // ── Recurring transactions ────────────────────────────────────────────────
 
     val recurringTransactions: StateFlow<List<RecurringTransaction>> = recurringRepo.recurring
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyList())
 
     fun addRecurring(rec: RecurringTransaction)    = viewModelScope.launch { recurringRepo.add(rec) }
     fun updateRecurring(rec: RecurringTransaction) = viewModelScope.launch { recurringRepo.update(rec) }
@@ -142,14 +193,13 @@ class TransactionViewModel(
 
     init {
         viewModelScope.launch {
-            // Wait for theme prefs to emit their real DataStore values before
-            // signalling ready — prevents the theme-colour flash on first frame.
+            // Wait for theme prefs and both DB tables to emit their first value
+            // before releasing the splash screen.
             prefs.themeMode.first()
-            repo.load()
-            recurringRepo.load()
+            repo.transactions.first()
+            recurringRepo.recurring.first()
             _dataLoaded.value = true
         }
-        // processRecurring runs independently so it never delays the UI.
         viewModelScope.launch { recurringRepo.processRecurring(repo) }
     }
 
@@ -169,20 +219,25 @@ class TransactionViewModel(
 
     // ── Categories ────────────────────────────────────────────────────────────
 
-    private companion object {
-        val incomeNames = setOf("Salary", "Freelance", "Investment", "Savings", "Other Income")
-    }
-
     val categories: StateFlow<List<CategoryItem>> = catRepo.categories
-        .stateIn(viewModelScope, SharingStarted.Eagerly, DefaultCategories)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), DefaultCategories)
 
-    val expenseCategories: StateFlow<List<CategoryItem>> = categories
-        .map { list -> list.filter { it.name !in incomeNames } }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    // Single partition pass instead of two separate filter passes.
+    private val partitionedCategories: StateFlow<Pair<List<CategoryItem>, List<CategoryItem>>> =
+        categories.map { list -> list.partition { it.name in incomeNames } }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5_000L),
+                emptyList<CategoryItem>() to emptyList()
+            )
 
-    val incomeCategories: StateFlow<List<CategoryItem>> = categories
-        .map { list -> list.filter { it.name in incomeNames } }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val incomeCategories: StateFlow<List<CategoryItem>> =
+        partitionedCategories.map { it.first }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyList())
+
+    val expenseCategories: StateFlow<List<CategoryItem>> =
+        partitionedCategories.map { it.second }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyList())
 
     fun saveCategory(item: CategoryItem) = viewModelScope.launch {
         catRepo.upsertCategory(categories.value, item)
@@ -205,6 +260,15 @@ class TransactionViewModel(
     fun setChartGranularity(value: String) = prefsState.setChartGranularity(value)
     fun setAiMode(enabled: Boolean)        = prefsState.setAiMode(enabled)
     fun setCustomAccentHex(hex: String)    = prefsState.setCustomAccentHex(hex)
+
+    private companion object {
+        val incomeNames = setOf("Salary", "Freelance", "Investment", "Savings", "Other Income")
+
+        // Pre-built lookup avoids a linear scan of AllCurrencies on every currencyCode emission.
+        val currencyCodeToSymbol: Map<String, String> by lazy {
+            AllCurrencies.associate { it.code to it.symbol }
+        }
+    }
 
     class Factory(
         private val repo: TransactionRepository,
