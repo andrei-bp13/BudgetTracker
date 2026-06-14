@@ -120,7 +120,7 @@ fun BudgetScreen(viewModel: TransactionViewModel) {
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f))
                     Text("No budgets yet", style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
-                    Text("Tap "Add Budget" to get started", style = MaterialTheme.typography.bodySmall,
+                    Text("Tap \"Add Budget\" to get started", style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f))
                 }
             }
