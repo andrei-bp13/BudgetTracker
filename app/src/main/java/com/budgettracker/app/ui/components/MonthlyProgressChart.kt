@@ -34,7 +34,7 @@ fun MonthlyProgressChart(
 
     val animProgress by animateFloatAsState(
         targetValue   = 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessVeryLow),
+        animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing),
         label         = "chartAnim"
     )
 

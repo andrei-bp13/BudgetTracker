@@ -789,7 +789,7 @@ fun ExpenseBarChart(
     val maxVal   = bars.maxOfOrNull { it.value }?.coerceAtLeast(1.0) ?: 1.0
     val animProg by animateFloatAsState(
         targetValue   = 1f,
-        animationSpec = spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessVeryLow),
+        animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing),
         label         = "bar"
     )
 
@@ -888,7 +888,7 @@ fun DonutChart(
     val colors   = categories.mapIndexed { i, (cat, _) -> chartColor(i, cat) }
     val animProg by animateFloatAsState(
         targetValue   = 1f,
-        animationSpec = spring(Spring.DampingRatioLowBouncy, Spring.StiffnessVeryLow),
+        animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing),
         label         = "donut"
     )
 
@@ -1027,7 +1027,7 @@ private fun CategoryDetailSheet(
                 contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
-                items(txns) { txn ->
+                items(txns, key = { it.id }) { txn ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()

@@ -1,9 +1,11 @@
 ﻿package com.pardonmyspending.app.data.model
 
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 
 enum class CategoryType { EXPENSE, INCOME }
 
+@Immutable
 data class CategoryItem(
     val id: String,
     val name: String,
@@ -12,7 +14,7 @@ data class CategoryItem(
     val isDefault: Boolean = true,
     val type: CategoryType = CategoryType.EXPENSE
 ) {
-    val color: Color get() = Color(android.graphics.Color.parseColor(colorHex))
+    val color: Color = Color(android.graphics.Color.parseColor(colorHex))
 }
 
 val DefaultCategories: List<CategoryItem> = listOf(

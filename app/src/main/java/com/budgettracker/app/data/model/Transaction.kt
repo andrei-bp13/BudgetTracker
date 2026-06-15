@@ -1,11 +1,13 @@
 ﻿package com.pardonmyspending.app.data.model
 
+import androidx.compose.runtime.Immutable
 import java.time.LocalDate
 import java.time.LocalTime
 
 enum class TransactionType { INCOME, EXPENSE }
 enum class PaymentType { DEBIT, CREDIT, CASH }
 
+@Immutable
 data class Transaction(
     val id: String,
     val title: String,

@@ -67,7 +67,7 @@ private fun CategoryBarRow(name: String, amount: Double, maxAmount: Double, colo
 
     val animFraction by animateFloatAsState(
         targetValue   = fraction,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+        animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
         label         = "barAnim"
     )
 

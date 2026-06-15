@@ -69,7 +69,7 @@ fun IconPickerSheet(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.height(360.dp)
             ) {
-                items(filtered) { icon ->
+                items(filtered, key = { it.id }) { icon ->
                     val selected = icon.id == currentIconId
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,

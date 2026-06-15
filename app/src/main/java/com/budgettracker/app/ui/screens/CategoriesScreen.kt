@@ -94,7 +94,7 @@ fun CategoriesScreen(
                         modifier = Modifier.padding(vertical = 4.dp)
                     )
                 }
-                items(expenseCats) { cat ->
+                items(expenseCats, key = { it.id }) { cat ->
                     CategoryRow(
                         category = cat,
                         onClick  = { editTarget = cat; showEdit = true },
@@ -112,7 +112,7 @@ fun CategoriesScreen(
                             modifier = Modifier.padding(vertical = 4.dp)
                         )
                     }
-                    items(incomeCats) { cat ->
+                    items(incomeCats, key = { it.id }) { cat ->
                         CategoryRow(
                             category = cat,
                             onClick  = { editTarget = cat; showEdit = true },

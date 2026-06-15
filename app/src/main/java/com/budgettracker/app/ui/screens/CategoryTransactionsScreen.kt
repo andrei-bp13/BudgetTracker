@@ -48,7 +48,7 @@ fun CategoryTransactionsScreen(
     val grouped: Map<LocalDate, List<Transaction>> = remember(filtered) {
         filtered.groupBy { it.date }
     }
-    val sortedDates = grouped.keys.sortedDescending()
+    val sortedDates = remember(grouped) { grouped.keys.sortedDescending() }
 
     val dateFmt = DateTimeFormatter.ofPattern("EEEE, MMM d")
 

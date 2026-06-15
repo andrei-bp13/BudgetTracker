@@ -82,7 +82,7 @@ private fun BudgetOverviewRow(
 ) {
     val animProgress by animateFloatAsState(
         targetValue   = progress,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+        animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
         label         = "budgetProgress_${budget.id}"
     )
 
