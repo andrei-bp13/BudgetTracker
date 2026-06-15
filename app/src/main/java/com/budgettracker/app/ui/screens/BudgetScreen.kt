@@ -13,6 +13,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.rounded.Done
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -48,7 +51,15 @@ private val monthFmt = DateTimeFormatter.ofPattern("MMMM yyyy")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BudgetScreen(viewModel: TransactionViewModel, editMode: Boolean = false) {
+fun BudgetScreen(
+    viewModel: TransactionViewModel,
+    editMode: Boolean = false,
+    onMenuClick: () -> Unit = {},
+    onAccountClick: () -> Unit = {},
+    accountInitial: Char = 'A',
+    isSignedIn: Boolean = false,
+    onToggleEditMode: () -> Unit = {}
+) {
     val budgets      by viewModel.budgets.collectAsState()
     val budgetSpent  by viewModel.budgetSpent.collectAsState()
     val transactions by viewModel.transactions.collectAsState()
@@ -96,7 +107,44 @@ fun BudgetScreen(viewModel: TransactionViewModel, editMode: Boolean = false) {
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Budget", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black)) },
+                navigationIcon = {
+                    IconButton(onClick = onMenuClick) {
+                        Icon(Icons.Rounded.Menu, contentDescription = "Menu")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onToggleEditMode) {
+                        Icon(
+                            imageVector        = if (editMode) Icons.Rounded.Done else Icons.Rounded.Edit,
+                            contentDescription = if (editMode) "Done editing" else "Edit layout",
+                            tint               = if (editMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    IconButton(onClick = onAccountClick) {
+                        Surface(
+                            shape    = CircleShape,
+                            color    = if (isSignedIn) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    accountInitial.toString(),
+                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black),
+                                    color = if (isSignedIn) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+            )
+        }
+    ) { innerPadding ->
+    Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
 
         // â"€â"€ Sticky "Add Budget" button â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
         Button(
@@ -196,6 +244,7 @@ fun BudgetScreen(viewModel: TransactionViewModel, editMode: Boolean = false) {
             Text("Show Past Budgets", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
         }
     }
+    } // end Scaffold
 
     if (showAddSheet) {
         AddBudgetSheet(viewModel = viewModel, initial = null, onDismiss = { showAddSheet = false })

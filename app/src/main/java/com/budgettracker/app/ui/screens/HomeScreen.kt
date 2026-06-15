@@ -50,6 +50,7 @@ import java.time.format.TextStyle
 import java.util.Locale
 import kotlin.math.roundToInt
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     viewModel: TransactionViewModel,
@@ -58,7 +59,12 @@ fun HomeScreen(
     onPaymentTypeClick: (PaymentType) -> Unit = {},
     onEditTransaction: (Transaction) -> Unit = {},
     onDeleteTransaction: (Transaction) -> Unit = {},
-    editMode: Boolean = false
+    editMode: Boolean = false,
+    onMenuClick: () -> Unit = {},
+    onAccountClick: () -> Unit = {},
+    accountInitial: Char = 'A',
+    isSignedIn: Boolean = false,
+    onToggleEditMode: () -> Unit = {}
 ) {
     val thisMonth      by viewModel.thisMonthDailyExpenses.collectAsState()
     val lastMonth      by viewModel.lastMonthDailyExpenses.collectAsState()
@@ -89,9 +95,47 @@ fun HomeScreen(
     var homeBoxCoords      by remember { mutableStateOf<LayoutCoordinates?>(null) }
 
     // â"€â"€ Root box: content + scrim + overlay (Z order: content â†’ scrim â†’ overlay) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Dashboard", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black)) },
+                navigationIcon = {
+                    IconButton(onClick = onMenuClick) {
+                        Icon(Icons.Rounded.Menu, contentDescription = "Menu")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onToggleEditMode) {
+                        Icon(
+                            imageVector        = if (editMode) Icons.Rounded.Done else Icons.Rounded.Edit,
+                            contentDescription = if (editMode) "Done editing" else "Edit layout",
+                            tint               = if (editMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    IconButton(onClick = onAccountClick) {
+                        Surface(
+                            shape    = CircleShape,
+                            color    = if (isSignedIn) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    accountInitial.toString(),
+                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black),
+                                    color = if (isSignedIn) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+            )
+        }
+    ) { innerPadding ->
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .padding(innerPadding)
             .onGloballyPositioned { homeBoxCoords = it }
     ) {
         // â"€â"€ Card order & visibility â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
@@ -513,6 +557,7 @@ fun HomeScreen(
             )
         }
     }
+    } // end Scaffold
 }
 
 // â"€â"€ Editable card wrapper (home screen) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€

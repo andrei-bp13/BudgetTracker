@@ -23,6 +23,9 @@ import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
+import androidx.compose.material.icons.rounded.Done
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -91,7 +94,12 @@ fun ReportsScreen(
     viewModel: TransactionViewModel,
     onBarClick: (ChartBar) -> Unit = {},
     onIncomeBarClick: (ChartBar) -> Unit = {},
-    editMode: Boolean = false
+    editMode: Boolean = false,
+    onMenuClick: () -> Unit = {},
+    onAccountClick: () -> Unit = {},
+    accountInitial: Char = 'A',
+    isSignedIn: Boolean = false,
+    onToggleEditMode: () -> Unit = {}
 ) {
     val granularity     by viewModel.chartGranularity.collectAsState()
     val allTransactions by viewModel.transactions.collectAsState()
@@ -630,10 +638,48 @@ fun ReportsScreen(
         }
     }
 
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Reports", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black)) },
+                navigationIcon = {
+                    IconButton(onClick = onMenuClick) {
+                        Icon(Icons.Rounded.Menu, contentDescription = "Menu")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onToggleEditMode) {
+                        Icon(
+                            imageVector        = if (editMode) Icons.Rounded.Done else Icons.Rounded.Edit,
+                            contentDescription = if (editMode) "Done editing" else "Edit layout",
+                            tint               = if (editMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    IconButton(onClick = onAccountClick) {
+                        Surface(
+                            shape    = CircleShape,
+                            color    = if (isSignedIn) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    accountInitial.toString(),
+                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black),
+                                    color = if (isSignedIn) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+            )
+        }
+    ) { innerPadding ->
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
+            .padding(innerPadding)
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -696,6 +742,7 @@ fun ReportsScreen(
 
         Spacer(Modifier.height(80.dp))
     }
+    } // end Scaffold
 
     // â"€â"€ Category detail bottom sheet â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
     catDetailCategory?.let { category ->

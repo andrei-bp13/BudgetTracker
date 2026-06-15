@@ -93,10 +93,11 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel, accountViewModel: Acc
         }
     }
 
-    // Track current route at the top level -" used for both topBar visibility and bottomBar selection
+    // Track current route for bottomBar selection and edit-mode resets
     val currentEntry by navController.currentBackStackEntryAsState()
     val route = currentEntry?.destination?.route
-    val isTopLevel = route == null || route in setOf(Screen.Home.route, Screen.Reports.route, Screen.Calendar.route, Screen.Budget.route, Screen.Recurring.route)
+    val accountInitial = signedInAccount?.displayName?.firstOrNull()?.uppercaseChar() ?: 'A'
+    val isSignedIn     = signedInAccount != null
 
     // Reset edit modes and FAB when navigating away from their screens
     LaunchedEffect(route) {
@@ -197,75 +198,7 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel, accountViewModel: Acc
                         }
                     }
                 },
-                topBar = {
-                    // Only show the global top bar for the three top-level tabs;
-                    // sub-screens (DrillDown, CategoryDetail, etc.) carry their own TopAppBar.
-                    if (isTopLevel) {
-                        TopAppBar(
-                            title = {
-                                Text(
-                                    when (route) {
-                                        Screen.Home.route      -> "Dashboard"
-                                        Screen.Reports.route   -> "Reports"
-                                        Screen.Calendar.route  -> "Calendar"
-                                        Screen.Budget.route    -> "Budget"
-                                        Screen.Recurring.route -> "Recurring"
-                                        else                   -> ""
-                                    },
-                                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black)
-                                )
-                            },
-                            navigationIcon = {
-                                IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                    Icon(Icons.Rounded.Menu, contentDescription = "Menu")
-                                }
-                            },
-                            actions = {
-                                if (route == Screen.Home.route || route == Screen.Reports.route || route == Screen.Budget.route) {
-                                    val isEditMode = (route == Screen.Home.route    && homeEditMode)   ||
-                                                     (route == Screen.Reports.route && reportsEditMode) ||
-                                                     (route == Screen.Budget.route  && budgetEditMode)
-                                    IconButton(onClick = {
-                                        when (route) {
-                                            Screen.Home.route    -> homeEditMode    = !homeEditMode
-                                            Screen.Reports.route -> reportsEditMode = !reportsEditMode
-                                            Screen.Budget.route  -> budgetEditMode  = !budgetEditMode
-                                        }
-                                    }) {
-                                        Icon(
-                                            imageVector        = if (isEditMode) Icons.Rounded.Done else Icons.Rounded.Edit,
-                                            contentDescription = if (isEditMode) "Done editing" else "Edit layout",
-                                            tint               = if (isEditMode) MaterialTheme.colorScheme.primary
-                                                                  else MaterialTheme.colorScheme.onSurface
-                                        )
-                                    }
-                                }
-                                IconButton(onClick = { showAccountSheet = true }) {
-                                    Surface(
-                                        shape    = CircleShape,
-                                        color    = if (signedInAccount != null)
-                                                       MaterialTheme.colorScheme.primary
-                                                   else MaterialTheme.colorScheme.primaryContainer,
-                                        modifier = Modifier.size(32.dp)
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Text(
-                                                (signedInAccount?.displayName?.firstOrNull()?.uppercaseChar() ?: 'A').toString(),
-                                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black),
-                                                color = if (signedInAccount != null)
-                                                            MaterialTheme.colorScheme.onPrimary
-                                                        else MaterialTheme.colorScheme.onPrimaryContainer
-                                            )
-                                        }
-                                    }
-                                }
-                            },
-                            colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = MaterialTheme.colorScheme.surface
-                            )
-                        )
-                    }
-                },
+                topBar = {},
                 bottomBar = {
                     NavigationBar(
                         tonalElevation = 4.dp,
@@ -329,7 +262,12 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel, accountViewModel: Acc
                             onCategoryClick     = { name -> navController.navigate(Screen.CategoryDetail.route(name)) },
                             onPaymentTypeClick  = { pt -> navController.navigate(Screen.PaymentTypeDetail.route(pt)) },
                             onEditTransaction   = { t -> editingTransaction = t },
-                            onDeleteTransaction = { t -> viewModel.deleteTransaction(t.id) }
+                            onDeleteTransaction = { t -> viewModel.deleteTransaction(t.id) },
+                            onMenuClick         = { scope.launch { drawerState.open() } },
+                            onAccountClick      = { showAccountSheet = true },
+                            accountInitial      = accountInitial,
+                            isSignedIn          = isSignedIn,
+                            onToggleEditMode    = { homeEditMode = !homeEditMode }
                         )
                     }
                     composable(
@@ -358,7 +296,12 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel, accountViewModel: Acc
                                 navController.navigate(
                                     Screen.DrillDown.route(bar.title, bar.startDate, bar.endDate, TransactionType.INCOME)
                                 )
-                            }
+                            },
+                            onMenuClick      = { scope.launch { drawerState.open() } },
+                            onAccountClick   = { showAccountSheet = true },
+                            accountInitial   = accountInitial,
+                            isSignedIn       = isSignedIn,
+                            onToggleEditMode = { reportsEditMode = !reportsEditMode }
                         )
                     }
                     composable(
@@ -389,7 +332,11 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel, accountViewModel: Acc
                         CalendarScreen(
                             viewModel           = viewModel,
                             onEditTransaction   = { t -> editingTransaction = t },
-                            onDeleteTransaction = { t -> viewModel.deleteTransaction(t.id) }
+                            onDeleteTransaction = { t -> viewModel.deleteTransaction(t.id) },
+                            onMenuClick         = { scope.launch { drawerState.open() } },
+                            onAccountClick      = { showAccountSheet = true },
+                            accountInitial      = accountInitial,
+                            isSignedIn          = isSignedIn
                         )
                     }
                     composable(
@@ -416,12 +363,24 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel, accountViewModel: Acc
                         )
                     }
                     composable(Screen.Budget.route) {
-                        BudgetScreen(viewModel = viewModel, editMode = budgetEditMode)
+                        BudgetScreen(
+                            viewModel        = viewModel,
+                            editMode         = budgetEditMode,
+                            onMenuClick      = { scope.launch { drawerState.open() } },
+                            onAccountClick   = { showAccountSheet = true },
+                            accountInitial   = accountInitial,
+                            isSignedIn       = isSignedIn,
+                            onToggleEditMode = { budgetEditMode = !budgetEditMode }
+                        )
                     }
                     composable(Screen.Recurring.route) {
                         RecurringScreen(
-                            viewModel       = viewModel,
-                            onEditRecurring = { rec -> editingRecurring = rec }
+                            viewModel      = viewModel,
+                            onEditRecurring = { rec -> editingRecurring = rec },
+                            onMenuClick    = { scope.launch { drawerState.open() } },
+                            onAccountClick = { showAccountSheet = true },
+                            accountInitial = accountInitial,
+                            isSignedIn     = isSignedIn
                         )
                     }
                 }

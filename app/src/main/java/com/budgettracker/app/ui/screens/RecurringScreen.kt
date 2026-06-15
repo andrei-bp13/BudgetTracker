@@ -25,10 +25,15 @@ import java.time.format.DateTimeFormatter
 
 private val shortDate = DateTimeFormatter.ofPattern("MMM d, yyyy")
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecurringScreen(
     viewModel: TransactionViewModel,
-    onEditRecurring: (RecurringTransaction) -> Unit = {}
+    onEditRecurring: (RecurringTransaction) -> Unit = {},
+    onMenuClick: () -> Unit = {},
+    onAccountClick: () -> Unit = {},
+    accountInitial: Char = 'A',
+    isSignedIn: Boolean = false
 ) {
     val recurring      by viewModel.recurringTransactions.collectAsState()
     val currencySymbol = LocalCurrencySymbol.current
@@ -36,8 +41,38 @@ fun RecurringScreen(
     val active   = remember(recurring) { recurring.filter { it.status == RecurringStatus.ACTIVE } }
     val inactive = remember(recurring) { recurring.filter { it.status != RecurringStatus.ACTIVE } }
 
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Recurring", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black)) },
+                navigationIcon = {
+                    IconButton(onClick = onMenuClick) {
+                        Icon(Icons.Rounded.Menu, contentDescription = "Menu")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onAccountClick) {
+                        Surface(
+                            shape    = CircleShape,
+                            color    = if (isSignedIn) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    accountInitial.toString(),
+                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black),
+                                    color = if (isSignedIn) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+            )
+        }
+    ) { innerPadding ->
     if (recurring.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(Icons.Rounded.Repeat, contentDescription = null, modifier = Modifier.size(48.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
@@ -47,11 +82,9 @@ fun RecurringScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
             }
         }
-        return
-    }
-
+    } else {
     LazyColumn(
-        modifier        = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+        modifier        = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 16.dp),
         contentPadding  = PaddingValues(vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -111,6 +144,8 @@ fun RecurringScreen(
 
         item { Spacer(Modifier.height(80.dp)) }
     }
+    } // end else
+    } // end Scaffold
 }
 
 @Composable

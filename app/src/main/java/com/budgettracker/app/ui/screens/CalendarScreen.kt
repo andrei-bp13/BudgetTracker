@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ChevronLeft
 import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -39,12 +40,16 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun CalendarScreen(
     viewModel: TransactionViewModel,
     onEditTransaction: (Transaction) -> Unit = {},
-    onDeleteTransaction: (Transaction) -> Unit = {}
+    onDeleteTransaction: (Transaction) -> Unit = {},
+    onMenuClick: () -> Unit = {},
+    onAccountClick: () -> Unit = {},
+    accountInitial: Char = 'A',
+    isSignedIn: Boolean = false
 ) {
     val allTransactions   by viewModel.transactions.collectAsState()
     val recurringList     by viewModel.recurringTransactions.collectAsState()
@@ -104,9 +109,40 @@ fun CalendarScreen(
     var overlayBounds      by remember { mutableStateOf(Rect.Zero) }
     var rootCoords         by remember { mutableStateOf<LayoutCoordinates?>(null) }
 
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Calendar", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black)) },
+                navigationIcon = {
+                    IconButton(onClick = onMenuClick) {
+                        Icon(Icons.Rounded.Menu, contentDescription = "Menu")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onAccountClick) {
+                        Surface(
+                            shape    = CircleShape,
+                            color    = if (isSignedIn) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    accountInitial.toString(),
+                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black),
+                                    color = if (isSignedIn) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+            )
+        }
+    ) { innerPadding ->
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .padding(innerPadding)
             .onGloballyPositioned { rootCoords = it }
     ) {
         LazyColumn(
@@ -309,6 +345,7 @@ fun CalendarScreen(
             )
         }
     }
+    } // end Scaffold
 
     // â"€â"€ Year / month picker dialog â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
     if (showYearMonthPicker) {
