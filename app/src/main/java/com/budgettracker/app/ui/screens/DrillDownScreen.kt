@@ -35,6 +35,7 @@ import com.pardonmyspending.app.ui.theme.LocalCurrencySymbol
 import com.pardonmyspending.app.viewmodel.TransactionViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -67,8 +68,17 @@ fun DrillDownScreen(
     }
 
     val expandedCategories = remember(startDate, endDate) { mutableStateMapOf<String, Boolean>() }
-    val dateFmt       = DateTimeFormatter.ofPattern("MMM d")
+    val dateFmt     = DateTimeFormatter.ofPattern("MMM d")
+    val dateFmtFull = DateTimeFormatter.ofPattern("EEEE, MMMM d", Locale.getDefault())
     val fallbackColor = MaterialTheme.colorScheme.primary
+
+    val byDate = remember(filtered, categoryFilter) {
+        if (categoryFilter == null) emptyList()
+        else filtered
+            .groupBy { it.date }
+            .map { (date, txns) -> date to txns.sortedByDescending { it.amount } }
+            .sortedByDescending { (date, _) -> date }
+    }
 
     // Overlay state
     var overlayTransaction by remember { mutableStateOf<Transaction?>(null) }
@@ -151,53 +161,86 @@ fun DrillDownScreen(
                     }
                 }
 
-                // â"€â"€ Category groups â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
-                byCategory.forEach { (cat, txns) ->
-                    val catTotal   = txns.sumOf { it.amount }
-                    val isExpanded = expandedCategories[cat] == true
-                    val catItem    = viewModel.categoryFor(cat)
-                    val catColor   = catItem?.color ?: fallbackColor
-                    val catIconId  = catItem?.iconId ?: "more_horiz"
-
-                    item(key = "header_$cat") {
-                        CategoryDrillHeader(
-                            name           = cat,
-                            total          = catTotal,
-                            count          = txns.size,
-                            color          = catColor,
-                            iconId         = catIconId,
-                            isExpanded     = isExpanded,
-                            currencySymbol = currencySymbol,
-                            onClick        = { expandedCategories[cat] = !isExpanded }
-                        )
-                    }
-
-                    if (isExpanded) {
-                        items(txns, key = { it.id }) { txn ->
-                            DrillTransactionRow(
+                if (categoryFilter != null) {
+                    // Date-grouped flat list when a specific category is selected
+                    byDate.forEach { (date, txns) ->
+                        item(key = "date_$date") {
+                            Text(
+                                date.format(dateFmtFull),
+                                style    = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                color    = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+                            )
+                        }
+                        items(txns, key = { "flat_${it.id}" }) { txn ->
+                            val catItem   = viewModel.categoryFor(txn.category)
+                            val catColor  = catItem?.color ?: fallbackColor
+                            val catIconId = catItem?.iconId ?: "more_horiz"
+                            DrillFlatRow(
                                 txn            = txn,
-                                color          = catColor,
+                                catColor       = catColor,
+                                catIconId      = catIconId,
                                 isIncome       = transactionType == TransactionType.INCOME,
                                 currencySymbol = currencySymbol,
-                                dateFmt        = dateFmt,
                                 onLongPress    = { bounds ->
                                     overlayTransaction = txn
                                     overlayBounds      = bounds
                                 }
                             )
                             HorizontalDivider(
-                                modifier  = Modifier.padding(start = 52.dp),
-                                color     = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                                color     = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
                                 thickness = 0.5.dp
                             )
                         }
                     }
+                } else {
+                    byCategory.forEach { (cat, txns) ->
+                        val catTotal   = txns.sumOf { it.amount }
+                        val isExpanded = expandedCategories[cat] == true
+                        val catItem    = viewModel.categoryFor(cat)
+                        val catColor   = catItem?.color ?: fallbackColor
+                        val catIconId  = catItem?.iconId ?: "more_horiz"
 
-                    item(key = "div_$cat") {
-                        HorizontalDivider(
-                            color     = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-                            thickness = 0.5.dp
-                        )
+                        item(key = "header_$cat") {
+                            CategoryDrillHeader(
+                                name           = cat,
+                                total          = catTotal,
+                                count          = txns.size,
+                                color          = catColor,
+                                iconId         = catIconId,
+                                isExpanded     = isExpanded,
+                                currencySymbol = currencySymbol,
+                                onClick        = { expandedCategories[cat] = !isExpanded }
+                            )
+                        }
+
+                        if (isExpanded) {
+                            items(txns, key = { it.id }) { txn ->
+                                DrillTransactionRow(
+                                    txn            = txn,
+                                    color          = catColor,
+                                    isIncome       = transactionType == TransactionType.INCOME,
+                                    currencySymbol = currencySymbol,
+                                    dateFmt        = dateFmt,
+                                    onLongPress    = { bounds ->
+                                        overlayTransaction = txn
+                                        overlayBounds      = bounds
+                                    }
+                                )
+                                HorizontalDivider(
+                                    modifier  = Modifier.padding(start = 52.dp),
+                                    color     = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                                    thickness = 0.5.dp
+                                )
+                            }
+                        }
+
+                        item(key = "div_$cat") {
+                            HorizontalDivider(
+                                color     = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                                thickness = 0.5.dp
+                            )
+                        }
                     }
                 }
 
@@ -332,6 +375,70 @@ private fun DrillTransactionRow(
         Text(
             "${if (isIncome) "+" else "-"}$currencySymbol ${"%.2f".format(txn.amount)}",
             style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+            color = if (isIncome) Color(0xFF4CAF50) else MaterialTheme.colorScheme.error
+        )
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun DrillFlatRow(
+    txn: Transaction,
+    catColor: Color,
+    catIconId: String,
+    isIncome: Boolean,
+    currencySymbol: String,
+    onLongPress: (Rect) -> Unit
+) {
+    val secondary = MaterialTheme.colorScheme.onSurfaceVariant
+    var rowBounds by remember { mutableStateOf(Rect.Zero) }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .onGloballyPositioned { rowBounds = it.boundsInRoot() }
+            .combinedClickable(onClick = {}, onLongClick = { onLongPress(rowBounds) })
+            .padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(38.dp)
+                .clip(CircleShape)
+                .background(catColor.copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = iconById(catIconId),
+                contentDescription = null,
+                tint     = catColor,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                txn.title,
+                style   = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                maxLines = 1
+            )
+            Row(
+                verticalAlignment     = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                PaymentTypeIcon(type = txn.paymentType, tint = secondary, size = 12.dp)
+                Text(
+                    txn.paymentType.displayName(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = secondary
+                )
+            }
+        }
+
+        Text(
+            "${if (isIncome) "+" else "-"}$currencySymbol ${"%.2f".format(txn.amount)}",
+            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
             color = if (isIncome) Color(0xFF4CAF50) else MaterialTheme.colorScheme.error
         )
     }
