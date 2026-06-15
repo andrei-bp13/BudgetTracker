@@ -43,6 +43,7 @@ fun DrillDownScreen(
     startDate: LocalDate,
     endDate: LocalDate,
     transactionType: TransactionType = TransactionType.EXPENSE,
+    categoryFilter: String? = null,
     viewModel: TransactionViewModel,
     onBack: () -> Unit,
     onEditTransaction: (Transaction) -> Unit = {},
@@ -51,8 +52,9 @@ fun DrillDownScreen(
     val allTransactions by viewModel.transactions.collectAsState()
     val currencySymbol  = LocalCurrencySymbol.current
 
-    val filtered = remember(allTransactions, startDate, endDate, transactionType) {
+    val filtered = remember(allTransactions, startDate, endDate, transactionType, categoryFilter) {
         filterByTypeAndDateRange(allTransactions, startDate, endDate, transactionType)
+            .let { if (categoryFilter != null) it.filter { t -> t.category == categoryFilter } else it }
     }
 
     val totalAmount = remember(filtered) { filtered.sumOf { it.amount } }

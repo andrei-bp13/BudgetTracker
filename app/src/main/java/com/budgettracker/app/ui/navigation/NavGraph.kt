@@ -21,7 +21,9 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavType
 import androidx.navigation.compose.*
+import androidx.navigation.navArgument
 import androidx.compose.runtime.CompositionLocalProvider
 import kotlinx.coroutines.launch
 import com.pardonmyspending.app.data.model.PaymentType
@@ -43,9 +45,17 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
     object CategoryDetail : Screen("category/{name}", "Category", Icons.Rounded.BarChart) {
         fun route(name: String) = "category/${java.net.URLEncoder.encode(name, "UTF-8")}"
     }
-    object DrillDown : Screen("drilldown/{title}/{startDate}/{endDate}/{transactionType}", "Detail", Icons.Rounded.BarChart) {
-        fun route(title: String, startDate: LocalDate, endDate: LocalDate, transactionType: TransactionType = TransactionType.EXPENSE) =
-            "drilldown/${java.net.URLEncoder.encode(title, "UTF-8")}/$startDate/$endDate/${transactionType.name}"
+    object DrillDown : Screen("drilldown/{title}/{startDate}/{endDate}/{transactionType}?category={category}", "Detail", Icons.Rounded.BarChart) {
+        fun route(
+            title: String,
+            startDate: LocalDate,
+            endDate: LocalDate,
+            transactionType: TransactionType = TransactionType.EXPENSE,
+            category: String? = null
+        ): String {
+            val base = "drilldown/${java.net.URLEncoder.encode(title, "UTF-8")}/$startDate/$endDate/${transactionType.name}"
+            return if (category != null) "$base?category=${java.net.URLEncoder.encode(category, "UTF-8")}" else base
+        }
     }
     object PaymentTypeDetail : Screen("payment/{typeName}", "Payment", Icons.Rounded.Home) {
         fun route(type: PaymentType) = "payment/${type.name}"
@@ -297,6 +307,11 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel, accountViewModel: Acc
                                     Screen.DrillDown.route(bar.title, bar.startDate, bar.endDate, TransactionType.INCOME)
                                 )
                             },
+                            onCategoryClick  = { cat, start, end, type ->
+                                navController.navigate(
+                                    Screen.DrillDown.route(cat, start, end, type, cat)
+                                )
+                            },
                             onMenuClick      = { scope.launch { drawerState.open() } },
                             onAccountClick   = { showAccountSheet = true },
                             accountInitial   = accountInitial,
@@ -306,22 +321,29 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel, accountViewModel: Acc
                     }
                     composable(
                         Screen.DrillDown.route,
+                        arguments = listOf(
+                            navArgument("category") { type = NavType.StringType; defaultValue = "" }
+                        ),
                         enterTransition    = { slideInHorizontally { it } + fadeIn() },
                         popExitTransition  = { slideOutHorizontally { it } + fadeOut() }
                     ) { backStack ->
-                        val rawTitle = backStack.arguments?.getString("title") ?: ""
-                        val title    = java.net.URLDecoder.decode(rawTitle, "UTF-8")
-                        val start    = backStack.arguments?.getString("startDate")
+                        val rawTitle       = backStack.arguments?.getString("title") ?: ""
+                        val title          = java.net.URLDecoder.decode(rawTitle, "UTF-8")
+                        val start          = backStack.arguments?.getString("startDate")
                             ?.let { LocalDate.parse(it) } ?: LocalDate.now()
-                        val end      = backStack.arguments?.getString("endDate")
+                        val end            = backStack.arguments?.getString("endDate")
                             ?.let { LocalDate.parse(it) } ?: LocalDate.now()
-                        val typeName = backStack.arguments?.getString("transactionType") ?: "EXPENSE"
-                        val txType   = runCatching { TransactionType.valueOf(typeName) }.getOrDefault(TransactionType.EXPENSE)
+                        val typeName       = backStack.arguments?.getString("transactionType") ?: "EXPENSE"
+                        val txType         = runCatching { TransactionType.valueOf(typeName) }.getOrDefault(TransactionType.EXPENSE)
+                        val rawCat         = backStack.arguments?.getString("category") ?: ""
+                        val categoryFilter = rawCat.takeIf { it.isNotEmpty() }
+                            ?.let { java.net.URLDecoder.decode(it, "UTF-8") }
                         DrillDownScreen(
                             title               = title,
                             startDate           = start,
                             endDate             = end,
                             transactionType     = txType,
+                            categoryFilter      = categoryFilter,
                             viewModel           = viewModel,
                             onBack              = { navController.popBackStack() },
                             onEditTransaction   = { t -> editingTransaction = t },

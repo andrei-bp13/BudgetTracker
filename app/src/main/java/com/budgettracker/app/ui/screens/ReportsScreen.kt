@@ -94,6 +94,7 @@ fun ReportsScreen(
     viewModel: TransactionViewModel,
     onBarClick: (ChartBar) -> Unit = {},
     onIncomeBarClick: (ChartBar) -> Unit = {},
+    onCategoryClick: (category: String, startDate: LocalDate, endDate: LocalDate, type: TransactionType) -> Unit = { _, _, _, _ -> },
     editMode: Boolean = false,
     onMenuClick: () -> Unit = {},
     onAccountClick: () -> Unit = {},
@@ -168,10 +169,8 @@ fun ReportsScreen(
     }
 
     val selectedCatPeriod = catPeriods.getOrNull(catPeriodIndex)
-    var catDetailCategory by remember { mutableStateOf<String?>(null) }
-    val catDetailSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    // All categories sorted -" used for the detail sheet
+    // All categories sorted — used for the donut chart + legend
     val catTotals = remember(allTransactions, selectedCatPeriod) {
         if (selectedCatPeriod == null) emptyList()
         else computeCategoryTotals(
@@ -243,8 +242,6 @@ fun ReportsScreen(
     }
 
     val selectedIncomeCatPeriod = incomeCatPeriods.getOrNull(incomeCatPeriodIndex)
-    var incomeCatDetailCategory by remember { mutableStateOf<String?>(null) }
-    val incomeCatDetailSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     val incomeCatTotals = remember(allTransactions, selectedIncomeCatPeriod) {
         if (selectedIncomeCatPeriod == null) emptyList()
@@ -535,7 +532,11 @@ fun ReportsScreen(
                     } else {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
                             DonutChart(categories = catDisplay, viewModel = viewModel, modifier = Modifier.size(140.dp))
-                            CategoryLegend(categories = catDisplay, viewModel = viewModel, onCategoryClick = { if (it != "Other") catDetailCategory = it }, modifier = Modifier.weight(1f))
+                            CategoryLegend(categories = catDisplay, viewModel = viewModel, onCategoryClick = { cat ->
+                                if (cat != "Other") selectedCatPeriod?.let { p ->
+                                    onCategoryClick(cat, p.startDate, p.endDate, TransactionType.EXPENSE)
+                                }
+                            }, modifier = Modifier.weight(1f))
                         }
                     }
                 }
@@ -630,7 +631,11 @@ fun ReportsScreen(
                     } else {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
                             DonutChart(categories = incomeCatDisplay, viewModel = viewModel, modifier = Modifier.size(140.dp))
-                            CategoryLegend(categories = incomeCatDisplay, viewModel = viewModel, onCategoryClick = { if (it != "Other") incomeCatDetailCategory = it }, modifier = Modifier.weight(1f))
+                            CategoryLegend(categories = incomeCatDisplay, viewModel = viewModel, onCategoryClick = { cat ->
+                                if (cat != "Other") selectedIncomeCatPeriod?.let { p ->
+                                    onCategoryClick(cat, p.startDate, p.endDate, TransactionType.INCOME)
+                                }
+                            }, modifier = Modifier.weight(1f))
                         }
                     }
                 }
@@ -743,43 +748,6 @@ fun ReportsScreen(
         Spacer(Modifier.height(80.dp))
     }
     } // end Scaffold
-
-    // â"€â"€ Category detail bottom sheet â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
-    catDetailCategory?.let { category ->
-        ModalBottomSheet(
-            onDismissRequest = { catDetailCategory = null },
-            sheetState       = catDetailSheetState,
-        ) {
-            val screenHeight = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp
-            Box(modifier = Modifier.heightIn(max = screenHeight * 0.85f)) {
-            CategoryDetailSheet(
-                category        = category,
-                period          = selectedCatPeriod,
-                allTransactions = allTransactions,
-                viewModel       = viewModel,
-                currencySymbol  = currencySymbol
-            )
-            }
-        }
-    }
-
-    incomeCatDetailCategory?.let { category ->
-        ModalBottomSheet(
-            onDismissRequest = { incomeCatDetailCategory = null },
-            sheetState       = incomeCatDetailSheetState,
-        ) {
-            val screenHeight = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp
-            Box(modifier = Modifier.heightIn(max = screenHeight * 0.85f)) {
-            CategoryDetailSheet(
-                category        = category,
-                period          = selectedIncomeCatPeriod,
-                allTransactions = allTransactions,
-                viewModel       = viewModel,
-                currencySymbol  = currencySymbol
-            )
-            }
-        }
-    }
 }
 
 // â"€â"€ Shared granularity dropdown â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
