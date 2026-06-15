@@ -182,6 +182,7 @@ fun DrillDownScreen(
                                 catIconId      = catIconId,
                                 isIncome       = transactionType == TransactionType.INCOME,
                                 currencySymbol = currencySymbol,
+                                onTap          = { onEditTransaction(txn) },
                                 onLongPress    = { bounds ->
                                     overlayTransaction = txn
                                     overlayBounds      = bounds
@@ -388,6 +389,7 @@ private fun DrillFlatRow(
     catIconId: String,
     isIncome: Boolean,
     currencySymbol: String,
+    onTap: () -> Unit,
     onLongPress: (Rect) -> Unit
 ) {
     val secondary = MaterialTheme.colorScheme.onSurfaceVariant
@@ -397,7 +399,7 @@ private fun DrillFlatRow(
         modifier = Modifier
             .fillMaxWidth()
             .onGloballyPositioned { rowBounds = it.boundsInRoot() }
-            .combinedClickable(onClick = {}, onLongClick = { onLongPress(rowBounds) })
+            .combinedClickable(onClick = onTap, onLongClick = { onLongPress(rowBounds) })
             .padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
