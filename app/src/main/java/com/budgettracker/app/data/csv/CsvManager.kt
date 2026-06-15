@@ -1,4 +1,4 @@
-package com.pardonmyspending.app.data.csv
+﻿package com.pardonmyspending.app.data.csv
 
 import android.content.ContentUris
 import android.content.ContentValues
@@ -34,13 +34,13 @@ class CsvManager(private val context: Context) {
         return result
     }
 
-    // ── Internal helpers ──────────────────────────────────────────────────────
+    // â"€â"€ Internal helpers â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
     private fun writeErrorLog(failedLines: List<String>) {
         val date     = LocalDate.now().toString()
         val fileName = "PardonMySpending_errorlog_import_$date.txt"
         val content  = buildString {
-            appendLine("BudgetTracker Import Error Log — $date")
+            appendLine("BudgetTracker Import Error Log - $date")
             appendLine("Failed rows: ${failedLines.size}")
             appendLine()
             appendLine("The following lines could not be parsed and were skipped:")

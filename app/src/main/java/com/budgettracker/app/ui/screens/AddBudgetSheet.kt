@@ -1,4 +1,4 @@
-package com.pardonmyspending.app.ui.screens
+﻿package com.pardonmyspending.app.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -67,7 +67,7 @@ fun AddBudgetSheet(
         onDismissRequest = onDismiss,
         sheetState       = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         dragHandle       = { BottomSheetDefaults.DragHandle() },
-        modifier         = Modifier.fillMaxHeight()
+        modifier         = Modifier.fillMaxHeight(0.85f)
     ) {
         Column(modifier = Modifier.fillMaxHeight()) {
 
@@ -79,7 +79,7 @@ fun AddBudgetSheet(
                     .padding(bottom = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // ── Header ────────────────────────────────────────────────────
+                // â"€â"€ Header â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
                 Row(
                     modifier              = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -94,7 +94,7 @@ fun AddBudgetSheet(
                     }
                 }
 
-                // ── Title ─────────────────────────────────────────────────────
+                // â"€â"€ Title â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
                 OutlinedTextField(
                     value         = title,
                     onValueChange = { title = it },
@@ -105,7 +105,7 @@ fun AddBudgetSheet(
                     shape         = MaterialTheme.shapes.medium
                 )
 
-                // ── Amount ────────────────────────────────────────────────────
+                // â"€â"€ Amount â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
                 OutlinedTextField(
                     value           = amount,
                     onValueChange   = { amount = it.filter { c -> c.isDigit() || c == '.' } },
@@ -118,7 +118,7 @@ fun AddBudgetSheet(
                     shape           = MaterialTheme.shapes.medium
                 )
 
-                // ── Period ────────────────────────────────────────────────────
+                // â"€â"€ Period â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
                 Text("Resets", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 val periods = BudgetPeriod.values()
                 SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
@@ -141,7 +141,7 @@ fun AddBudgetSheet(
                     }
                 }
 
-                // ── Category ──────────────────────────────────────────────────
+                // â"€â"€ Category â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
                 Text("Category", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
                 FlowRow(
@@ -185,7 +185,7 @@ fun AddBudgetSheet(
                 }
             }
 
-            // ── Save button ───────────────────────────────────────────────────
+            // â"€â"€ Save button â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
             Button(
                 onClick  = { onSave() },
                 modifier = Modifier

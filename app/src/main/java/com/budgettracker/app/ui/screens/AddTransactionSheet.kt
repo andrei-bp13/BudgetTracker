@@ -1,4 +1,4 @@
-package com.pardonmyspending.app.ui.screens
+﻿package com.pardonmyspending.app.ui.screens
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -48,13 +48,14 @@ private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 fun AddTransactionSheet(
     viewModel: TransactionViewModel,
     onDismiss: () -> Unit,
-    initialTransaction: Transaction? = null
+    initialTransaction: Transaction? = null,
+    isAiPrefill: Boolean = false
 ) {
     val expenseCategories by viewModel.expenseCategories.collectAsState()
     val incomeCategories  by viewModel.incomeCategories.collectAsState()
     val allTransactions   by viewModel.transactions.collectAsState()
     val currencySymbol    = LocalCurrencySymbol.current
-    val isEditing         = initialTransaction != null
+    val isEditing         = initialTransaction != null && !isAiPrefill
 
     var transactionType by remember { mutableStateOf(initialTransaction?.type ?: TransactionType.EXPENSE) }
     var title          by remember { mutableStateOf(initialTransaction?.title    ?: "") }
@@ -120,11 +121,11 @@ fun AddTransactionSheet(
         onDismissRequest = onDismiss,
         sheetState       = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         dragHandle       = { BottomSheetDefaults.DragHandle() },
-        modifier         = Modifier.fillMaxHeight()
+        modifier         = Modifier.fillMaxHeight(0.85f)
     ) {
         Column(modifier = Modifier.fillMaxHeight()) {
 
-            // ── Scrollable form ───────────────────────────────────────────────
+            // â"€â"€ Scrollable form â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -133,7 +134,7 @@ fun AddTransactionSheet(
                     .padding(bottom = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // ── Header ────────────────────────────────────────────────────
+                // â"€â"€ Header â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
                 Row(
                     modifier              = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -195,7 +196,7 @@ fun AddTransactionSheet(
                     }
                 }
 
-                // ── Title ──────────────────────────────────────────────────────
+                // â"€â"€ Title â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
                 OutlinedTextField(
                     value         = title,
                     onValueChange = { title = it },
@@ -206,7 +207,7 @@ fun AddTransactionSheet(
                     shape         = MaterialTheme.shapes.medium
                 )
 
-                // ── Amount ─────────────────────────────────────────────────────
+                // â"€â"€ Amount â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
                 OutlinedTextField(
                     value           = amount,
                     onValueChange   = { amount = it.filter { c -> c.isDigit() || c == '.' } },
@@ -219,7 +220,7 @@ fun AddTransactionSheet(
                     shape           = MaterialTheme.shapes.medium
                 )
 
-                // ── Note ───────────────────────────────────────────────────────
+                // â"€â"€ Note â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
                 OutlinedTextField(
                     value         = note,
                     onValueChange = { note = it },
@@ -230,7 +231,7 @@ fun AddTransactionSheet(
                     shape         = MaterialTheme.shapes.medium
                 )
 
-                // ── Payment type ───────────────────────────────────────────────
+                // â"€â"€ Payment type â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
                 val paymentTypes = PaymentType.values()
                 SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                     paymentTypes.forEachIndexed { index, pt ->
@@ -251,7 +252,7 @@ fun AddTransactionSheet(
                     }
                 }
 
-                // ── Date + Time ────────────────────────────────────────────────
+                // â"€â"€ Date + Time â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
                 Row(
                     modifier              = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -286,7 +287,7 @@ fun AddTransactionSheet(
                     }
                 }
 
-                // ── Category header ────────────────────────────────────────────
+                // â"€â"€ Category header â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
                 Row(
                     modifier              = Modifier.fillMaxWidth(),
                     verticalAlignment     = Alignment.CenterVertically,
@@ -304,7 +305,7 @@ fun AddTransactionSheet(
                         ) {
                             Icon(Icons.Rounded.SwapVert, contentDescription = "Sort", modifier = Modifier.size(14.dp))
                             Spacer(Modifier.width(4.dp))
-                            Text(if (sortByMostUsed) "Most Used" else "A–Z", style = MaterialTheme.typography.labelSmall)
+                            Text(if (sortByMostUsed) "Most Used" else "A-Z", style = MaterialTheme.typography.labelSmall)
                         }
                         TextButton(
                             onClick        = { showNewCatSheet = true },
@@ -317,7 +318,7 @@ fun AddTransactionSheet(
                     }
                 }
 
-                // ── Category grid — centered FlowRow, scrolls with the outer column ──
+                // â"€â"€ Category grid -" centered FlowRow, scrolls with the outer column â"€â"€
                 FlowRow(
                     modifier              = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
@@ -370,7 +371,7 @@ fun AddTransactionSheet(
 
             } // scrollable Column
 
-            // ── Fixed save button ─────────────────────────────────────────────
+            // â"€â"€ Fixed save button â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -391,7 +392,7 @@ fun AddTransactionSheet(
 
         } // outer Column
 
-        // ── Date picker ───────────────────────────────────────────────────────
+        // â"€â"€ Date picker â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
         if (showDatePicker) {
             val datePickerState = rememberDatePickerState(
                 initialSelectedDateMillis = selectedDate.toEpochDay() * 86_400_000L
@@ -414,7 +415,7 @@ fun AddTransactionSheet(
             }
         }
 
-        // ── Time picker ───────────────────────────────────────────────────────
+        // â"€â"€ Time picker â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
         if (showTimePicker) {
             val timePickerState = rememberTimePickerState(
                 initialHour   = selectedTime.hour,
@@ -441,7 +442,7 @@ fun AddTransactionSheet(
             )
         }
 
-        // ── Add category shortcut ─────────────────────────────────────────────
+        // â"€â"€ Add category shortcut â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
         if (showNewCatSheet) {
             val newCatType = if (transactionType == TransactionType.EXPENSE) CategoryType.EXPENSE else CategoryType.INCOME
             EditCategorySheet(

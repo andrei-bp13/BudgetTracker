@@ -1,4 +1,4 @@
-package com.pardonmyspending.app.ui.screens
+﻿package com.pardonmyspending.app.ui.screens
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -49,9 +49,13 @@ fun CalendarScreen(
     val allTransactions   by viewModel.transactions.collectAsState()
     val recurringList     by viewModel.recurringTransactions.collectAsState()
     val categories        by viewModel.categories.collectAsState()
+    val globalColoring    by viewModel.globalColoring.collectAsState()
     val currencySymbol    = LocalCurrencySymbol.current
     val accent            = MaterialTheme.colorScheme.primary
     val today             = LocalDate.now()
+    val resolveColor: (String) -> Color = remember(globalColoring, accent) {
+        { name -> if (globalColoring) accent else viewModel.categoryFor(name)?.color ?: accent }
+    }
 
     var selectedDate        by remember { mutableStateOf(today) }
     var displayedMonth      by remember { mutableStateOf(YearMonth.now()) }
@@ -71,13 +75,13 @@ fun CalendarScreen(
             .sortedByDescending { it.amount }
     }
 
-    // Recurring dots: day → distinct category colors
-    val recurringByDay = remember(recurringList, displayedMonth, categories) {
+    // Recurring dots: day â†’ distinct category colors
+    val recurringByDay = remember(recurringList, displayedMonth, categories, globalColoring) {
         recurringList
             .filter { it.status == RecurringStatus.ACTIVE }
             .flatMap { rec ->
-                val color = categories.firstOrNull { it.name == rec.category }?.color
-                    ?: Color.Gray
+                val color = if (globalColoring) accent
+                            else categories.firstOrNull { it.name == rec.category }?.color ?: Color.Gray
                 rec.datesInMonth(displayedMonth).map { date -> date.dayOfMonth to color }
             }
             .groupBy({ it.first }, { it.second })
@@ -112,7 +116,7 @@ fun CalendarScreen(
             contentPadding = PaddingValues(vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
-            // ── Calendar card ─────────────────────────────────────────────────────
+            // â"€â"€ Calendar card â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
             item {
                 Card(
                     colors = CardDefaults.cardColors(
@@ -146,7 +150,7 @@ fun CalendarScreen(
 
                         Spacer(Modifier.height(4.dp))
 
-                        // Day-of-week headers (Mon–Sun)
+                        // Day-of-week headers (Mon-"Sun)
                         Row(modifier = Modifier.fillMaxWidth()) {
                             listOf("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su").forEach { d ->
                                 Text(
@@ -205,7 +209,7 @@ fun CalendarScreen(
                 Spacer(Modifier.height(16.dp))
             }
 
-            // ── Selected-day header ───────────────────────────────────────────────
+            // â"€â"€ Selected-day header â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
             item {
                 Text(
                     selectedDate.format(headerFmt),
@@ -216,7 +220,7 @@ fun CalendarScreen(
                 Spacer(Modifier.height(8.dp))
             }
 
-            // ── Transactions for selected day ─────────────────────────────────────
+            // â"€â"€ Transactions for selected day â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
             if (selectedDayTransactions.isEmpty()) {
                 item {
                     Box(
@@ -237,9 +241,9 @@ fun CalendarScreen(
                     CalendarTransactionRow(
                         txn            = txn,
                         currencySymbol = currencySymbol,
-                        categoryColor  = viewModel.categoryFor(txn.category)?.color
-                            ?: MaterialTheme.colorScheme.primary,
+                        categoryColor  = resolveColor(txn.category),
                         categoryIconId = viewModel.categoryFor(txn.category)?.iconId ?: "more_horiz",
+                        onTap          = { onEditTransaction(txn) },
                         onLongPress    = { bounds ->
                             overlayTransaction = txn
                             overlayBounds      = bounds
@@ -252,7 +256,7 @@ fun CalendarScreen(
                 }
             }
 
-            // ── Upcoming recurring preview (future dates only) ────────────────────
+            // â"€â"€ Upcoming recurring preview (future dates only) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
             if (selectedDayRecurring.isNotEmpty()) {
                 item {
                     Spacer(Modifier.height(12.dp))
@@ -265,7 +269,7 @@ fun CalendarScreen(
                     Spacer(Modifier.height(4.dp))
                 }
                 items(selectedDayRecurring, key = { "rec_${it.id}" }) { rec ->
-                    val catColor  = viewModel.categoryFor(rec.category)?.color ?: accent
+                    val catColor  = resolveColor(rec.category)
                     val catIconId = viewModel.categoryFor(rec.category)?.iconId ?: "more_horiz"
                     CalendarTransactionRow(
                         txn = Transaction(
@@ -281,6 +285,7 @@ fun CalendarScreen(
                         currencySymbol = currencySymbol,
                         categoryColor  = catColor,
                         categoryIconId = catIconId,
+                        onTap          = {},
                         onLongPress    = {}
                     )
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f), thickness = 0.5.dp)
@@ -305,7 +310,7 @@ fun CalendarScreen(
         }
     }
 
-    // ── Year / month picker dialog ────────────────────────────────────────────
+    // â"€â"€ Year / month picker dialog â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
     if (showYearMonthPicker) {
         YearMonthPickerDialog(
             current  = displayedMonth,
@@ -360,7 +365,7 @@ private fun YearMonthPickerDialog(
                     }
                 }
 
-                // Month grid (4 × 3)
+                // Month grid (4 Ã— 3)
                 val months = Month.values()
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     months.toList().chunked(4).forEach { row ->
@@ -471,6 +476,7 @@ private fun CalendarTransactionRow(
     currencySymbol: String,
     categoryColor: Color,
     categoryIconId: String,
+    onTap: () -> Unit,
     onLongPress: (Rect) -> Unit
 ) {
     val secondaryColor = MaterialTheme.colorScheme.onSurfaceVariant
@@ -480,7 +486,7 @@ private fun CalendarTransactionRow(
         modifier = Modifier
             .fillMaxWidth()
             .onGloballyPositioned { rowBounds = it.boundsInRoot() }
-            .combinedClickable(onClick = {}, onLongClick = { onLongPress(rowBounds) })
+            .combinedClickable(onClick = onTap, onLongClick = { onLongPress(rowBounds) })
             .padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)

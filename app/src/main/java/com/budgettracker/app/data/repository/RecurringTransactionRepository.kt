@@ -1,4 +1,4 @@
-package com.pardonmyspending.app.data.repository
+﻿package com.pardonmyspending.app.data.repository
 
 import com.pardonmyspending.app.data.db.RecurringTransactionDao
 import com.pardonmyspending.app.data.db.toEntity

@@ -1,4 +1,4 @@
-package com.pardonmyspending.app.ui.screens
+﻿package com.pardonmyspending.app.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -48,7 +48,8 @@ fun EditCategorySheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        sheetState       = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        modifier         = Modifier.fillMaxHeight(0.85f)
     ) {
         Column(
             modifier = Modifier
@@ -107,7 +108,7 @@ fun EditCategorySheet(
                 shape = MaterialTheme.shapes.medium
             )
 
-            // Type selector — locked for default categories
+            // Type selector -" locked for default categories
             Text("Type", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             val typeEnabled = category == null || !category.isDefault
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {

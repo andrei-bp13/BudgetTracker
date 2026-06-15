@@ -1,4 +1,4 @@
-package com.pardonmyspending.app.ui.components
+﻿package com.pardonmyspending.app.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -41,7 +41,7 @@ fun EditDeleteOverlay(
     val accent  = MaterialTheme.colorScheme.primary
     val density = LocalDensity.current
 
-    // Transparent scrim — tapping outside the overlay dismisses it
+    // Transparent scrim -" tapping outside the overlay dismisses it
     Box(
         Modifier
             .fillMaxSize()

@@ -1,4 +1,4 @@
-package com.pardonmyspending.app.viewmodel
+﻿package com.pardonmyspending.app.viewmodel
 
 import com.pardonmyspending.app.data.repository.PreferencesRepository
 import kotlinx.coroutines.CoroutineScope
@@ -53,6 +53,18 @@ internal class PreferencesState(
         .distinctUntilChanged()
         .stateIn(scope, SharingStarted.WhileSubscribed(5_000L), false)
 
+    val cardOrderJson: StateFlow<String> = prefs.cardOrderJson
+        .distinctUntilChanged()
+        .stateIn(scope, SharingStarted.WhileSubscribed(5_000L), "")
+
+    val cardVisibleJson: StateFlow<String> = prefs.cardVisibleJson
+        .distinctUntilChanged()
+        .stateIn(scope, SharingStarted.WhileSubscribed(5_000L), "")
+
+    val aiApiKey: StateFlow<String> = prefs.aiApiKey
+        .distinctUntilChanged()
+        .stateIn(scope, SharingStarted.WhileSubscribed(5_000L), "")
+
     fun setThemeMode(mode: String)         = scope.launch { prefs.setThemeMode(mode) }
     fun setAccentIndex(i: Int)             = scope.launch { prefs.setAccentColorIndex(i) }
     fun setCustomAccentHex(hex: String)    = scope.launch { prefs.setCustomAccentHex(hex) }
@@ -61,4 +73,7 @@ internal class PreferencesState(
     fun setCurrencyCode(code: String)      = scope.launch { prefs.setCurrencyCode(code) }
     fun setChartGranularity(value: String) = scope.launch { prefs.setChartGranularity(value) }
     fun setAiMode(enabled: Boolean)        = scope.launch { prefs.setAiMode(enabled) }
+    fun setCardOrder(json: String)         = scope.launch { prefs.setCardOrder(json) }
+    fun setCardVisible(json: String)       = scope.launch { prefs.setCardVisible(json) }
+    fun setAiApiKey(key: String)           = scope.launch { prefs.setAiApiKey(key) }
 }

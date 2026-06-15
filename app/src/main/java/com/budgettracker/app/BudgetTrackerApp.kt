@@ -1,4 +1,4 @@
-package com.pardonmyspending.app
+﻿package com.pardonmyspending.app
 
 import android.app.Application
 import com.pardonmyspending.app.data.csv.CsvManager

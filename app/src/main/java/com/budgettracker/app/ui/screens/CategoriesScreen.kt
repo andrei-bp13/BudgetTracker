@@ -1,4 +1,4 @@
-package com.pardonmyspending.app.ui.screens
+﻿package com.pardonmyspending.app.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.pardonmyspending.app.data.model.CategoryItem
@@ -58,21 +59,26 @@ fun CategoriesScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // ── Sticky "New Category" button ──────────────────────────────────
+            // â"€â"€ Sticky "New Category" button â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
             Button(
                 onClick  = { showNew = true },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 10.dp)
                     .height(52.dp),
-                shape = MaterialTheme.shapes.large
+                shape = MaterialTheme.shapes.large,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Transparent,
+                    contentColor   = MaterialTheme.colorScheme.primary
+                ),
+                elevation = ButtonDefaults.buttonElevation(0.dp, 0.dp, 0.dp)
             ) {
                 Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
                 Text("New Category", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold))
             }
 
-            // ── Scrollable category list ──────────────────────────────────────
+            // â"€â"€ Scrollable category list â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
             LazyColumn(
                 modifier            = Modifier
                     .weight(1f)
@@ -116,7 +122,7 @@ fun CategoriesScreen(
                 }
             }
 
-            // ── Sticky "Restore Defaults" button ──────────────────────────────
+            // â"€â"€ Sticky "Restore Defaults" button â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
             OutlinedButton(
                 onClick  = { showResetConfirm = true },
                 modifier = Modifier
@@ -134,7 +140,7 @@ fun CategoriesScreen(
         }
     }
 
-    // ── Restore confirmation dialog ───────────────────────────────────────────
+    // â"€â"€ Restore confirmation dialog â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
     if (showResetConfirm) {
         AlertDialog(
             onDismissRequest = { showResetConfirm = false },

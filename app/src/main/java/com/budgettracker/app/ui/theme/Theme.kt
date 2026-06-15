@@ -1,4 +1,4 @@
-package com.pardonmyspending.app.ui.theme
+﻿package com.pardonmyspending.app.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme

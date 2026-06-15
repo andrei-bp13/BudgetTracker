@@ -1,4 +1,4 @@
-package com.pardonmyspending.app.util
+﻿package com.pardonmyspending.app.util
 
 import com.pardonmyspending.app.data.model.Budget
 import com.pardonmyspending.app.data.model.BudgetPeriod
@@ -12,7 +12,7 @@ import java.time.format.TextStyle
 import java.time.temporal.TemporalAdjusters
 import java.util.Locale
 
-// ── Shared data class for category-period chips ───────────────────────────────
+// â"€â"€ Shared data class for category-period chips â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 data class CatPeriod(
     val label: String,
@@ -21,7 +21,7 @@ data class CatPeriod(
     val endDate: LocalDate
 )
 
-// ── Bar-chart helpers (context-aware, fully injectable for tests) ──────────────
+// â"€â"€ Bar-chart helpers (context-aware, fully injectable for tests) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 fun computeMonthlyBars(
     transactions: List<Transaction>,
@@ -52,7 +52,7 @@ fun computeWeeklyBars(
             val endDay = minOf(day + 6, dim)
             val start  = ym.atDay(day)
             val end    = ym.atDay(endDay)
-            val lbl    = if (day == endDay) "$day" else "$day–$endDay"
+            val lbl    = if (day == endDay) "$day" else "$day-$endDay"
             val total  = transactions.filter {
                 it.type == type && !it.date.isBefore(start) && !it.date.isAfter(end)
             }.sumOf { it.amount }
@@ -76,7 +76,7 @@ fun computeYearlyBars(
     }
 }
 
-// ── Category-card period helpers ──────────────────────────────────────────────
+// â"€â"€ Category-card period helpers â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 fun catPeriods(
     granularity: String,
@@ -93,7 +93,7 @@ fun catPeriods(
             var day = 1
             while (day <= dim) {
                 val endDay = minOf(day + 6, dim)
-                val lbl = if (day == endDay) "$day" else "$day–$endDay"
+                val lbl = if (day == endDay) "$day" else "$day-$endDay"
                 add(CatPeriod(lbl, "$abbr $lbl $contextYear", ym.atDay(day), ym.atDay(endDay)))
                 day += 7
             }
@@ -129,7 +129,7 @@ fun defaultCatPeriodIndex(
     else -> 0
 }
 
-// ── ViewModel helpers ─────────────────────────────────────────────────────────
+// â"€â"€ ViewModel helpers â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 fun dailyExpenses(list: List<Transaction>, month: YearMonth, maxDay: Int? = null): List<Pair<Int, Double>> {
     val days  = (maxDay ?: month.lengthOfMonth()).coerceIn(1, month.lengthOfMonth())
@@ -222,7 +222,7 @@ fun yearlyExpenses(
 fun monthTotal(list: List<Transaction>, month: YearMonth, type: TransactionType): Double =
     list.filter { it.type == type && YearMonth.from(it.date) == month }.sumOf { it.amount }
 
-// ── Shared date-range and grouping helpers (single source of truth) ───────────
+// â"€â"€ Shared date-range and grouping helpers (single source of truth) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 /** Returns transactions whose date falls within [start]..[end] inclusive. */
 fun filterInDateRange(
@@ -258,7 +258,7 @@ fun computeCategoryTotals(transactions: List<Transaction>): List<Pair<String, Do
         .map { it.key to it.value }
 
 
-// ── Budget spent ──────────────────────────────────────────────────────────────
+// â"€â"€ Budget spent â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 fun budgetSpentAmount(
     transactions: List<Transaction>,

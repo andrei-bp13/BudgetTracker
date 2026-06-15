@@ -1,4 +1,4 @@
-package com.pardonmyspending.app.ui.screens
+﻿package com.pardonmyspending.app.ui.screens
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -104,7 +104,7 @@ fun DrillDownScreen(
                 contentPadding = PaddingValues(vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
-                // ── Summary card ──────────────────────────────────────────────────
+                // â"€â"€ Summary card â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
                 item {
                     Card(
                         colors = CardDefaults.cardColors(
@@ -149,7 +149,7 @@ fun DrillDownScreen(
                     }
                 }
 
-                // ── Category groups ───────────────────────────────────────────────
+                // â"€â"€ Category groups â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
                 byCategory.forEach { (cat, txns) ->
                     val catTotal   = txns.sumOf { it.amount }
                     val isExpanded = expandedCategories[cat] == true

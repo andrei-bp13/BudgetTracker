@@ -1,4 +1,4 @@
-package com.pardonmyspending.app.data.csv
+﻿package com.pardonmyspending.app.data.csv
 
 import com.pardonmyspending.app.data.model.PaymentType
 import com.pardonmyspending.app.data.model.Transaction
@@ -31,7 +31,7 @@ fun splitCsvLine(line: String): List<String> {
     var i        = 0
     while (i < line.length) {
         when {
-            // "" inside a quoted field → literal " character (RFC 4180)
+            // "" inside a quoted field â†’ literal " character (RFC 4180)
             line[i] == '"' && inQuotes && i + 1 < line.length && line[i + 1] == '"' -> {
                 sb.append('"'); i += 2
             }

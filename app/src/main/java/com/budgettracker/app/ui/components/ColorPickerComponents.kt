@@ -1,4 +1,4 @@
-package com.pardonmyspending.app.ui.components
+﻿package com.pardonmyspending.app.ui.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background

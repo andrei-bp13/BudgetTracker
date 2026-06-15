@@ -1,4 +1,4 @@
-package com.pardonmyspending.app.ui.screens
+﻿package com.pardonmyspending.app.ui.screens
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
@@ -98,14 +98,19 @@ fun BudgetScreen(viewModel: TransactionViewModel, editMode: Boolean = false) {
 
     Column(modifier = Modifier.fillMaxSize()) {
 
-        // ── Sticky "Add Budget" button ────────────────────────────────────────
+        // â"€â"€ Sticky "Add Budget" button â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
         Button(
             onClick  = { showAddSheet = true },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 10.dp)
                 .height(52.dp),
-            shape = MaterialTheme.shapes.large
+            shape = MaterialTheme.shapes.large,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.Transparent,
+                contentColor   = MaterialTheme.colorScheme.primary
+            ),
+            elevation = ButtonDefaults.buttonElevation(0.dp, 0.dp, 0.dp)
         ) {
             Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(8.dp))
@@ -127,7 +132,7 @@ fun BudgetScreen(viewModel: TransactionViewModel, editMode: Boolean = false) {
                 }
             }
         } else {
-            // ── Draggable budget cards ────────────────────────────────────────
+            // â"€â"€ Draggable budget cards â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
             LazyColumn(
                 modifier            = Modifier.weight(1f).padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -177,7 +182,7 @@ fun BudgetScreen(viewModel: TransactionViewModel, editMode: Boolean = false) {
             }
         }
 
-        // ── Sticky "Show Past Budgets" button ─────────────────────────────────
+        // â"€â"€ Sticky "Show Past Budgets" button â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
         OutlinedButton(
             onClick  = { showPastBudgets = true },
             modifier = Modifier
@@ -209,7 +214,7 @@ fun BudgetScreen(viewModel: TransactionViewModel, editMode: Boolean = false) {
     }
 }
 
-// ── Drag wrapper ──────────────────────────────────────────────────────────────
+// â"€â"€ Drag wrapper â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 @Composable
 private fun BudgetCardWrapper(
@@ -256,7 +261,7 @@ private fun BudgetCardWrapper(
     }
 }
 
-// ── Budget card ───────────────────────────────────────────────────────────────
+// â"€â"€ Budget card â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 @Composable
 private fun BudgetCard(
@@ -390,7 +395,7 @@ private fun BudgetCard(
     }
 }
 
-// ── Past Budgets sheet ────────────────────────────────────────────────────────
+// â"€â"€ Past Budgets sheet â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -404,7 +409,7 @@ private fun PastBudgetsSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState       = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        modifier         = Modifier.fillMaxHeight()
+        modifier         = Modifier.fillMaxHeight(0.85f)
     ) {
         Column(
             modifier = Modifier
@@ -521,7 +526,7 @@ private fun PastPeriodRow(
     }
 }
 
-// ── Past period computation ───────────────────────────────────────────────────
+// â"€â"€ Past period computation â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 private fun buildPastPeriods(budget: Budget, transactions: List<Transaction>): List<Pair<String, Double>> {
     val today       = LocalDate.now()
@@ -540,7 +545,7 @@ private fun buildPastPeriods(budget: Budget, transactions: List<Transaction>): L
                     it.type == TransactionType.EXPENSE && it.category == budget.categoryName &&
                     !it.date.isBefore(weekStart) && !it.date.isAfter(weekEnd)
                 }.sumOf { it.amount }
-                val label = "${weekStart.format(DateTimeFormatter.ofPattern("MMM d"))} – ${weekEnd.format(DateTimeFormatter.ofPattern("MMM d, yyyy"))}"
+                val label = "${weekStart.format(DateTimeFormatter.ofPattern("MMM d"))} - ${weekEnd.format(DateTimeFormatter.ofPattern("MMM d, yyyy"))}"
                 result += label to spent
                 weekStart = weekStart.minusWeeks(1)
             }

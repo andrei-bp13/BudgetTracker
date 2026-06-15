@@ -1,4 +1,4 @@
-package com.pardonmyspending.app.ui.screens
+﻿package com.pardonmyspending.app.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -36,6 +36,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.pardonmyspending.app.data.model.PaymentType
 import com.pardonmyspending.app.data.model.Transaction
+import com.pardonmyspending.app.data.model.TransactionType
+import com.pardonmyspending.app.util.computeCategoryTotals
+import com.pardonmyspending.app.util.computeMonthlyBars
+import java.time.YearMonth
+import org.json.JSONArray
+import org.json.JSONObject
 import com.pardonmyspending.app.ui.components.*
 import com.pardonmyspending.app.ui.theme.LocalCurrencySymbol
 import com.pardonmyspending.app.viewmodel.TransactionViewModel
@@ -60,6 +66,9 @@ fun HomeScreen(
     val topCats        by viewModel.topCategories.collectAsState()
     val expense             by viewModel.thisMonthExpense.collectAsState()
     val income              by viewModel.thisMonthIncome.collectAsState()
+    val allTransactions          by viewModel.transactions.collectAsState()
+    val expenseChartBars         by viewModel.expenseChartBars.collectAsState()
+    val categoryTotalsThisMonth  by viewModel.categoryTotalsThisMonth.collectAsState()
     val globalColoring      by viewModel.globalColoring.collectAsState()
     val byPaymentType       by viewModel.thisMonthByPaymentType.collectAsState()
     val byPaymentTypeIncome by viewModel.thisMonthIncomeByPaymentType.collectAsState()
@@ -74,26 +83,48 @@ fun HomeScreen(
     val currencySymbol = LocalCurrencySymbol.current
     val monthName = LocalDate.now().month.getDisplayName(TextStyle.FULL, Locale.getDefault())
 
-    // ── Overlay state (lifted to this level for global dismiss & precise positioning) ─────
+    // â"€â"€ Overlay state (lifted to this level for global dismiss & precise positioning) â"€â"€â"€â"€â"€
     var overlayTransaction by remember { mutableStateOf<Transaction?>(null) }
     var overlayBounds      by remember { mutableStateOf(Rect.Zero) }
     var homeBoxCoords      by remember { mutableStateOf<LayoutCoordinates?>(null) }
 
-    // ── Root box: content + scrim + overlay (Z order: content → scrim → overlay) ──────────
+    // â"€â"€ Root box: content + scrim + overlay (Z order: content â†’ scrim â†’ overlay) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
     Box(
         modifier = Modifier
             .fillMaxSize()
             .onGloballyPositioned { homeBoxCoords = it }
     ) {
-        // ── Card order & visibility ───────────────────────────────────────────
-        val cardOrder   = remember { mutableStateListOf("month_summary", "monthly_progress", "recent_transactions", "top_categories", "budgets") }
-        val cardVisible = remember { mutableStateMapOf(
-            "month_summary"        to true,
-            "monthly_progress"     to true,
-            "recent_transactions"  to true,
-            "top_categories"       to true,
-            "budgets"              to false
-        ) }
+        // â"€â"€ Card order & visibility â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
+        val cardOrder   = remember { mutableStateListOf(*TransactionViewModel.DEFAULT_CARD_ORDER.toTypedArray()) }
+        val cardVisible = remember { mutableStateMapOf(*TransactionViewModel.DEFAULT_CARD_VISIBLE.entries.map { it.key to it.value }.toTypedArray()) }
+
+        // â"€â"€ Drag-to-reorder state â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
+        var draggedCardId by remember { mutableStateOf<String?>(null) }
+
+        // Sync from persisted prefs (StateFlow always emits current value on collection)
+        LaunchedEffect(Unit) {
+            viewModel.cardOrderJson.collect { json ->
+                if (json.isNotEmpty() && draggedCardId == null) {
+                    try {
+                        val arr = JSONArray(json)
+                        val list = (0 until arr.length()).map { arr.getString(it) }
+                        if (list.isNotEmpty()) { cardOrder.clear(); cardOrder.addAll(list) }
+                    } catch (_: Exception) {}
+                }
+            }
+        }
+        LaunchedEffect(Unit) {
+            viewModel.cardVisibleJson.collect { json ->
+                if (json.isNotEmpty()) {
+                    try {
+                        val obj = JSONObject(json)
+                        val map = buildMap<String, Boolean> { obj.keys().forEach { k -> put(k, obj.getBoolean(k)) } }
+                        cardVisible.clear(); cardVisible.putAll(map)
+                    } catch (_: Exception) {}
+                }
+            }
+        }
+
         fun swapCards(a: String, b: String) {
             val i = cardOrder.indexOf(a); val j = cardOrder.indexOf(b)
             if (i >= 0 && j >= 0) { cardOrder[i] = b; cardOrder[j] = a }
@@ -101,8 +132,6 @@ fun HomeScreen(
         val visibleCards = cardOrder.filter { cardVisible[it] == true && (it != "budgets" || budgets.isNotEmpty()) }
         val hiddenCards  = cardOrder.filter { cardVisible[it] != true  && (it != "budgets" || budgets.isNotEmpty()) }
 
-        // ── Drag-to-reorder state ─────────────────────────────────────────────
-        var draggedCardId by remember { mutableStateOf<String?>(null) }
         var dragOffsetY   by remember { mutableStateOf(0f) }
         val cardHeights   = remember { mutableStateMapOf<String, Int>() }
 
@@ -128,7 +157,7 @@ fun HomeScreen(
             }
         }
 
-        // ── Card render dispatch ──────────────────────────────────────────────
+        // â"€â"€ Card render dispatch â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
         val renderCard: @Composable (String) -> Unit = { cardId ->
             when (cardId) {
                 "month_summary" -> Card(
@@ -177,7 +206,7 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(20.dp)) {
-                        Text("Monthly Progress — $monthName", style = MaterialTheme.typography.titleMedium)
+                        Text("Monthly Progress - $monthName", style = MaterialTheme.typography.titleMedium)
                         Spacer(Modifier.height(12.dp))
                         MonthlyProgressChart(thisMonth = thisMonth, lastMonth = lastMonth, modifier = Modifier.fillMaxWidth())
                     }
@@ -202,10 +231,211 @@ fun HomeScreen(
                     categoryFor = { viewModel.categoryFor(it) },
                     modifier    = Modifier.fillMaxWidth()
                 )
+
+                // â"€â"€ Report cards pinned to dashboard â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
+                "expense_chart" -> Card(
+                    colors   = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                    shape    = MaterialTheme.shapes.extraLarge,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Text("Expenses - ${LocalDate.now().year}", style = MaterialTheme.typography.titleMedium)
+                        Spacer(Modifier.height(12.dp))
+                        ExpenseBarChart(bars = expenseChartBars, currencySymbol = currencySymbol, onBarClick = {})
+                    }
+                }
+
+                "income_chart" -> {
+                    val today = LocalDate.now()
+                    val incomeBars = remember(allTransactions) {
+                        computeMonthlyBars(allTransactions, today.year, TransactionType.INCOME)
+                    }
+                    Card(
+                        colors   = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                        shape    = MaterialTheme.shapes.extraLarge,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            Text("Income - ${today.year}", style = MaterialTheme.typography.titleMedium)
+                            Spacer(Modifier.height(12.dp))
+                            ExpenseBarChart(bars = incomeBars, currencySymbol = currencySymbol, barColor = Color(0xFF4CAF50), onBarClick = {})
+                        }
+                    }
+                }
+
+                "spending_category" -> {
+                    val catDisplay = remember(categoryTotalsThisMonth) {
+                        val top = categoryTotalsThisMonth.take(6)
+                        val other = categoryTotalsThisMonth.drop(6).sumOf { it.second }
+                        if (other > 0.001) top + ("Other" to other) else top
+                    }
+                    Card(
+                        colors   = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                        shape    = MaterialTheme.shapes.extraLarge,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            Text("Spending by Category", style = MaterialTheme.typography.titleMedium)
+                            Spacer(Modifier.height(12.dp))
+                            if (catDisplay.isEmpty()) {
+                                Text("No expense data this month", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            } else {
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    DonutChart(categories = catDisplay, viewModel = viewModel, modifier = Modifier.size(140.dp))
+                                    CategoryLegend(categories = catDisplay, viewModel = viewModel, modifier = Modifier.weight(1f))
+                                }
+                            }
+                        }
+                    }
+                }
+
+                "income_category" -> {
+                    val now = YearMonth.now()
+                    val incomeCatDisplay = remember(allTransactions) {
+                        val totals = computeCategoryTotals(
+                            allTransactions.filter { it.type == TransactionType.INCOME && YearMonth.from(it.date) == now }
+                        )
+                        val top = totals.take(6)
+                        val other = totals.drop(6).sumOf { it.second }
+                        if (other > 0.001) top + ("Other" to other) else top
+                    }
+                    Card(
+                        colors   = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                        shape    = MaterialTheme.shapes.extraLarge,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            Text("Income by Category", style = MaterialTheme.typography.titleMedium)
+                            Spacer(Modifier.height(12.dp))
+                            if (incomeCatDisplay.isEmpty()) {
+                                Text("No income data this month", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            } else {
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    DonutChart(categories = incomeCatDisplay, viewModel = viewModel, modifier = Modifier.size(140.dp))
+                                    CategoryLegend(categories = incomeCatDisplay, viewModel = viewModel, modifier = Modifier.weight(1f))
+                                }
+                            }
+                        }
+                    }
+                }
+
+                "highest_expense" -> {
+                    var hxFilter by remember { mutableStateOf("all") }
+                    val hxTxn = remember(allTransactions, hxFilter) {
+                        allTransactions.filter { it.type == TransactionType.EXPENSE }
+                            .let { list -> when (hxFilter) {
+                                "year"  -> list.filter { it.date.year == LocalDate.now().year }
+                                "month" -> list.filter { YearMonth.from(it.date) == YearMonth.now() }
+                                else    -> list
+                            }}.maxByOrNull { it.amount }
+                    }
+                    HighlightSummaryCard(
+                        label          = "Highest Expense",
+                        transaction    = hxTxn,
+                        amountColor    = MaterialTheme.colorScheme.error,
+                        amountPrefix   = "-",
+                        currencySymbol = currencySymbol,
+                        viewModel      = viewModel,
+                        selectedFilter = hxFilter,
+                        onFilterChange = { hxFilter = it },
+                        modifier       = Modifier.fillMaxWidth()
+                    )
+                }
+
+                "highest_income" -> {
+                    var hiFilter by remember { mutableStateOf("all") }
+                    val hiTxn = remember(allTransactions, hiFilter) {
+                        allTransactions.filter { it.type == TransactionType.INCOME }
+                            .let { list -> when (hiFilter) {
+                                "year"  -> list.filter { it.date.year == LocalDate.now().year }
+                                "month" -> list.filter { YearMonth.from(it.date) == YearMonth.now() }
+                                else    -> list
+                            }}.maxByOrNull { it.amount }
+                    }
+                    HighlightSummaryCard(
+                        label          = "Highest Income",
+                        transaction    = hiTxn,
+                        amountColor    = Color(0xFF4CAF50),
+                        amountPrefix   = "+",
+                        currencySymbol = currencySymbol,
+                        viewModel      = viewModel,
+                        selectedFilter = hiFilter,
+                        onFilterChange = { hiFilter = it },
+                        modifier       = Modifier.fillMaxWidth()
+                    )
+                }
+
+                "total_spent" -> {
+                    var tsFilter by remember { mutableStateOf("month") }
+                    val tsTotal = remember(allTransactions, tsFilter) {
+                        allTransactions.filter { it.type == TransactionType.EXPENSE }
+                            .let { list -> when (tsFilter) {
+                                "year"  -> list.filter { it.date.year == LocalDate.now().year }
+                                "month" -> list.filter { YearMonth.from(it.date) == YearMonth.now() }
+                                "week"  -> { val s = LocalDate.now().with(java.time.DayOfWeek.MONDAY); list.filter { !it.date.isBefore(s) && !it.date.isAfter(s.plusDays(6)) } }
+                                else    -> list
+                            }}.sumOf { it.amount }
+                    }
+                    TotalSummaryCard(
+                        label          = "Total Spent",
+                        total          = tsTotal,
+                        amountColor    = MaterialTheme.colorScheme.error,
+                        amountPrefix   = "-",
+                        currencySymbol = currencySymbol,
+                        selectedFilter = tsFilter,
+                        onFilterChange = { tsFilter = it },
+                        modifier       = Modifier.fillMaxWidth()
+                    )
+                }
+
+                "total_earned" -> {
+                    var teFilter by remember { mutableStateOf("month") }
+                    val teTotal = remember(allTransactions, teFilter) {
+                        allTransactions.filter { it.type == TransactionType.INCOME }
+                            .let { list -> when (teFilter) {
+                                "year"  -> list.filter { it.date.year == LocalDate.now().year }
+                                "month" -> list.filter { YearMonth.from(it.date) == YearMonth.now() }
+                                "week"  -> { val s = LocalDate.now().with(java.time.DayOfWeek.MONDAY); list.filter { !it.date.isBefore(s) && !it.date.isAfter(s.plusDays(6)) } }
+                                else    -> list
+                            }}.sumOf { it.amount }
+                    }
+                    TotalSummaryCard(
+                        label          = "Total Earned",
+                        total          = teTotal,
+                        amountColor    = Color(0xFF4CAF50),
+                        amountPrefix   = "+",
+                        currencySymbol = currencySymbol,
+                        selectedFilter = teFilter,
+                        onFilterChange = { teFilter = it },
+                        modifier       = Modifier.fillMaxWidth()
+                    )
+                }
+
+                "total_savings" -> {
+                    var svFilter by remember { mutableStateOf("all") }
+                    val savingsCategories = remember { setOf("Savings", "Investment") }
+                    val svTxns = remember(allTransactions, svFilter) {
+                        allTransactions.filter { it.category in savingsCategories }
+                            .let { list -> when (svFilter) {
+                                "year"  -> list.filter { it.date.year == LocalDate.now().year }
+                                "month" -> list.filter { YearMonth.from(it.date) == YearMonth.now() }
+                                else    -> list
+                            }}.sortedByDescending { it.date.atTime(it.time) }
+                    }
+                    SavingsSummaryCard(
+                        total          = svTxns.sumOf { it.amount },
+                        latestTxn      = svTxns.firstOrNull(),
+                        currencySymbol = currencySymbol,
+                        viewModel      = viewModel,
+                        selectedFilter = svFilter,
+                        onFilterChange = { svFilter = it },
+                        modifier       = Modifier.fillMaxWidth()
+                    )
+                }
             }
         }
 
-        // ── 1. Scrollable content ─────────────────────────────────────────────
+        // â"€â"€ 1. Scrollable content â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -231,8 +461,8 @@ fun HomeScreen(
                         dragOffsetY     = if (draggedCardId == cardId) dragOffsetY else 0f,
                         onDragStart     = { draggedCardId = cardId; dragOffsetY = 0f },
                         onDrag          = handleDrag,
-                        onDragEnd       = { draggedCardId = null; dragOffsetY = 0f },
-                        onToggleVisible = { cardVisible[cardId] = false },
+                        onDragEnd       = { draggedCardId = null; dragOffsetY = 0f; viewModel.setCardOrder(cardOrder.toList()) },
+                        onToggleVisible = { cardVisible[cardId] = false; viewModel.setCardVisible(cardVisible.toMap()) },
                         onHeightChanged = { cardHeights[cardId] = it }
                     ) { renderCard(cardId) }
                 }
@@ -259,7 +489,7 @@ fun HomeScreen(
                             onDragStart     = {},
                             onDrag          = {},
                             onDragEnd       = {},
-                            onToggleVisible = { cardVisible[cardId] = true },
+                            onToggleVisible = { cardVisible[cardId] = true; viewModel.setCardVisible(cardVisible.toMap()) },
                             onHeightChanged = {}
                         ) { renderCard(cardId) }
                     }
@@ -269,7 +499,7 @@ fun HomeScreen(
             Spacer(Modifier.height(80.dp))
         }
 
-        // ── 2. Overlay (scrim + edit/delete buttons) positioned over the long-pressed row ──
+        // â"€â"€ 2. Overlay (scrim + edit/delete buttons) positioned over the long-pressed row â"€â"€
         val activeTxn = overlayTransaction
         val coords    = homeBoxCoords
         if (activeTxn != null && coords != null) {
@@ -285,7 +515,7 @@ fun HomeScreen(
     }
 }
 
-// ── Editable card wrapper (home screen) ──────────────────────────────────────
+// â"€â"€ Editable card wrapper (home screen) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 @Composable
 private fun HomeEditableCardWrapper(

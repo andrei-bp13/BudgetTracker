@@ -1,4 +1,4 @@
-package com.pardonmyspending.app.ui.screens
+﻿package com.pardonmyspending.app.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -35,20 +35,23 @@ fun PaymentTypeTransactionsScreen(
     onBack: () -> Unit
 ) {
     val allTransactions by viewModel.transactions.collectAsState()
+    val globalColoring  by viewModel.globalColoring.collectAsState()
     val currencySymbol  = LocalCurrencySymbol.current
     val accent          = MaterialTheme.colorScheme.primary
-    val fallbackColor   = accent
+    val resolveColor: (String) -> Color = remember(globalColoring, accent) {
+        { name -> if (globalColoring) accent else viewModel.categoryFor(name)?.color ?: accent }
+    }
 
     val thisMonth = YearMonth.now()
     val filtered = remember(allTransactions, paymentType) {
         allTransactions.filter {
-            it.type == TransactionType.EXPENSE &&
             it.paymentType == paymentType &&
             YearMonth.from(it.date) == thisMonth
         }.sortedByDescending { it.date }
     }
 
-    val totalAmount = remember(filtered) { filtered.sumOf { it.amount } }
+    val totalExpense = remember(filtered) { filtered.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount } }
+    val totalIncome  = remember(filtered) { filtered.filter { it.type == TransactionType.INCOME  }.sumOf { it.amount } }
 
     val grouped: Map<LocalDate, List<Transaction>> = remember(filtered) {
         filtered.groupBy { it.date }
@@ -90,7 +93,7 @@ fun PaymentTypeTransactionsScreen(
                 .padding(horizontal = 16.dp),
             contentPadding = PaddingValues(vertical = 8.dp)
         ) {
-            // ── Summary card ──────────────────────────────────────────────────
+            // â"€â"€ Summary card â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
             item {
                 Card(
                     colors = CardDefaults.cardColors(
@@ -108,26 +111,26 @@ fun PaymentTypeTransactionsScreen(
                     ) {
                         Column {
                             Text(
-                                "Total this month",
+                                "Spent this month",
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                "$currencySymbol ${"%.2f".format(totalAmount)}",
+                                "$currencySymbol ${"%.2f".format(totalExpense)}",
                                 style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black),
-                                color = accent
+                                color = MaterialTheme.colorScheme.error
                             )
                         }
                         Column(horizontalAlignment = Alignment.End) {
                             Text(
-                                "${filtered.size}",
-                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
-                                color = accent
+                                "Earned this month",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                "transactions",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                "$currencySymbol ${"%.2f".format(totalIncome)}",
+                                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Black),
+                                color = Color(0xFF4CAF50)
                             )
                         }
                     }
@@ -149,7 +152,7 @@ fun PaymentTypeTransactionsScreen(
                 }
             }
 
-            // ── Grouped by date ───────────────────────────────────────────────
+            // â"€â"€ Grouped by date â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
             sortedDates.forEach { date ->
                 val dayTxns = grouped[date] ?: return@forEach
 
@@ -163,9 +166,8 @@ fun PaymentTypeTransactionsScreen(
                 }
 
                 items(dayTxns, key = { it.id }) { txn ->
-                    val catItem  = viewModel.categoryFor(txn.category)
-                    val catColor = catItem?.color ?: fallbackColor
-                    val catIcon  = catItem?.iconId ?: "more_horiz"
+                    val catColor = resolveColor(txn.category)
+                    val catIcon  = viewModel.categoryFor(txn.category)?.iconId ?: "more_horiz"
                     PaymentTxnRow(
                         txn            = txn,
                         categoryColor  = catColor,
@@ -227,9 +229,10 @@ private fun PaymentTxnRow(
         }
 
         Text(
-            "-$currencySymbol ${"%.2f".format(txn.amount)}",
+            "${if (txn.type == TransactionType.EXPENSE) "-" else "+"}$currencySymbol ${"%.2f".format(txn.amount)}",
             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.error
+            color = if (txn.type == TransactionType.EXPENSE) MaterialTheme.colorScheme.error
+                    else Color(0xFF4CAF50)
         )
     }
 }

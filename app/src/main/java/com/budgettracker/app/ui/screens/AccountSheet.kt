@@ -1,4 +1,4 @@
-package com.pardonmyspending.app.ui.screens
+﻿package com.pardonmyspending.app.ui.screens
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -37,7 +37,8 @@ fun AccountSheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState       = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        sheetState       = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        modifier         = Modifier.fillMaxHeight(0.85f)
     ) {
         if (account == null) {
             SignedOutContent(
@@ -77,7 +78,7 @@ private fun SignedOutContent(onSignIn: () -> Unit) {
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black)
         )
         Text(
-            "Sign in with Google to back up your transactions, budgets, and categories to Google Drive — and restore them on any device.",
+            "Sign in with Google to back up your transactions, budgets, and categories to Google Drive - and restore them on any device.",
             style     = MaterialTheme.typography.bodyMedium,
             color     = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center

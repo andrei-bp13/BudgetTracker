@@ -1,4 +1,4 @@
-package com.pardonmyspending.app.data.model
+﻿package com.pardonmyspending.app.data.model
 
 import androidx.compose.ui.graphics.Color
 
@@ -39,7 +39,7 @@ val DefaultCategories: List<CategoryItem> = listOf(
     CategoryItem("cat_other_income", "Other Income",     "savings",         "#00695C", type = CategoryType.INCOME),
 )
 
-// 19 vivid colors — the 20th slot in EditCategorySheet is the custom RGB picker
+// 19 vivid colors -" the 20th slot in EditCategorySheet is the custom RGB picker
 val CategoryColorOptions: List<Color> = listOf(
     Color(0xFF4361EE), // vivid blue
     Color(0xFF8338EC), // violet

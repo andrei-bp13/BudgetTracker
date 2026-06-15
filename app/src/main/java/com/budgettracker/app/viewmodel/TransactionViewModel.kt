@@ -1,4 +1,4 @@
-package com.pardonmyspending.app.viewmodel
+﻿package com.pardonmyspending.app.viewmodel
 
 import android.net.Uri
 import androidx.lifecycle.ViewModel
@@ -8,6 +8,9 @@ import com.pardonmyspending.app.data.model.*
 import com.pardonmyspending.app.data.model.CategoryType
 import com.pardonmyspending.app.data.repository.BudgetRepository
 import com.pardonmyspending.app.data.repository.CategoryRepository
+import com.pardonmyspending.app.data.repository.CategorySuggestion
+import com.pardonmyspending.app.data.repository.AiRepository
+import com.pardonmyspending.app.data.repository.ParsedTransaction
 import com.pardonmyspending.app.data.repository.PreferencesRepository
 import com.pardonmyspending.app.data.repository.RecurringTransactionRepository
 import com.pardonmyspending.app.data.repository.TransactionRepository
@@ -21,6 +24,8 @@ import com.pardonmyspending.app.util.weeklyExpensesForMonth
 import com.pardonmyspending.app.util.yearlyExpenses
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import org.json.JSONArray
+import org.json.JSONObject
 import java.time.LocalDate
 import java.time.YearMonth
 
@@ -44,7 +49,7 @@ class TransactionViewModel(
 
     private val prefsState = PreferencesState(prefs, viewModelScope)
 
-    // ── UI preferences (delegated) ────────────────────────────────────────────
+    // â"€â"€ UI preferences (delegated) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
     val themeMode:        StateFlow<String>  = prefsState.themeMode
     val accentIndex:      StateFlow<Int>     = prefsState.accentIndex
     val customAccentHex:  StateFlow<String>  = prefsState.customAccentHex
@@ -53,13 +58,16 @@ class TransactionViewModel(
     val currencyCode:     StateFlow<String>  = prefsState.currencyCode
     val chartGranularity: StateFlow<String>  = prefsState.chartGranularity
     val aiMode:           StateFlow<Boolean> = prefsState.aiMode
+    val cardOrderJson:    StateFlow<String>  = prefsState.cardOrderJson
+    val cardVisibleJson:  StateFlow<String>  = prefsState.cardVisibleJson
+    val aiApiKey:         StateFlow<String>  = prefsState.aiApiKey
 
     val currencySymbol: StateFlow<String> = prefsState.currencyCode
         .map { code -> currencyCodeToSymbol[code] ?: "$" }
         .distinctUntilChanged()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), "$")
 
-    // ── Transaction data ──────────────────────────────────────────────────────
+    // â"€â"€ Transaction data â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
     val transactions: StateFlow<List<Transaction>> = repo.transactions
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyList())
@@ -183,7 +191,7 @@ class TransactionViewModel(
         processed.map { it.thisMonthIncomeByPaymentType }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyMap())
 
-    // ── Recurring transactions ────────────────────────────────────────────────
+    // â"€â"€ Recurring transactions â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
     val recurringTransactions: StateFlow<List<RecurringTransaction>> = recurringRepo.recurring
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyList())
@@ -221,7 +229,16 @@ class TransactionViewModel(
         if (failed > 0) _importErrorEvent.tryEmit(Unit)
     }
 
-    // ── Categories ────────────────────────────────────────────────────────────
+    fun setCardOrder(order: List<String>) =
+        prefsState.setCardOrder(JSONArray(order).toString())
+
+    fun setCardVisible(visible: Map<String, Boolean>) {
+        val obj = JSONObject()
+        visible.forEach { (k, v) -> obj.put(k, v) }
+        prefsState.setCardVisible(obj.toString())
+    }
+
+    // â"€â"€ Categories â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
     val categories: StateFlow<List<CategoryItem>> = catRepo.categories
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), DefaultCategories)
@@ -255,7 +272,7 @@ class TransactionViewModel(
         catRepo.save(emptyList())
     }
 
-    // ── Budgets ───────────────────────────────────────────────────────────────
+    // â"€â"€ Budgets â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
     val budgets: StateFlow<List<Budget>> = budgetRepo.budgets
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyList())
@@ -274,7 +291,7 @@ class TransactionViewModel(
     fun categoryFor(name: String): CategoryItem? =
         categories.value.firstOrNull { it.name == name }
 
-    // ── Preference setters (delegated) ────────────────────────────────────────
+    // â"€â"€ Preference setters (delegated) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
     fun setThemeMode(mode: String)         = prefsState.setThemeMode(mode)
     fun setAccentIndex(i: Int)             = prefsState.setAccentIndex(i)
@@ -284,8 +301,37 @@ class TransactionViewModel(
     fun setChartGranularity(value: String) = prefsState.setChartGranularity(value)
     fun setAiMode(enabled: Boolean)        = prefsState.setAiMode(enabled)
     fun setCustomAccentHex(hex: String)    = prefsState.setCustomAccentHex(hex)
+    fun setAiApiKey(key: String)           = prefsState.setAiApiKey(key)
 
-    private companion object {
+    // â"€â"€ Mistral AI â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
+
+    private val aiRepo = AiRepository()
+
+    suspend fun parseTransactionWithAI(input: String): Result<ParsedTransaction> =
+        aiRepo.parseTransaction(
+            apiKey             = aiApiKey.value,
+            input              = input,
+            expenseCategories  = expenseCategories.value.map { it.name },
+            incomeCategories   = incomeCategories.value.map { it.name },
+            today              = LocalDate.now()
+        )
+
+    suspend fun suggestCategoryWithAI(title: String): CategorySuggestion? =
+        aiRepo.suggestCategory(
+            apiKey             = aiApiKey.value,
+            title              = title,
+            expenseCategories  = expenseCategories.value.map { it.name },
+            incomeCategories   = incomeCategories.value.map { it.name }
+        )
+
+    companion object {
+        val DEFAULT_CARD_ORDER = listOf(
+            "month_summary", "monthly_progress", "recent_transactions", "top_categories", "budgets"
+        )
+        val DEFAULT_CARD_VISIBLE = mapOf(
+            "month_summary" to true, "monthly_progress" to true,
+            "recent_transactions" to true, "top_categories" to true, "budgets" to false
+        )
         // Pre-built lookup avoids a linear scan of AllCurrencies on every currencyCode emission.
         val currencyCodeToSymbol: Map<String, String> by lazy {
             AllCurrencies.associate { it.code to it.symbol }

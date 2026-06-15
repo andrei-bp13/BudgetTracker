@@ -1,4 +1,4 @@
-package com.pardonmyspending.app.ui.screens
+﻿package com.pardonmyspending.app.ui.screens
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
@@ -18,6 +18,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.Visibility
@@ -66,13 +67,15 @@ import com.pardonmyspending.app.util.filterExpensesByDateRange
 import com.pardonmyspending.app.util.filterInDateRange
 import com.pardonmyspending.app.viewmodel.ChartBar
 import com.pardonmyspending.app.viewmodel.TransactionViewModel
+import org.json.JSONArray
+import org.json.JSONObject
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle as JTextStyle
 import java.util.Locale
 
-// ── Granularity options ───────────────────────────────────────────────────────
+// â"€â"€ Granularity options â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 private val granularityOptions = listOf(
     Triple("weekly",  "Weekly",  "Selected month in 7-day groups"),
@@ -80,7 +83,7 @@ private val granularityOptions = listOf(
     Triple("yearly",  "Yearly",  "All years"),
 )
 
-// ── Screen ────────────────────────────────────────────────────────────────────
+// â"€â"€ Screen â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -95,7 +98,7 @@ fun ReportsScreen(
     val currencySymbol  = LocalCurrencySymbol.current
     val today           = LocalDate.now()
 
-    // ── Expenses chart context ────────────────────────────────────────────────
+    // â"€â"€ Expenses chart context â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
     var chartContextYear  by remember { mutableIntStateOf(today.year) }
     var chartContextMonth by remember { mutableIntStateOf(today.monthValue) }
     var showGranularityMenu by remember { mutableStateOf(false) }
@@ -116,10 +119,10 @@ fun ReportsScreen(
         "weekly"  -> {
             val abbr = YearMonth.of(chartContextYear, chartContextMonth)
                 .month.getDisplayName(JTextStyle.SHORT, Locale.getDefault())
-            "Expenses — $abbr $chartContextYear by Week"
+            "Expenses - $abbr $chartContextYear by Week"
         }
-        "yearly"  -> "Expenses — By Year"
-        else      -> "Expenses — $chartContextYear"
+        "yearly"  -> "Expenses - By Year"
+        else      -> "Expenses - $chartContextYear"
     }
 
     // When switching granularity, carry context forward
@@ -137,7 +140,7 @@ fun ReportsScreen(
         chartChipScrollState.animateScrollTo((idx * 58.dp.value).toInt())
     }
 
-    // ── Category card context ─────────────────────────────────────────────────
+    // â"€â"€ Category card context â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
     var catGranularity  by remember { mutableStateOf("monthly") }
     var showCatGranMenu by remember { mutableStateOf(false) }
     var catContextYear  by remember { mutableIntStateOf(today.year) }
@@ -160,7 +163,7 @@ fun ReportsScreen(
     var catDetailCategory by remember { mutableStateOf<String?>(null) }
     val catDetailSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    // All categories sorted — used for the detail sheet
+    // All categories sorted -" used for the detail sheet
     val catTotals = remember(allTransactions, selectedCatPeriod) {
         if (selectedCatPeriod == null) emptyList()
         else computeCategoryTotals(
@@ -175,10 +178,10 @@ fun ReportsScreen(
         if (otherAmount > 0.001) top + ("Other" to otherAmount) else top
     }
 
-    val catTitle = selectedCatPeriod?.let { "Spending by Category — ${it.title}" }
+    val catTitle = selectedCatPeriod?.let { "Spending by Category - ${it.title}" }
         ?: "Spending by Category"
 
-    // ── Income chart context ──────────────────────────────────────────────────
+    // â"€â"€ Income chart context â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
     var incomeGranularity        by remember { mutableStateOf("monthly") }
     var showIncomeGranularityMenu by remember { mutableStateOf(false) }
     var incomeChartContextYear   by remember { mutableIntStateOf(today.year) }
@@ -196,10 +199,10 @@ fun ReportsScreen(
         "weekly"  -> {
             val abbr = YearMonth.of(incomeChartContextYear, incomeChartContextMonth)
                 .month.getDisplayName(JTextStyle.SHORT, Locale.getDefault())
-            "Income — $abbr $incomeChartContextYear by Week"
+            "Income - $abbr $incomeChartContextYear by Week"
         }
-        "yearly"  -> "Income — By Year"
-        else      -> "Income — $incomeChartContextYear"
+        "yearly"  -> "Income - By Year"
+        else      -> "Income - $incomeChartContextYear"
     }
 
     val incomeChipScrollState = rememberScrollState()
@@ -212,7 +215,7 @@ fun ReportsScreen(
         incomeChipScrollState.animateScrollTo((idx * 58.dp.value).toInt())
     }
 
-    // ── Income category context ───────────────────────────────────────────────
+    // â"€â"€ Income category context â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
     var incomeCatGranularity   by remember { mutableStateOf("monthly") }
     var showIncomeCatGranMenu  by remember { mutableStateOf(false) }
     var incomeCatContextYear   by remember { mutableIntStateOf(today.year) }
@@ -248,10 +251,10 @@ fun ReportsScreen(
         if (otherAmount > 0.001) top + ("Other" to otherAmount) else top
     }
 
-    val incomeCatTitle = selectedIncomeCatPeriod?.let { "Income by Category — ${it.title}" }
+    val incomeCatTitle = selectedIncomeCatPeriod?.let { "Income by Category - ${it.title}" }
         ?: "Income by Category"
 
-    // ── Highlight & total summaries ───────────────────────────────────────────
+    // â"€â"€ Highlight & total summaries â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
     var expenseHighlightFilter by remember { mutableStateOf("all") }
     var incomeHighlightFilter  by remember { mutableStateOf("all") }
     var totalSpentFilter       by remember { mutableStateOf("all") }
@@ -294,7 +297,7 @@ fun ReportsScreen(
             .sumOf { it.amount }
     }
 
-    // ── Total savings ─────────────────────────────────────────────────────────
+    // â"€â"€ Total savings â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
     var totalSavingsFilter by remember { mutableStateOf("all") }
     val savingsCategories = remember { setOf("Savings", "Investment") }
 
@@ -307,7 +310,27 @@ fun ReportsScreen(
     val totalSavings     = remember(savingsTransactions) { savingsTransactions.sumOf { it.amount } }
     val latestSavingsTxn = remember(savingsTransactions) { savingsTransactions.firstOrNull() }
 
-    // ── Card order & visibility ───────────────────────────────────────────────
+    // â"€â"€ Dashboard card state (for "Add to dashboard" feature) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
+    val dashCardOrderJson   by viewModel.cardOrderJson.collectAsState()
+    val dashCardVisibleJson by viewModel.cardVisibleJson.collectAsState()
+
+    val dashboardCardIds = remember(dashCardOrderJson) {
+        if (dashCardOrderJson.isBlank()) TransactionViewModel.DEFAULT_CARD_ORDER.toSet()
+        else buildSet { val arr = JSONArray(dashCardOrderJson); repeat(arr.length()) { add(arr.getString(it)) } }
+    }
+
+    fun addCardToDashboard(cardId: String) {
+        val currentOrder = if (dashCardOrderJson.isBlank()) TransactionViewModel.DEFAULT_CARD_ORDER
+            else JSONArray(dashCardOrderJson).let { arr -> List(arr.length()) { arr.getString(it) } }
+        val currentVisible = if (dashCardVisibleJson.isBlank()) TransactionViewModel.DEFAULT_CARD_VISIBLE
+            else JSONObject(dashCardVisibleJson).let { obj -> obj.keys().asSequence().associateWith { obj.getBoolean(it) } }
+        if (cardId !in currentOrder) {
+            viewModel.setCardOrder(currentOrder + cardId)
+            viewModel.setCardVisible(currentVisible + (cardId to true))
+        }
+    }
+
+    // â"€â"€ Card order & visibility â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
     val cardOrder   = remember { mutableStateListOf(
         "expense_chart", "spending_category", "income_chart", "income_category",
         "highest_expense", "highest_income", "total_spent", "total_earned", "total_savings"
@@ -330,7 +353,7 @@ fun ReportsScreen(
     val visibleCards = cardOrder.filter { cardVisible[it] == true }
     val hiddenCards  = cardOrder.filter { cardVisible[it] != true }
 
-    // ── Drag-to-reorder state ─────────────────────────────────────────────────
+    // â"€â"€ Drag-to-reorder state â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
     var draggedCardId by remember { mutableStateOf<String?>(null) }
     var dragOffsetY   by remember { mutableStateOf(0f) }
     val cardHeights   = remember { mutableStateMapOf<String, Int>() }
@@ -357,7 +380,7 @@ fun ReportsScreen(
         }
     }
 
-    // ── Card render dispatch ──────────────────────────────────────────────────
+    // â"€â"€ Card render dispatch â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
     val renderCard: @Composable (String) -> Unit = { cardId ->
         when (cardId) {
             "highest_expense" -> HighlightSummaryCard(
@@ -626,15 +649,17 @@ fun ReportsScreen(
         visibleCards.forEach { cardId ->
             key(cardId) {
                 EditableCardWrapper(
-                    editMode        = editMode,
-                    visible         = true,
-                    isDragged       = draggedCardId == cardId,
-                    dragOffsetY     = if (draggedCardId == cardId) dragOffsetY else 0f,
-                    onDragStart     = { draggedCardId = cardId; dragOffsetY = 0f },
-                    onDrag          = handleDrag,
-                    onDragEnd       = { draggedCardId = null; dragOffsetY = 0f },
-                    onToggleVisible = { cardVisible[cardId] = false },
-                    onHeightChanged = { cardHeights[cardId] = it }
+                    editMode         = editMode,
+                    visible          = true,
+                    isDragged        = draggedCardId == cardId,
+                    dragOffsetY      = if (draggedCardId == cardId) dragOffsetY else 0f,
+                    onDragStart      = { draggedCardId = cardId; dragOffsetY = 0f },
+                    onDrag           = handleDrag,
+                    onDragEnd        = { draggedCardId = null; dragOffsetY = 0f },
+                    onToggleVisible  = { cardVisible[cardId] = false },
+                    onHeightChanged  = { cardHeights[cardId] = it },
+                    isOnDashboard    = cardId in dashboardCardIds,
+                    onAddToDashboard = { addCardToDashboard(cardId) }
                 ) { renderCard(cardId) }
             }
         }
@@ -653,15 +678,17 @@ fun ReportsScreen(
             hiddenCards.forEach { cardId ->
                 key(cardId) {
                     EditableCardWrapper(
-                        editMode        = true,
-                        visible         = false,
-                        isDragged       = false,
-                        dragOffsetY     = 0f,
-                        onDragStart     = {},
-                        onDrag          = {},
-                        onDragEnd       = {},
-                        onToggleVisible = { cardVisible[cardId] = true },
-                        onHeightChanged = {}
+                        editMode         = true,
+                        visible          = false,
+                        isDragged        = false,
+                        dragOffsetY      = 0f,
+                        onDragStart      = {},
+                        onDrag           = {},
+                        onDragEnd        = {},
+                        onToggleVisible  = { cardVisible[cardId] = true },
+                        onHeightChanged  = {},
+                        isOnDashboard    = cardId in dashboardCardIds,
+                        onAddToDashboard = { addCardToDashboard(cardId) }
                     ) { renderCard(cardId) }
                 }
             }
@@ -670,11 +697,12 @@ fun ReportsScreen(
         Spacer(Modifier.height(80.dp))
     }
 
-    // ── Category detail bottom sheet ──────────────────────────────────────────
+    // â"€â"€ Category detail bottom sheet â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
     catDetailCategory?.let { category ->
         ModalBottomSheet(
             onDismissRequest = { catDetailCategory = null },
-            sheetState       = catDetailSheetState
+            sheetState       = catDetailSheetState,
+            modifier         = Modifier.fillMaxHeight(0.85f)
         ) {
             CategoryDetailSheet(
                 category        = category,
@@ -689,7 +717,8 @@ fun ReportsScreen(
     incomeCatDetailCategory?.let { category ->
         ModalBottomSheet(
             onDismissRequest = { incomeCatDetailCategory = null },
-            sheetState       = incomeCatDetailSheetState
+            sheetState       = incomeCatDetailSheetState,
+            modifier         = Modifier.fillMaxHeight(0.85f)
         ) {
             CategoryDetailSheet(
                 category        = category,
@@ -702,7 +731,7 @@ fun ReportsScreen(
     }
 }
 
-// ── Shared granularity dropdown ───────────────────────────────────────────────
+// â"€â"€ Shared granularity dropdown â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 @Composable
 private fun GranularityDropdownMenu(
@@ -737,10 +766,10 @@ private fun GranularityDropdownMenu(
     }
 }
 
-// ── Bar chart ─────────────────────────────────────────────────────────────────
+// â"€â"€ Bar chart â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 @Composable
-private fun ExpenseBarChart(
+fun ExpenseBarChart(
     bars: List<ChartBar>,
     currencySymbol: String,
     onBarClick: (ChartBar) -> Unit,
@@ -826,9 +855,9 @@ private fun ExpenseBarChart(
     }
 }
 
-// ── Donut + legend ────────────────────────────────────────────────────────────
+// â"€â"€ Donut + legend â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
-private val chartPalette = listOf(
+val chartPalette = listOf(
     Color(0xFF4361EE), // vivid blue
     Color(0xFFF72585), // hot pink
     Color(0xFF4CC9F0), // sky blue
@@ -840,13 +869,13 @@ private val chartPalette = listOf(
     Color(0xFF118AB2), // teal blue
     Color(0xFFBDE0FE), // pale blue (unlikely to be reached)
 )
-private val otherColor = Color(0xFFB0BEC5) // neutral blue-grey for "Other"
+val otherColor = Color(0xFFB0BEC5) // neutral blue-grey for "Other"
 
-private fun chartColor(index: Int, categoryName: String): Color =
+fun chartColor(index: Int, categoryName: String): Color =
     if (categoryName == "Other") otherColor else chartPalette.getOrElse(index) { otherColor }
 
 @Composable
-private fun DonutChart(
+fun DonutChart(
     categories: List<Pair<String, Double>>,
     viewModel: TransactionViewModel,
     modifier: Modifier = Modifier
@@ -882,7 +911,7 @@ private fun DonutChart(
 }
 
 @Composable
-private fun CategoryLegend(
+fun CategoryLegend(
     categories: List<Pair<String, Double>>,
     viewModel: TransactionViewModel,
     onCategoryClick: (String) -> Unit = {},
@@ -927,7 +956,7 @@ private fun CategoryLegend(
     }
 }
 
-// ── Category detail bottom sheet ──────────────────────────────────────────────
+// â"€â"€ Category detail bottom sheet â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 @Composable
 private fun CategoryDetailSheet(
@@ -1037,18 +1066,18 @@ private fun CategoryDetailSheet(
     }
 }
 
-// ── Highlight summary card ────────────────────────────────────────────────────
+// â"€â"€ Highlight summary card â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
-private val highlightDateFmt = DateTimeFormatter.ofPattern("MMM d")
-private val highlightTimeFmt = DateTimeFormatter.ofPattern("HH:mm")
+val highlightDateFmt = DateTimeFormatter.ofPattern("MMM d")
+val highlightTimeFmt = DateTimeFormatter.ofPattern("HH:mm")
 
-private val highlightFilterOptions = listOf(
+val highlightFilterOptions = listOf(
     "all"   to "All Time",
     "year"  to "This Year",
     "month" to "This Month"
 )
 
-private fun filterDisplayLabel(key: String): String = when (key) {
+fun filterDisplayLabel(key: String): String = when (key) {
     "year"  -> "This Year"
     "month" -> "This Month"
     "week"  -> "This Week"
@@ -1056,7 +1085,7 @@ private fun filterDisplayLabel(key: String): String = when (key) {
 }
 
 @Composable
-private fun HighlightSummaryCard(
+fun HighlightSummaryCard(
     label: String,
     transaction: Transaction?,
     amountColor: Color,
@@ -1134,7 +1163,7 @@ private fun HighlightSummaryCard(
             }
             Spacer(Modifier.height(2.dp))
             Text(
-                if (transaction != null) "$amountPrefix$currencySymbol ${"%.2f".format(transaction.amount)}" else "—",
+                if (transaction != null) "$amountPrefix$currencySymbol ${"%.2f".format(transaction.amount)}" else "-",
                 style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Black),
                 color = if (transaction != null) amountColor else secondary
             )
@@ -1209,9 +1238,9 @@ private fun HighlightSummaryCard(
     }
 }
 
-// ── Total summary card ────────────────────────────────────────────────────────
+// â"€â"€ Total summary card â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
-private val totalFilterOptions = listOf(
+val totalFilterOptions = listOf(
     "all"   to "All Time",
     "year"  to "This Year",
     "month" to "This Month",
@@ -1219,7 +1248,7 @@ private val totalFilterOptions = listOf(
 )
 
 @Composable
-private fun TotalSummaryCard(
+fun TotalSummaryCard(
     label: String,
     total: Double,
     amountColor: Color,
@@ -1304,9 +1333,9 @@ private fun TotalSummaryCard(
     }
 }
 
-// ── Savings summary card ──────────────────────────────────────────────────────
+// â"€â"€ Savings summary card â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
-// ── Editable card wrapper ─────────────────────────────────────────────────────
+// â"€â"€ Editable card wrapper â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 @Composable
 private fun EditableCardWrapper(
@@ -1319,6 +1348,8 @@ private fun EditableCardWrapper(
     onDragEnd: () -> Unit,
     onToggleVisible: () -> Unit,
     onHeightChanged: (Int) -> Unit,
+    isOnDashboard: Boolean = true,
+    onAddToDashboard: () -> Unit = {},
     content: @Composable () -> Unit
 ) {
     val latestOnDragStart by rememberUpdatedState(onDragStart)
@@ -1372,8 +1403,33 @@ private fun EditableCardWrapper(
         if (editMode) {
             Row(
                 modifier              = Modifier.fillMaxWidth().padding(end = 28.dp),
-                horizontalArrangement = Arrangement.End
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment     = Alignment.CenterVertically
             ) {
+                val dashTint = if (!isOnDashboard) MaterialTheme.colorScheme.primary
+                               else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(bottomStart = 8.dp, bottomEnd = 8.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.9f))
+                        .then(if (!isOnDashboard) Modifier.clickable(onClick = onAddToDashboard) else Modifier)
+                        .padding(horizontal = 10.dp, vertical = 5.dp),
+                    verticalAlignment     = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                ) {
+                    Icon(
+                        imageVector        = Icons.Outlined.Dashboard,
+                        contentDescription = "Add to dashboard",
+                        tint               = dashTint,
+                        modifier           = Modifier.size(13.dp)
+                    )
+                    Text(
+                        text  = "add to dashboard",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = dashTint
+                    )
+                }
+                Spacer(Modifier.width(6.dp))
                 Row(
                     modifier = Modifier
                         .clip(RoundedCornerShape(bottomStart = 8.dp, bottomEnd = 8.dp))
@@ -1400,16 +1456,16 @@ private fun EditableCardWrapper(
     }
 }
 
-// ── Savings filter options ────────────────────────────────────────────────────
+// â"€â"€ Savings filter options â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
-private val savingsFilterOptions = listOf(
+val savingsFilterOptions = listOf(
     "all"   to "All Time",
     "year"  to "This Year",
     "month" to "This Month"
 )
 
 @Composable
-private fun SavingsSummaryCard(
+fun SavingsSummaryCard(
     total: Double,
     latestTxn: Transaction?,
     currencySymbol: String,

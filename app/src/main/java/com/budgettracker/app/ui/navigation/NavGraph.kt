@@ -1,4 +1,4 @@
-package com.pardonmyspending.app.ui.navigation
+﻿package com.pardonmyspending.app.ui.navigation
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
@@ -26,6 +26,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import kotlinx.coroutines.launch
 import com.pardonmyspending.app.data.model.PaymentType
 import com.pardonmyspending.app.data.model.TransactionType
+import com.pardonmyspending.app.data.repository.ParsedTransaction
+import com.pardonmyspending.app.data.repository.toTransaction
 import com.pardonmyspending.app.ui.screens.*
 import com.pardonmyspending.app.ui.theme.LocalCurrencySymbol
 import com.pardonmyspending.app.viewmodel.AccountViewModel
@@ -58,9 +60,12 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel, accountViewModel: Acc
     val navController       = rememberNavController()
     val drawerState         = rememberDrawerState(DrawerValue.Closed)
     var showAddSheet          by remember { mutableStateOf(false) }
+    var showAiSheet           by remember { mutableStateOf(false) }
     var showAddRecurringSheet by remember { mutableStateOf(false) }
     var editingTransaction    by remember { mutableStateOf<com.pardonmyspending.app.data.model.Transaction?>(null) }
     var editingRecurring      by remember { mutableStateOf<com.pardonmyspending.app.data.model.RecurringTransaction?>(null) }
+    var aiParsed              by remember { mutableStateOf<ParsedTransaction?>(null) }
+    val aiMode                by viewModel.aiMode.collectAsState()
     var fabExpanded           by remember { mutableStateOf(false) }
 
     BackHandler(enabled = fabExpanded) { fabExpanded = false }
@@ -76,13 +81,19 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel, accountViewModel: Acc
     LaunchedEffect(Unit) {
         viewModel.importErrorEvent.collect {
             snackbarHostState.showSnackbar(
-                message  = "Some rows couldn't be imported — error log saved to Downloads",
+                message  = "Some rows couldn't be imported - error log saved to Downloads",
                 duration = SnackbarDuration.Long
             )
         }
     }
 
-    // Track current route at the top level — used for both topBar visibility and bottomBar selection
+    LaunchedEffect(Unit) {
+        accountViewModel.localBackupStatus.collect { message ->
+            snackbarHostState.showSnackbar(message = message, duration = SnackbarDuration.Short)
+        }
+    }
+
+    // Track current route at the top level -" used for both topBar visibility and bottomBar selection
     val currentEntry by navController.currentBackStackEntryAsState()
     val route = currentEntry?.destination?.route
     val isTopLevel = route == null || route in setOf(Screen.Home.route, Screen.Reports.route, Screen.Calendar.route, Screen.Budget.route, Screen.Recurring.route)
@@ -101,6 +112,7 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel, accountViewModel: Acc
             drawerContent = {
                 SettingsDrawer(
                     viewModel              = viewModel,
+                    accountViewModel       = accountViewModel,
                     onClose                = { scope.launch { drawerState.close() } },
                     onNavigateToCategories = {
                         scope.launch { drawerState.close() }
@@ -140,7 +152,7 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel, accountViewModel: Acc
                                     onClick         = { fabExpanded = false; showAddRecurringSheet = true },
                                     shape           = RoundedCornerShape(percent = 50),
                                     color           = MaterialTheme.colorScheme.primaryContainer,
-                                    contentColor    = androidx.compose.ui.graphics.Color.White,
+                                    contentColor    = MaterialTheme.colorScheme.onPrimaryContainer,
                                     shadowElevation = 2.dp
                                 ) {
                                     Row(
@@ -153,10 +165,10 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel, accountViewModel: Acc
                                     }
                                 }
                                 Surface(
-                                    onClick         = { fabExpanded = false; showAddSheet = true },
+                                    onClick         = { fabExpanded = false; if (aiMode) showAiSheet = true else showAddSheet = true },
                                     shape           = RoundedCornerShape(percent = 50),
                                     color           = MaterialTheme.colorScheme.primaryContainer,
-                                    contentColor    = androidx.compose.ui.graphics.Color.White,
+                                    contentColor    = MaterialTheme.colorScheme.onPrimaryContainer,
                                     shadowElevation = 2.dp
                                 ) {
                                     Row(
@@ -261,7 +273,7 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel, accountViewModel: Acc
                     ) {
                         val current = currentEntry?.destination
 
-                        // 1 — Home
+                        // 1 -" Home
                         NavigationBarItem(
                             selected = current?.hierarchy?.any { it.route == Screen.Home.route } == true,
                             onClick  = { navController.navigate(Screen.Home.route) { launchSingleTop = true; restoreState = true } },
@@ -269,7 +281,7 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel, accountViewModel: Acc
                             label    = { Text(Screen.Home.label) }
                         )
 
-                        // 2 — Reports
+                        // 2 -" Reports
                         NavigationBarItem(
                             selected = current?.hierarchy?.any { it.route == Screen.Reports.route } == true,
                             onClick  = { navController.navigate(Screen.Reports.route) { launchSingleTop = true; restoreState = true } },
@@ -277,7 +289,7 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel, accountViewModel: Acc
                             label    = { Text(Screen.Reports.label) }
                         )
 
-                        // 3 — Budget
+                        // 3 -" Budget
                         NavigationBarItem(
                             selected = current?.hierarchy?.any { it.route == Screen.Budget.route } == true,
                             onClick  = { navController.navigate(Screen.Budget.route) { launchSingleTop = true; restoreState = true } },
@@ -285,7 +297,7 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel, accountViewModel: Acc
                             label    = { Text(Screen.Budget.label) }
                         )
 
-                        // 4 — Calendar
+                        // 4 -" Calendar
                         NavigationBarItem(
                             selected = current?.hierarchy?.any { it.route == Screen.Calendar.route } == true,
                             onClick  = { navController.navigate(Screen.Calendar.route) { launchSingleTop = true; restoreState = true } },
@@ -293,7 +305,7 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel, accountViewModel: Acc
                             label    = { Text(Screen.Calendar.label) }
                         )
 
-                        // 5 — Recurring payments
+                        // 5 -" Recurring payments
                         NavigationBarItem(
                             selected = current?.hierarchy?.any { it.route == Screen.Recurring.route } == true,
                             onClick  = { navController.navigate(Screen.Recurring.route) { launchSingleTop = true; restoreState = true } },
@@ -313,7 +325,7 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel, accountViewModel: Acc
                         HomeScreen(
                             viewModel           = viewModel,
                             editMode            = homeEditMode,
-                            onAddTransaction    = { showAddSheet = true },
+                            onAddTransaction    = { if (aiMode) showAiSheet = true else showAddSheet = true },
                             onCategoryClick     = { name -> navController.navigate(Screen.CategoryDetail.route(name)) },
                             onPaymentTypeClick  = { pt -> navController.navigate(Screen.PaymentTypeDetail.route(pt)) },
                             onEditTransaction   = { t -> editingTransaction = t },
@@ -426,13 +438,30 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel, accountViewModel: Acc
             }
         }
 
-        if (showAddSheet || editingTransaction != null) {
+        if (showAiSheet) {
+            AiInputSheet(
+                viewModel       = viewModel,
+                onDismiss       = { showAiSheet = false },
+                onParsed        = { parsed ->
+                    aiParsed    = parsed
+                    showAiSheet = false
+                },
+                onSwitchToManual = {
+                    showAiSheet  = false
+                    showAddSheet = true
+                }
+            )
+        }
+
+        if (showAddSheet || editingTransaction != null || aiParsed != null) {
             AddTransactionSheet(
                 viewModel          = viewModel,
-                initialTransaction = editingTransaction,
+                initialTransaction = editingTransaction ?: aiParsed?.toTransaction(),
+                isAiPrefill        = aiParsed != null,
                 onDismiss          = {
                     showAddSheet       = false
                     editingTransaction = null
+                    aiParsed           = null
                 }
             )
         }

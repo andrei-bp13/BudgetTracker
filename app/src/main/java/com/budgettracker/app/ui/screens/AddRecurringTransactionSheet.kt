@@ -1,4 +1,4 @@
-package com.pardonmyspending.app.ui.screens
+﻿package com.pardonmyspending.app.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -122,7 +122,7 @@ fun AddRecurringTransactionSheet(
         onDismissRequest = onDismiss,
         sheetState       = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         dragHandle       = { BottomSheetDefaults.DragHandle() },
-        modifier         = Modifier.fillMaxHeight()
+        modifier         = Modifier.fillMaxHeight(0.85f)
     ) {
         Column(modifier = Modifier.fillMaxHeight()) {
 
@@ -134,7 +134,7 @@ fun AddRecurringTransactionSheet(
                     .padding(bottom = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // ── Header ────────────────────────────────────────────────────
+                // â"€â"€ Header â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
                 Row(
                     modifier              = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -172,24 +172,24 @@ fun AddRecurringTransactionSheet(
                     }
                 }
 
-                // ── Title ─────────────────────────────────────────────────────
+                // â"€â"€ Title â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
                 OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Title") },
                     textStyle = MaterialTheme.typography.bodyMedium, modifier = Modifier.fillMaxWidth(),
                     singleLine = true, shape = MaterialTheme.shapes.medium)
 
-                // ── Amount ────────────────────────────────────────────────────
+                // â"€â"€ Amount â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
                 OutlinedTextField(value = amount, onValueChange = { amount = it.filter { c -> c.isDigit() || c == '.' } },
                     label = { Text("Amount") }, textStyle = MaterialTheme.typography.bodyMedium,
                     prefix = { Text("$currencySymbol ", style = MaterialTheme.typography.bodyMedium) },
                     modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true, shape = MaterialTheme.shapes.medium)
 
-                // ── Note ──────────────────────────────────────────────────────
+                // â"€â"€ Note â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
                 OutlinedTextField(value = note, onValueChange = { note = it }, label = { Text("Note (optional)") },
                     textStyle = MaterialTheme.typography.bodyMedium, modifier = Modifier.fillMaxWidth(),
                     singleLine = true, shape = MaterialTheme.shapes.medium)
 
-                // ── Payment type ──────────────────────────────────────────────
+                // â"€â"€ Payment type â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
                 val paymentTypes = PaymentType.values()
                 SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                     paymentTypes.forEachIndexed { index, pt ->
@@ -202,7 +202,7 @@ fun AddRecurringTransactionSheet(
                     }
                 }
 
-                // ── Start date ────────────────────────────────────────────────
+                // â"€â"€ Start date â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
                 Text("Schedule", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
                 Box(modifier = Modifier.fillMaxWidth()) {
@@ -216,7 +216,7 @@ fun AddRecurringTransactionSheet(
                     Box(modifier = Modifier.matchParentSize().clickable { showStartDatePicker = true })
                 }
 
-                // ── Frequency ─────────────────────────────────────────────────
+                // â"€â"€ Frequency â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
                 Text("Repeats", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 val frequencies = RecurringFrequency.values()
                 SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
@@ -241,7 +241,7 @@ fun AddRecurringTransactionSheet(
                     }
                 }
 
-                // ── Custom interval ───────────────────────────────────────────
+                // â"€â"€ Custom interval â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
                 if (frequency == RecurringFrequency.CUSTOM) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -294,7 +294,7 @@ fun AddRecurringTransactionSheet(
                     }
                 }
 
-                // ── End condition ─────────────────────────────────────────────
+                // â"€â"€ End condition â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
                 Text("Ends", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 val endOptions = EndCondition.values()
                 SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
@@ -339,7 +339,7 @@ fun AddRecurringTransactionSheet(
                     )
                 }
 
-                // ── Category header ───────────────────────────────────────────
+                // â"€â"€ Category header â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
                 Row(
                     modifier              = Modifier.fillMaxWidth(),
                     verticalAlignment     = Alignment.CenterVertically,
@@ -353,7 +353,7 @@ fun AddRecurringTransactionSheet(
                         ) {
                             Icon(Icons.Rounded.SwapVert, contentDescription = "Sort", modifier = Modifier.size(14.dp))
                             Spacer(Modifier.width(4.dp))
-                            Text(if (sortByMostUsed) "Most Used" else "A–Z", style = MaterialTheme.typography.labelSmall)
+                            Text(if (sortByMostUsed) "Most Used" else "A-Z", style = MaterialTheme.typography.labelSmall)
                         }
                         TextButton(
                             onClick        = { showNewCatSheet = true },
@@ -366,7 +366,7 @@ fun AddRecurringTransactionSheet(
                     }
                 }
 
-                // ── Category grid — centered FlowRow, scrolls with the outer column ──
+                // â"€â"€ Category grid -" centered FlowRow, scrolls with the outer column â"€â"€
                 FlowRow(
                     modifier              = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
@@ -400,7 +400,7 @@ fun AddRecurringTransactionSheet(
 
             } // scrollable Column
 
-            // ── Save button ───────────────────────────────────────────────────
+            // â"€â"€ Save button â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
             Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp)) {
                 val typeLabel = if (transactionType == TransactionType.EXPENSE) "Expense" else "Income"
                 Button(onClick = onSave, modifier = Modifier.fillMaxWidth().height(52.dp), shape = MaterialTheme.shapes.large) {
@@ -410,7 +410,7 @@ fun AddRecurringTransactionSheet(
             }
         }
 
-        // ── Start date picker ─────────────────────────────────────────────────
+        // â"€â"€ Start date picker â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
         if (showStartDatePicker) {
             val state = rememberDatePickerState(initialSelectedDateMillis = startDate.toEpochDay() * 86_400_000L)
             DatePickerDialog(
@@ -425,7 +425,7 @@ fun AddRecurringTransactionSheet(
             ) { DatePicker(state = state) }
         }
 
-        // ── End date picker ───────────────────────────────────────────────────
+        // â"€â"€ End date picker â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
         if (showEndDatePicker) {
             val state = rememberDatePickerState(initialSelectedDateMillis = endDate.toEpochDay() * 86_400_000L)
             DatePickerDialog(
@@ -440,7 +440,7 @@ fun AddRecurringTransactionSheet(
             ) { DatePicker(state = state) }
         }
 
-        // ── Add category shortcut ─────────────────────────────────────────────
+        // â"€â"€ Add category shortcut â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
         if (showNewCatSheet) {
             val newCatType = if (transactionType == TransactionType.EXPENSE) CategoryType.EXPENSE else CategoryType.INCOME
             EditCategorySheet(

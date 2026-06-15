@@ -1,4 +1,4 @@
-package com.pardonmyspending.app.data.repository
+﻿package com.pardonmyspending.app.data.repository
 
 import android.net.Uri
 import com.pardonmyspending.app.data.csv.CsvManager
@@ -15,7 +15,7 @@ class TransactionRepository(
     private val csvManager: CsvManager,
     private val dao: TransactionDao
 ) {
-    // Room drives updates reactively — no manual in-memory mirror needed.
+    // Room drives updates reactively -" no manual in-memory mirror needed.
     val transactions: Flow<List<Transaction>> = dao.observeAll()
         .map { entities -> entities.map { it.toTransaction() } }
 

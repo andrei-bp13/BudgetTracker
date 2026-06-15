@@ -1,4 +1,4 @@
-package com.pardonmyspending.app.ui.icons
+﻿package com.pardonmyspending.app.ui.icons
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
@@ -7,7 +7,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 data class AppIcon(val id: String, val label: String, val vector: ImageVector)
 
 val AppIcons: List<AppIcon> = listOf(
-    // ── Home & Living (10) ────────────────────────────────────────────────────
+    // â"€â"€ Home & Living (10) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
     AppIcon("home",             "Home",          Icons.Outlined.Home),
     AppIcon("apartment",        "Apartment",     Icons.Outlined.Apartment),
     AppIcon("bathtub",          "Bathroom",      Icons.Outlined.Bathtub),
@@ -19,7 +19,7 @@ val AppIcons: List<AppIcon> = listOf(
     AppIcon("construction",     "Repairs",       Icons.Outlined.Construction),
     AppIcon("lock",             "Security",      Icons.Outlined.Lock),
 
-    // ── Utilities (6) ─────────────────────────────────────────────────────────
+    // â"€â"€ Utilities (6) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
     AppIcon("electric",         "Electricity",   Icons.Outlined.ElectricBolt),
     AppIcon("water_drop",       "Water",         Icons.Outlined.WaterDrop),
     AppIcon("wifi",             "Internet",      Icons.Outlined.Wifi),
@@ -27,7 +27,7 @@ val AppIcons: List<AppIcon> = listOf(
     AppIcon("whatshot",         "Gas/Heating",   Icons.Outlined.Whatshot),
     AppIcon("thermostat",       "Thermostat",    Icons.Outlined.Thermostat),
 
-    // ── Food & Dining (7) ─────────────────────────────────────────────────────
+    // â"€â"€ Food & Dining (7) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
     AppIcon("restaurant",       "Restaurant",    Icons.Outlined.Restaurant),
     AppIcon("groceries",        "Groceries",     Icons.Outlined.LocalGroceryStore),
     AppIcon("coffee",           "Coffee",        Icons.Outlined.Coffee),
@@ -36,14 +36,14 @@ val AppIcons: List<AppIcon> = listOf(
     AppIcon("local_bar",        "Bar/Drinks",    Icons.Outlined.LocalBar),
     AppIcon("icecream",         "Ice Cream",     Icons.Outlined.Icecream),
 
-    // ── Shopping (5) ──────────────────────────────────────────────────────────
+    // â"€â"€ Shopping (5) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
     AppIcon("shopping_bag",     "Shopping",      Icons.Outlined.ShoppingBag),
     AppIcon("shopping_cart",    "Online Order",  Icons.Outlined.ShoppingCart),
     AppIcon("storefront",       "Store",         Icons.Outlined.Storefront),
     AppIcon("checkroom",        "Clothing",      Icons.Outlined.Checkroom),
     AppIcon("watch",            "Accessories",   Icons.Outlined.Watch),
 
-    // ── Transportation (7) ────────────────────────────────────────────────────
+    // â"€â"€ Transportation (7) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
     AppIcon("car",              "Car",           Icons.Outlined.DirectionsCar),
     AppIcon("bus",              "Bus",           Icons.Outlined.DirectionsBus),
     AppIcon("train",            "Train",         Icons.Outlined.Train),
@@ -52,7 +52,7 @@ val AppIcons: List<AppIcon> = listOf(
     AppIcon("bike",             "Bicycle",       Icons.Outlined.DirectionsBike),
     AppIcon("gas_station",      "Gas Station",   Icons.Outlined.LocalGasStation),
 
-    // ── Health & Wellness (7) ─────────────────────────────────────────────────
+    // â"€â"€ Health & Wellness (7) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
     AppIcon("hospital",         "Hospital",      Icons.Outlined.LocalHospital),
     AppIcon("medication",       "Pharmacy",      Icons.Outlined.Medication),
     AppIcon("fitness",          "Gym",           Icons.Outlined.FitnessCenter),
@@ -61,7 +61,7 @@ val AppIcons: List<AppIcon> = listOf(
     AppIcon("psychology",       "Therapy",       Icons.Outlined.Psychology),
     AppIcon("vaccines",         "Vaccines",      Icons.Outlined.Vaccines),
 
-    // ── Entertainment (7) ─────────────────────────────────────────────────────
+    // â"€â"€ Entertainment (7) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
     AppIcon("movie",            "Movies",        Icons.Outlined.Movie),
     AppIcon("music_note",       "Music",         Icons.Outlined.MusicNote),
     AppIcon("sports_esports",   "Gaming",        Icons.Outlined.SportsEsports),
@@ -70,14 +70,14 @@ val AppIcons: List<AppIcon> = listOf(
     AppIcon("palette",          "Art",           Icons.Outlined.Palette),
     AppIcon("camera_alt",       "Photography",   Icons.Outlined.CameraAlt),
 
-    // ── Education (5) ─────────────────────────────────────────────────────────
+    // â"€â"€ Education (5) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
     AppIcon("school",           "School",        Icons.Outlined.School),
     AppIcon("menu_book",        "Books",         Icons.Outlined.MenuBook),
     AppIcon("computer",         "Computer",      Icons.Outlined.Computer),
     AppIcon("science",          "Science",       Icons.Outlined.Science),
     AppIcon("emoji_events",     "Achievement",   Icons.Outlined.EmojiEvents),
 
-    // ── Finance & Work (7) ────────────────────────────────────────────────────
+    // â"€â"€ Finance & Work (7) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
     AppIcon("work",             "Work/Salary",   Icons.Outlined.Work),
     AppIcon("account_balance",  "Bank",          Icons.Outlined.AccountBalance),
     AppIcon("savings",          "Savings",       Icons.Outlined.Savings),
@@ -86,14 +86,14 @@ val AppIcons: List<AppIcon> = listOf(
     AppIcon("receipt",          "Bills",         Icons.Outlined.Receipt),
     AppIcon("business",         "Business",      Icons.Outlined.BusinessCenter),
 
-    // ── Travel (5) ────────────────────────────────────────────────────────────
+    // â"€â"€ Travel (5) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
     AppIcon("hotel",            "Hotel",         Icons.Outlined.Hotel),
     AppIcon("luggage",          "Luggage",       Icons.Outlined.Luggage),
     AppIcon("beach",            "Beach",         Icons.Outlined.BeachAccess),
     AppIcon("map",              "Navigation",    Icons.Outlined.Map),
     AppIcon("explore",          "Explore",       Icons.Outlined.Explore),
 
-    // ── Nature & Outdoors (6) ─────────────────────────────────────────────────
+    // â"€â"€ Nature & Outdoors (6) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
     AppIcon("park",             "Park/Trees",    Icons.Outlined.Park),
     AppIcon("eco",              "Eco/Leaf",      Icons.Outlined.Eco),
     AppIcon("local_florist",    "Flowers",       Icons.Outlined.LocalFlorist),
@@ -101,26 +101,26 @@ val AppIcons: List<AppIcon> = listOf(
     AppIcon("wb_sunny",         "Sunny",         Icons.Outlined.WbSunny),
     AppIcon("terrain",          "Mountain",      Icons.Outlined.Terrain),
 
-    // ── Pets & Animals (4) ────────────────────────────────────────────────────
+    // â"€â"€ Pets & Animals (4) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
     AppIcon("pets",             "Dog/Cat",       Icons.Outlined.Pets),
     AppIcon("set_meal",         "Pet Food",      Icons.Outlined.SetMeal),
     AppIcon("cruelty_free",     "Small Pets",    Icons.Outlined.CrueltyFree),
     AppIcon("emoji_nature",     "Wildlife",      Icons.Outlined.EmojiNature),
 
-    // ── Family & Kids (5) ────────────────────────────────────────────────────
+    // â"€â"€ Family & Kids (5) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
     AppIcon("child_care",       "Childcare",     Icons.Outlined.ChildCare),
     AppIcon("cake",             "Birthday",      Icons.Outlined.Cake),
     AppIcon("card_giftcard",    "Gifts",         Icons.Outlined.CardGiftcard),
     AppIcon("family",           "Family",        Icons.Outlined.FamilyRestroom),
     AppIcon("smart_toy",        "Toys",          Icons.Outlined.SmartToy),
 
-    // ── Personal Care (4) ────────────────────────────────────────────────────
+    // â"€â"€ Personal Care (4) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
     AppIcon("content_cut",      "Haircut",       Icons.Outlined.ContentCut),
     AppIcon("face",             "Face Care",     Icons.Outlined.Face),
     AppIcon("self_improve",     "Meditation",    Icons.Outlined.SelfImprovement),
     AppIcon("laundry",          "Laundry",       Icons.Outlined.LocalLaundryService),
 
-    // ── Sports (6) ───────────────────────────────────────────────────────────
+    // â"€â"€ Sports (6) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
     AppIcon("soccer",           "Soccer",        Icons.Outlined.SportsSoccer),
     AppIcon("basketball",       "Basketball",    Icons.Outlined.SportsBasketball),
     AppIcon("tennis",           "Tennis",        Icons.Outlined.SportsTennis),
@@ -128,7 +128,7 @@ val AppIcons: List<AppIcon> = listOf(
     AppIcon("pool",             "Swimming",      Icons.Outlined.Pool),
     AppIcon("hiking",           "Hiking",        Icons.Outlined.Hiking),
 
-    // ── Misc (4) ─────────────────────────────────────────────────────────────
+    // â"€â"€ Misc (4) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
     AppIcon("volunteer",        "Charity",       Icons.Outlined.VolunteerActivism),
     AppIcon("subscriptions",    "Subscriptions", Icons.Outlined.Subscriptions),
     AppIcon("star",             "Favourite",     Icons.Outlined.Star),

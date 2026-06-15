@@ -1,4 +1,4 @@
-package com.pardonmyspending.app.ui.components
+﻿package com.pardonmyspending.app.ui.components
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
@@ -104,7 +104,7 @@ fun MonthlyProgressChart(
                 }
             }
 
-            // This month — filled gradient + solid line
+            // This month -" filled gradient + solid line
             if (thisMonth.size >= 2) {
                 val fillPath = Path().apply {
                     moveTo(toOffset(thisMonth[0].first, 0.0).x, h)

@@ -1,4 +1,4 @@
-package com.pardonmyspending.app.data.auth
+﻿package com.pardonmyspending.app.data.auth
 
 import android.content.Context
 import android.content.Intent

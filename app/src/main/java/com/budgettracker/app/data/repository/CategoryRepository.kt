@@ -1,4 +1,4 @@
-package com.pardonmyspending.app.data.repository
+﻿package com.pardonmyspending.app.data.repository
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit
@@ -38,7 +38,7 @@ class CategoryRepository(private val context: Context) {
         }
     }
 
-    // ── Serialization ─────────────────────────────────────────────────────────
+    // â"€â"€ Serialization â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
     private fun List<CategoryItem>.serialize(): String =
         joinToString(RECORD_SEP) {

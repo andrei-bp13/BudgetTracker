@@ -1,4 +1,4 @@
-package com.pardonmyspending.app
+﻿package com.pardonmyspending.app
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -44,7 +44,8 @@ class MainActivity : ComponentActivity() {
             app.transactionRepository,
             app.recurringRepository,
             app.categoryRepository,
-            app.budgetRepository
+            app.budgetRepository,
+            app.preferencesRepository
         )
         val accountVm = ViewModelProvider(this, accountFactory)[AccountViewModel::class.java]
 

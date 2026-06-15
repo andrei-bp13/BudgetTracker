@@ -1,4 +1,4 @@
-package com.pardonmyspending.app.data.model
+﻿package com.pardonmyspending.app.data.model
 
 enum class BudgetPeriod { ONE_TIME, WEEKLY, MONTHLY, YEARLY }
 

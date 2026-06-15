@@ -1,4 +1,4 @@
-package com.pardonmyspending.app.data.db
+﻿package com.pardonmyspending.app.data.db
 
 import androidx.room.Entity
 import androidx.room.Index

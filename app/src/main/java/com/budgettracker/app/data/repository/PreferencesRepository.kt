@@ -1,4 +1,4 @@
-package com.pardonmyspending.app.data.repository
+﻿package com.pardonmyspending.app.data.repository
 
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -22,6 +22,9 @@ class PreferencesRepository(private val context: Context) {
         val CHART_GRANULARITY   = stringPreferencesKey("chart_granularity")
         val AI_MODE             = booleanPreferencesKey("ai_mode")
         val CUSTOM_ACCENT_COLOR = stringPreferencesKey("custom_accent_color")
+        val CARD_ORDER          = stringPreferencesKey("card_order")
+        val CARD_VISIBLE        = stringPreferencesKey("card_visible")
+        val AI_API_KEY          = stringPreferencesKey("ai_api_key")
         const val DEFAULT_ACCENT = 0
     }
 
@@ -31,6 +34,9 @@ class PreferencesRepository(private val context: Context) {
     val chartGranularity: Flow<String> = context.dataStore.data.map { it[CHART_GRANULARITY] ?: "monthly" }
     val aiMode: Flow<Boolean>          = context.dataStore.data.map { it[AI_MODE]           ?: false }
     val customAccentHex: Flow<String>  = context.dataStore.data.map { it[CUSTOM_ACCENT_COLOR] ?: "2196F3" }
+    val cardOrderJson:   Flow<String>  = context.dataStore.data.map { it[CARD_ORDER]          ?: "" }
+    val cardVisibleJson: Flow<String>  = context.dataStore.data.map { it[CARD_VISIBLE]        ?: "" }
+    val aiApiKey:        Flow<String>  = context.dataStore.data.map { it[AI_API_KEY]           ?: "" }
 
     // false = off, true = on. Only one should be active at a time.
     val globalColoring: Flow<Boolean>   = context.dataStore.data.map { it[GLOBAL_COLORING]   ?: false }
@@ -42,6 +48,9 @@ class PreferencesRepository(private val context: Context) {
     suspend fun setChartGranularity(value: String) { context.dataStore.edit { it[CHART_GRANULARITY] = value } }
     suspend fun setAiMode(enabled: Boolean)         { context.dataStore.edit { it[AI_MODE]            = enabled } }
     suspend fun setCustomAccentHex(hex: String)     { context.dataStore.edit { it[CUSTOM_ACCENT_COLOR] = hex } }
+    suspend fun setCardOrder(json: String)          { context.dataStore.edit { it[CARD_ORDER]      = json } }
+    suspend fun setCardVisible(json: String)        { context.dataStore.edit { it[CARD_VISIBLE]   = json } }
+    suspend fun setAiApiKey(key: String)             { context.dataStore.edit { it[AI_API_KEY]      = key  } }
 
     suspend fun setGlobalColoring(enabled: Boolean) {
         context.dataStore.edit {
