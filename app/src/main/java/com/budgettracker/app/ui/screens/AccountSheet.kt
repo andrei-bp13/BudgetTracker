@@ -38,8 +38,9 @@ fun AccountSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState       = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        modifier         = Modifier.fillMaxHeight(0.85f)
     ) {
+        val screenHeight = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp
+        Box(modifier = Modifier.heightIn(max = screenHeight * 0.85f)) {
         if (account == null) {
             SignedOutContent(
                 onSignIn = { signInLauncher.launch(viewModel.getSignInIntent()) }
@@ -54,6 +55,7 @@ fun AccountSheet(
                 onSignOut   = { viewModel.signOut(); onDismiss() }
             )
         }
+        } // Box
     }
 }
 

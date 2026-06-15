@@ -33,8 +33,9 @@ fun CurrencyPickerSheet(
         }
     }
 
-    ModalBottomSheet(onDismissRequest = onDismiss, modifier = Modifier.fillMaxHeight(0.85f)) {
-        Column(modifier = Modifier.fillMaxWidth()) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        val screenHeight = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp
+        Column(modifier = Modifier.fillMaxWidth().heightIn(max = screenHeight * 0.85f)) {
             Text(
                 "Select Currency",
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),

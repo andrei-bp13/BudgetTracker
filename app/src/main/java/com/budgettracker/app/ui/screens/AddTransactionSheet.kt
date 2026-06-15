@@ -121,9 +121,9 @@ fun AddTransactionSheet(
         onDismissRequest = onDismiss,
         sheetState       = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         dragHandle       = { BottomSheetDefaults.DragHandle() },
-        modifier         = Modifier.fillMaxHeight(0.85f)
     ) {
-        Column(modifier = Modifier.fillMaxHeight()) {
+        val screenHeight = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp
+        Column(modifier = Modifier.heightIn(max = screenHeight * 0.85f)) {
 
             // â"€â"€ Scrollable form â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
             Column(

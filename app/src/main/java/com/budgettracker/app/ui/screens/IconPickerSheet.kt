@@ -36,11 +36,12 @@ fun IconPickerSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState       = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        modifier         = Modifier.fillMaxHeight(0.85f)
     ) {
+        val screenHeight = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .heightIn(max = screenHeight * 0.85f)
                 .padding(horizontal = 16.dp)
                 .padding(bottom = 32.dp)
         ) {

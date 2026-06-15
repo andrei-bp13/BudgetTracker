@@ -702,8 +702,9 @@ fun ReportsScreen(
         ModalBottomSheet(
             onDismissRequest = { catDetailCategory = null },
             sheetState       = catDetailSheetState,
-            modifier         = Modifier.fillMaxHeight(0.85f)
         ) {
+            val screenHeight = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp
+            Box(modifier = Modifier.heightIn(max = screenHeight * 0.85f)) {
             CategoryDetailSheet(
                 category        = category,
                 period          = selectedCatPeriod,
@@ -711,6 +712,7 @@ fun ReportsScreen(
                 viewModel       = viewModel,
                 currencySymbol  = currencySymbol
             )
+            }
         }
     }
 
@@ -718,8 +720,9 @@ fun ReportsScreen(
         ModalBottomSheet(
             onDismissRequest = { incomeCatDetailCategory = null },
             sheetState       = incomeCatDetailSheetState,
-            modifier         = Modifier.fillMaxHeight(0.85f)
         ) {
+            val screenHeight = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp
+            Box(modifier = Modifier.heightIn(max = screenHeight * 0.85f)) {
             CategoryDetailSheet(
                 category        = category,
                 period          = selectedIncomeCatPeriod,
@@ -727,6 +730,7 @@ fun ReportsScreen(
                 viewModel       = viewModel,
                 currencySymbol  = currencySymbol
             )
+            }
         }
     }
 }
