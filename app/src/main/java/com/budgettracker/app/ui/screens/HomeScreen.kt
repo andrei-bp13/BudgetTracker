@@ -270,10 +270,11 @@ fun HomeScreen(
                     modifier        = Modifier.fillMaxWidth()
                 )
                 "budgets" -> BudgetOverviewCard(
-                    budgets     = budgets,
-                    budgetSpent = budgetSpent,
-                    categoryFor = { viewModel.categoryFor(it) },
-                    modifier    = Modifier.fillMaxWidth()
+                    budgets        = budgets,
+                    budgetSpent    = budgetSpent,
+                    categoryFor    = { viewModel.categoryFor(it) },
+                    modifier       = Modifier.fillMaxWidth(),
+                    globalColoring = globalColoring
                 )
 
                 // â"€â"€ Report cards pinned to dashboard â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€

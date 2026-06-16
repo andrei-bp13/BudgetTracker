@@ -60,9 +60,10 @@ fun BudgetScreen(
     isSignedIn: Boolean = false,
     onToggleEditMode: () -> Unit = {}
 ) {
-    val budgets      by viewModel.budgets.collectAsState()
-    val budgetSpent  by viewModel.budgetSpent.collectAsState()
-    val transactions by viewModel.transactions.collectAsState()
+    val budgets        by viewModel.budgets.collectAsState()
+    val budgetSpent    by viewModel.budgetSpent.collectAsState()
+    val transactions   by viewModel.transactions.collectAsState()
+    val globalColoring by viewModel.globalColoring.collectAsState()
     val currencySymbol = LocalCurrencySymbol.current
 
     var showAddSheet      by remember { mutableStateOf(false) }
@@ -219,7 +220,7 @@ fun BudgetScreen(
                             budget         = budget,
                             spent          = spent,
                             editMode       = editMode,
-                            categoryColor  = cat?.color ?: MaterialTheme.colorScheme.primary,
+                            categoryColor  = if (globalColoring) MaterialTheme.colorScheme.primary else (cat?.color ?: MaterialTheme.colorScheme.primary),
                             categoryIconId = cat?.iconId ?: "savings",
                             currencySymbol = currencySymbol,
                             onClick        = { if (!editMode) editTarget = budget },

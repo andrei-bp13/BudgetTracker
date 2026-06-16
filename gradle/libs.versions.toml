@@ -14,6 +14,7 @@ coreSplashscreen = "1.0.1"
 playServicesAuth = "21.2.0"
 gson = "2.10.1"
 coroutinesPlayServices = "1.7.3"
+glance = "1.1.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -37,6 +38,7 @@ junit = { group = "junit", name = "junit", version.ref = "junit" }
 play-services-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "playServicesAuth" }
 gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 kotlinx-coroutines-play-services = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-play-services", version.ref = "coroutinesPlayServices" }
+androidx-glance-appwidget = { group = "androidx.glance", name = "glance-appwidget", version.ref = "glance" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

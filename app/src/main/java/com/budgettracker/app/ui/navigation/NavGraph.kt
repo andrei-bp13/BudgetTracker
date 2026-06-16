@@ -62,6 +62,7 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
     }
     object Budget     : Screen("budget",    "Budget",    Icons.Rounded.Savings)
     object Recurring  : Screen("recurring", "Recurring", Icons.Rounded.Repeat)
+    object Widgets    : Screen("widgets",   "Widgets",   Icons.Rounded.Widgets)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -128,6 +129,10 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel, accountViewModel: Acc
                     onNavigateToCategories = {
                         scope.launch { drawerState.close() }
                         navController.navigate(Screen.Categories.route)
+                    },
+                    onNavigateToWidgets    = {
+                        scope.launch { drawerState.close() }
+                        navController.navigate(Screen.Widgets.route)
                     }
                 )
             }
@@ -404,6 +409,13 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel, accountViewModel: Acc
                             accountInitial = accountInitial,
                             isSignedIn     = isSignedIn
                         )
+                    }
+                    composable(
+                        Screen.Widgets.route,
+                        enterTransition   = { slideInHorizontally { it } + fadeIn() },
+                        popExitTransition = { slideOutHorizontally { it } + fadeOut() }
+                    ) {
+                        WidgetPickerScreen(onBack = { navController.popBackStack() })
                     }
                 }
 

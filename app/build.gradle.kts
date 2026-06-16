@@ -51,6 +51,7 @@ dependencies {
     implementation(libs.play.services.auth)
     implementation(libs.gson)
     implementation(libs.kotlinx.coroutines.play.services)
+    implementation(libs.androidx.glance.appwidget)
     debugImplementation(libs.androidx.ui.tooling)
     testImplementation(libs.junit)
     testImplementation(kotlin("test"))

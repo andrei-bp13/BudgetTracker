@@ -196,7 +196,12 @@ class TransactionViewModel(
     val recurringTransactions: StateFlow<List<RecurringTransaction>> = recurringRepo.recurring
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyList())
 
-    fun addRecurring(rec: RecurringTransaction)    = viewModelScope.launch { recurringRepo.add(rec) }
+    fun addRecurring(rec: RecurringTransaction) = viewModelScope.launch {
+        recurringRepo.add(rec)
+        // Process immediately so past-dated recurrings generate their transactions right away
+        // and nextDueDate is advanced to the correct upcoming date.
+        recurringRepo.processRecurring(repo)
+    }
     fun updateRecurring(rec: RecurringTransaction) = viewModelScope.launch { recurringRepo.update(rec) }
     fun deleteRecurring(id: String)                = viewModelScope.launch { recurringRepo.delete(id) }
 

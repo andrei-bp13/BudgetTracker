@@ -25,9 +25,11 @@ fun BudgetOverviewCard(
     budgets: List<Budget>,
     budgetSpent: Map<String, Double>,
     categoryFor: (String) -> CategoryItem?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    globalColoring: Boolean = false
 ) {
     val currencySymbol = LocalCurrencySymbol.current
+    val accent         = MaterialTheme.colorScheme.primary
 
     Card(
         modifier = modifier,
@@ -39,7 +41,7 @@ fun BudgetOverviewCard(
             Spacer(Modifier.height(12.dp))
             budgets.forEachIndexed { i, budget ->
                 val cat        = categoryFor(budget.categoryName)
-                val catColor   = cat?.color ?: MaterialTheme.colorScheme.primary
+                val catColor   = if (globalColoring) accent else (cat?.color ?: accent)
                 val iconId     = cat?.iconId ?: "savings"
                 val spent      = budgetSpent[budget.id] ?: 0.0
                 val exceeded   = spent >= budget.amount

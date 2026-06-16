@@ -22,5 +22,82 @@
             </intent-filter>
         </activity>
 
+        <receiver
+            android:name="com.pardonmyspending.app.widget.TotalSpentReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_total_spent" />
+        </receiver>
+
+        <receiver
+            android:name="com.pardonmyspending.app.widget.TotalEarnedReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_total_earned" />
+        </receiver>
+
+        <receiver
+            android:name="com.pardonmyspending.app.widget.TotalSavingsReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_total_savings" />
+        </receiver>
+
+        <receiver
+            android:name="com.pardonmyspending.app.widget.HighestExpenseReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_highest_expense" />
+        </receiver>
+
+        <receiver
+            android:name="com.pardonmyspending.app.widget.HighestIncomeReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_highest_income" />
+        </receiver>
+
+        <receiver
+            android:name="com.pardonmyspending.app.widget.BudgetProgressReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_budget_progress" />
+        </receiver>
+
+        <receiver
+            android:name="com.pardonmyspending.app.widget.MonthSummaryReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_month_summary" />
+        </receiver>
+
     </application>
 </manifest>

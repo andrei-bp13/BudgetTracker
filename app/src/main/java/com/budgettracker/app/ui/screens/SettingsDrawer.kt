@@ -40,7 +40,8 @@ fun SettingsDrawer(
     viewModel: TransactionViewModel,
     accountViewModel: AccountViewModel,
     onClose: () -> Unit,
-    onNavigateToCategories: () -> Unit = {}
+    onNavigateToCategories: () -> Unit = {},
+    onNavigateToWidgets: () -> Unit = {}
 ) {
     val themeMode        by viewModel.themeMode.collectAsState()
     val accentIndex      by viewModel.accentIndex.collectAsState()
@@ -295,7 +296,20 @@ fun SettingsDrawer(
 
         Divider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
 
-        // â"€â"€ Data section â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
+        // ── Widgets section ────────────────────────────────────────────────
+        SectionLabel("Widgets")
+
+        NavigationDrawerItem(
+            label = { Text("Manage Widgets") },
+            icon  = { Icon(Icons.Rounded.Widgets, contentDescription = null) },
+            selected = false,
+            onClick = { onNavigateToWidgets() },
+            modifier = Modifier.padding(horizontal = 12.dp)
+        )
+
+        Divider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
+
+        // ── Data section â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
         SectionLabel("Data")
 
         NavigationDrawerItem(
