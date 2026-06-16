@@ -108,6 +108,7 @@ private data class WidgetInfo(
 
 private val supportedWidgets = listOf(
     WidgetInfo("Monthly Summary", "Spent & earned this month",    Icons.Rounded.CalendarMonth, MonthSummaryReceiver::class.java),
+    WidgetInfo("Calendar",        "Monthly calendar with dots",   Icons.Rounded.DateRange,     CalendarReceiver::class.java),
     WidgetInfo("Total Spent",     "Monthly expenses at a glance", Icons.Rounded.TrendingDown,  TotalSpentReceiver::class.java),
     WidgetInfo("Total Earned",    "Monthly income at a glance",   Icons.Rounded.TrendingUp,    TotalEarnedReceiver::class.java),
     WidgetInfo("Total Savings",   "Your cumulative savings",       Icons.Rounded.Savings,       TotalSavingsReceiver::class.java),
@@ -277,6 +278,7 @@ private fun WidgetPreview(name: String) {
                     }
                 }
             }
+            "Calendar" -> CalendarPreview(primary = primary, sub = sub, onBg = onBg)
             "Total Spent" -> SimpleValuePreview(
                 label    = "Total Spent",
                 value    = "$ 0.00",
@@ -346,6 +348,68 @@ private fun TwoLineValuePreview(
         Text(title, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = onBg)
         if (value.isNotEmpty())
             Text(value, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = color)
+    }
+}
+
+@Composable
+private fun CalendarPreview(primary: Color, sub: Color, onBg: Color) {
+    val today = java.time.LocalDate.now()
+    val ym    = java.time.YearMonth.now()
+    val firstDayOffset = ym.atDay(1).dayOfWeek.value - 1
+    val daysInMonth    = ym.lengthOfMonth()
+    val rows           = ((firstDayOffset + daysInMonth) + 6) / 7
+    val mockDots       = setOf(3, 7, 12, 15, 20, 24)
+
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            "${ym.month.getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.getDefault())} ${ym.year}",
+            fontSize = 13.sp, fontWeight = FontWeight.Bold, color = onBg
+        )
+        Spacer(Modifier.height(2.dp))
+        Row(modifier = Modifier.fillMaxWidth()) {
+            listOf("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su").forEach { d ->
+                Text(d, modifier = Modifier.weight(1f), textAlign = androidx.compose.ui.text.style.TextAlign.Center, fontSize = 9.sp, color = sub)
+            }
+        }
+        Spacer(Modifier.height(2.dp))
+        repeat(rows) { row ->
+            Row(modifier = Modifier.fillMaxWidth()) {
+                repeat(7) { col ->
+                    val cellIndex = row * 7 + col
+                    val dayNum    = cellIndex - firstDayOffset + 1
+                    val isValid   = dayNum in 1..daysInMonth
+                    val isToday   = isValid && dayNum == today.dayOfMonth
+                    val hasDot    = isValid && dayNum in mockDots
+                    Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                        if (isValid) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(22.dp)
+                                        .clip(androidx.compose.foundation.shape.CircleShape)
+                                        .background(if (isToday) primary else Color.Transparent),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        dayNum.toString(),
+                                        fontSize = 9.sp,
+                                        fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isToday) Color.White else onBg
+                                    )
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .size(3.dp)
+                                        .clip(androidx.compose.foundation.shape.CircleShape)
+                                        .background(if (hasDot) primary else Color.Transparent)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(2.dp))
+        }
     }
 }
 

@@ -40,25 +40,27 @@ import java.util.Locale
 // ── Adaptive colour theme ─────────────────────────────────────────────────
 
 private class WidgetColors(
-    val bg:      GlanceColorProvider,
-    val onBg:    GlanceColorProvider,
-    val subtext: GlanceColorProvider,
-    val primary: GlanceColorProvider,
-    val green:   GlanceColorProvider,
-    val error:   GlanceColorProvider,
-    val track:   GlanceColorProvider,
+    val bg:        GlanceColorProvider,
+    val onBg:      GlanceColorProvider,
+    val subtext:   GlanceColorProvider,
+    val primary:   GlanceColorProvider,
+    val onPrimary: GlanceColorProvider,
+    val green:     GlanceColorProvider,
+    val error:     GlanceColorProvider,
+    val track:     GlanceColorProvider,
 )
 
 // ColorProvider(day, night) is @Composable — must be called inside composable scope
 @Composable
 private fun widgetColors() = WidgetColors(
-    bg      = ColorProvider(day = Color(0xFFFFFFFF), night = Color(0xFF1C1B1F)),
-    onBg    = ColorProvider(day = Color(0xFF1C1B1F), night = Color(0xFFE6E1E5)),
-    subtext = ColorProvider(day = Color(0xFF6B7280), night = Color(0xFFA0A0A0)),
-    primary = ColorProvider(day = Color(0xFF6750A4), night = Color(0xFFCEBDFF)),
-    green   = ColorProvider(day = Color(0xFF2E7D32), night = Color(0xFF81C784)),
-    error   = ColorProvider(day = Color(0xFFB00020), night = Color(0xFFCF6679)),
-    track   = ColorProvider(day = Color(0x22000000), night = Color(0x33FFFFFF)),
+    bg        = ColorProvider(day = Color(0xFFFFFFFF), night = Color(0xFF1C1B1F)),
+    onBg      = ColorProvider(day = Color(0xFF1C1B1F), night = Color(0xFFE6E1E5)),
+    subtext   = ColorProvider(day = Color(0xFF6B7280), night = Color(0xFFA0A0A0)),
+    primary   = ColorProvider(day = Color(0xFF6750A4), night = Color(0xFFCEBDFF)),
+    onPrimary = ColorProvider(day = Color(0xFFFFFFFF), night = Color(0xFF1C1B1F)),
+    green     = ColorProvider(day = Color(0xFF2E7D32), night = Color(0xFF81C784)),
+    error     = ColorProvider(day = Color(0xFFB00020), night = Color(0xFFCF6679)),
+    track     = ColorProvider(day = Color(0x22000000), night = Color(0x33FFFFFF)),
 )
 
 private val shortDate = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.getDefault())
@@ -398,4 +400,114 @@ class MonthSummaryWidget : GlanceAppWidget() {
 
 class MonthSummaryReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = MonthSummaryWidget()
+}
+
+// ── Calendar ──────────────────────────────────────────────────────────────
+
+class CalendarWidget : GlanceAppWidget() {
+    override suspend fun provideGlance(context: Context, id: GlanceId) {
+        val repo = WidgetDataRepository(context)
+        val data = repo.calendarData()
+        provideContent {
+            val clr        = widgetColors()
+            val availWidth = LocalSize.current.width - 24.dp   // subtract 12dp × 2 padding
+            val cellWidth  = availWidth / 7
+
+            Box(
+                modifier = GlanceModifier
+                    .fillMaxSize()
+                    .background(clr.bg)
+                    .cornerRadius(16.dp)
+                    .padding(horizontal = 12.dp, vertical = 12.dp),
+                contentAlignment = Alignment.TopStart
+            ) {
+                Column(modifier = GlanceModifier.fillMaxSize()) {
+
+                    // ── Month / year header ───────────────────────────
+                    Row(
+                        modifier            = GlanceModifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            "${data.monthName} ${data.year}",
+                            style = TextStyle(color = clr.onBg, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        )
+                    }
+
+                    Spacer(GlanceModifier.height(8.dp))
+
+                    // ── Day-of-week headers ───────────────────────────
+                    Row(modifier = GlanceModifier.fillMaxWidth()) {
+                        listOf("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su").forEach { label ->
+                            Box(
+                                modifier         = GlanceModifier.width(cellWidth),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(label, style = TextStyle(color = clr.subtext, fontSize = 10.sp))
+                            }
+                        }
+                    }
+
+                    Spacer(GlanceModifier.height(4.dp))
+
+                    // ── Day grid ──────────────────────────────────────
+                    val rows = ((data.firstDayOffset + data.daysInMonth) + 6) / 7
+                    repeat(rows) { row ->
+                        Row(modifier = GlanceModifier.fillMaxWidth()) {
+                            repeat(7) { col ->
+                                val cellIndex = row * 7 + col
+                                val dayNum    = cellIndex - data.firstDayOffset + 1
+                                val isValid   = dayNum in 1..data.daysInMonth
+                                val isToday   = isValid && dayNum == data.todayDay
+                                val hasDot    = isValid && dayNum in data.daysWithTransactions
+
+                                Box(
+                                    modifier         = GlanceModifier.width(cellWidth).padding(vertical = 2.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (isValid) {
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            // Day number circle
+                                            val circleModifier = GlanceModifier
+                                                .size(28.dp)
+                                                .cornerRadius(14.dp)
+                                                .let { if (isToday) it.background(clr.primary) else it }
+                                            Box(
+                                                modifier         = circleModifier,
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Text(
+                                                    dayNum.toString(),
+                                                    style = TextStyle(
+                                                        color      = if (isToday) clr.onPrimary else clr.onBg,
+                                                        fontSize   = 11.sp,
+                                                        fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal
+                                                    )
+                                                )
+                                            }
+                                            // Transaction dot (keeps height consistent)
+                                            Spacer(GlanceModifier.height(2.dp))
+                                            Box(
+                                                modifier = GlanceModifier
+                                                    .size(4.dp)
+                                                    .cornerRadius(2.dp)
+                                                    .let { if (hasDot) it.background(clr.primary) else it }
+                                            ) {}
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        Spacer(GlanceModifier.height(2.dp))
+                    }
+                }
+            }
+        }
+    }
+}
+
+class CalendarReceiver : GlanceAppWidgetReceiver() {
+    override val glanceAppWidget: GlanceAppWidget = CalendarWidget()
 }

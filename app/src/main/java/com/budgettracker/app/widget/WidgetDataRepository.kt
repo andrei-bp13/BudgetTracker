@@ -13,9 +13,22 @@ import com.pardonmyspending.app.data.model.TransactionType
 import com.pardonmyspending.app.data.repository.PreferencesRepository
 import com.pardonmyspending.app.util.monthTotal
 import kotlinx.coroutines.flow.first
+import java.time.LocalDate
 import java.time.YearMonth
+import java.time.format.TextStyle as JavaTextStyle
+import java.util.Locale
 
 data class PaymentTypeRow(val label: String, val expense: Double, val income: Double)
+
+data class CalendarWidgetData(
+    val monthName: String,
+    val year: Int,
+    val month: Int,
+    val firstDayOffset: Int,   // 0 = Monday, 6 = Sunday
+    val daysInMonth: Int,
+    val todayDay: Int,
+    val daysWithTransactions: Set<Int>
+)
 
 class WidgetDataRepository(context: Context) {
 
@@ -59,7 +72,6 @@ class WidgetDataRepository(context: Context) {
         return Triple(spent, budget.amount, budget.title)
     }
 
-    // Returns (totalSpent, totalEarned, perPaymentType) for the current month.
     suspend fun monthSummary(): Triple<Double, Double, List<PaymentTypeRow>> {
         val now  = YearMonth.now()
         val txns = transactions().filter { YearMonth.from(it.date) == now }
@@ -75,5 +87,22 @@ class WidgetDataRepository(context: Context) {
             )
         }
         return Triple(totalSpent, totalEarned, rows)
+    }
+
+    suspend fun calendarData(): CalendarWidgetData {
+        val now          = YearMonth.now()
+        val today        = LocalDate.now()
+        val firstDay     = now.atDay(1)
+        val txns         = transactions().filter { YearMonth.from(it.date) == now }
+        val daysWithTxns = txns.map { it.date.dayOfMonth }.toSet()
+        return CalendarWidgetData(
+            monthName            = now.month.getDisplayName(JavaTextStyle.FULL, Locale.getDefault()),
+            year                 = now.year,
+            month                = now.monthValue,
+            firstDayOffset       = firstDay.dayOfWeek.value - 1,  // Mon=0 … Sun=6
+            daysInMonth          = now.lengthOfMonth(),
+            todayDay             = if (YearMonth.from(today) == now) today.dayOfMonth else -1,
+            daysWithTransactions = daysWithTxns
+        )
     }
 }
