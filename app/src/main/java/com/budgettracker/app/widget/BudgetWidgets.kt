@@ -5,8 +5,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.glance.ColorFilter
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
+import androidx.glance.Image
+import androidx.glance.ImageProvider
 import androidx.glance.LocalSize
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
@@ -24,11 +27,13 @@ import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
+import androidx.glance.layout.size
 import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider as GlanceColorProvider
+import com.pardonmyspending.app.R
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -298,68 +303,90 @@ class MonthSummaryWidget : GlanceAppWidget() {
         val symbol = repo.currencySymbol()
         val (spent, earned, paymentRows) = repo.monthSummary()
         provideContent {
-            WidgetCard {
-                val availWidth = LocalSize.current.width - 32.dp
-                val halfWidth  = availWidth / 2
-                val thirdWidth = availWidth / 3
+            val clr        = widgetColors()
+            val availWidth = LocalSize.current.width - 32.dp
+            val halfWidth  = availWidth / 2
+            val thirdWidth = availWidth / 3
 
-                // ── Total Spent | Total Income ────────────────────────
-                Row(modifier = GlanceModifier.fillMaxWidth()) {
-                    Column(modifier = GlanceModifier.width(halfWidth)) {
-                        Text(
-                            "Total spent this month",
-                            style    = TextStyle(color = subtext, fontSize = 10.sp),
-                            maxLines = 2
-                        )
-                        Spacer(GlanceModifier.height(3.dp))
-                        Text(
-                            "$symbol ${"%.2f".format(spent)}",
-                            style = TextStyle(color = error, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        )
-                    }
-                    Column(
-                        modifier            = GlanceModifier.width(halfWidth),
-                        horizontalAlignment = Alignment.End
-                    ) {
-                        Text(
-                            "Total income this month",
-                            style    = TextStyle(color = subtext, fontSize = 10.sp),
-                            maxLines = 2
-                        )
-                        Spacer(GlanceModifier.height(3.dp))
-                        Text(
-                            "$symbol ${"%.2f".format(earned)}",
-                            style = TextStyle(color = green, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        )
-                    }
-                }
+            // Inline card shell so ColumnScope is available for defaultWeight()
+            Box(
+                modifier = GlanceModifier
+                    .fillMaxSize()
+                    .background(clr.bg)
+                    .cornerRadius(16.dp)
+                    .padding(16.dp),
+                contentAlignment = Alignment.TopStart
+            ) {
+                Column(modifier = GlanceModifier.fillMaxSize()) {
 
-                Spacer(GlanceModifier.height(10.dp))
-
-                // ── Divider ───────────────────────────────────────────
-                Box(modifier = GlanceModifier.fillMaxWidth().height(1.dp).background(track)) {}
-
-                Spacer(GlanceModifier.height(8.dp))
-
-                // ── Per-payment-type breakdown ────────────────────────
-                Row(modifier = GlanceModifier.fillMaxWidth()) {
-                    paymentRows.forEach { row ->
+                    // ── Total Spent | Total Income ────────────────────
+                    Row(modifier = GlanceModifier.fillMaxWidth()) {
+                        Column(modifier = GlanceModifier.width(halfWidth)) {
+                            Text(
+                                "Total spent this month",
+                                style    = TextStyle(color = clr.subtext, fontSize = 10.sp),
+                                maxLines = 2
+                            )
+                            Spacer(GlanceModifier.height(4.dp))
+                            Text(
+                                "$symbol ${"%.2f".format(spent)}",
+                                style = TextStyle(color = clr.error, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                            )
+                        }
                         Column(
-                            modifier            = GlanceModifier.width(thirdWidth),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                            modifier            = GlanceModifier.width(halfWidth),
+                            horizontalAlignment = Alignment.End
                         ) {
-                            Text(row.label, style = TextStyle(color = subtext, fontSize = 10.sp))
-                            Spacer(GlanceModifier.height(2.dp))
-                            Row {
-                                Text(
-                                    "$symbol${"%.0f".format(row.expense)}",
-                                    style = TextStyle(color = error, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                            Text(
+                                "Total income this month",
+                                style    = TextStyle(color = clr.subtext, fontSize = 10.sp),
+                                maxLines = 2
+                            )
+                            Spacer(GlanceModifier.height(4.dp))
+                            Text(
+                                "$symbol ${"%.2f".format(earned)}",
+                                style = TextStyle(color = clr.green, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                            )
+                        }
+                    }
+
+                    // Fill space so payment types sit at the bottom
+                    Spacer(GlanceModifier.defaultWeight())
+
+                    // ── Divider ───────────────────────────────────────
+                    Box(modifier = GlanceModifier.fillMaxWidth().height(1.dp).background(clr.track)) {}
+
+                    Spacer(GlanceModifier.height(10.dp))
+
+                    // ── Per-payment-type breakdown ────────────────────
+                    Row(modifier = GlanceModifier.fillMaxWidth()) {
+                        paymentRows.forEach { row ->
+                            val iconRes = if (row.label == "Cash") R.drawable.ic_widget_payments
+                                          else                     R.drawable.ic_widget_credit_card
+                            Column(
+                                modifier            = GlanceModifier.width(thirdWidth),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Image(
+                                    provider           = ImageProvider(iconRes),
+                                    contentDescription = row.label,
+                                    modifier           = GlanceModifier.size(16.dp),
+                                    colorFilter        = ColorFilter.tint(clr.subtext)
                                 )
-                                Text("/", style = TextStyle(color = subtext, fontSize = 11.sp))
-                                Text(
-                                    "${"%.0f".format(row.income)}",
-                                    style = TextStyle(color = green, fontSize = 11.sp, fontWeight = FontWeight.Medium)
-                                )
+                                Spacer(GlanceModifier.height(3.dp))
+                                Row {
+                                    Text(
+                                        "$symbol${"%.0f".format(row.expense)}",
+                                        style = TextStyle(color = clr.error, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                                    )
+                                    Text("/", style = TextStyle(color = clr.subtext, fontSize = 11.sp))
+                                    Text(
+                                        "${"%.0f".format(row.income)}",
+                                        style = TextStyle(color = clr.green, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                                    )
+                                }
+                                Spacer(GlanceModifier.height(2.dp))
+                                Text(row.label, style = TextStyle(color = clr.subtext, fontSize = 10.sp))
                             }
                         }
                     }
