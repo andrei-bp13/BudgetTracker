@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:background="@drawable/widget_card_bg">
+
+    <!-- Month header -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="June 2025"
+        android:textColor="?attr/colorOnSurface"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Day headers -->
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Mo" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurfaceVariant"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Tu" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurfaceVariant"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="We" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurfaceVariant"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Th" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurfaceVariant"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Fr" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurfaceVariant"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Sa" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurfaceVariant"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Su" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurfaceVariant"/>
+    </LinearLayout>
+
+    <View android:layout_width="match_parent" android:layout_height="4dp"/>
+
+    <!-- Row 1: 1 blank + 1..6 -->
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="" android:gravity="center" android:textSize="10sp"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="1" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurface"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="2" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurface"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="3" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurface"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="4" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurface"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="5" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurface"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="6" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurface"/>
+    </LinearLayout>
+
+    <!-- Row 2: 7..13 (16 highlighted as today) -->
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="4dp">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="7" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurface"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="8" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurface"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="9" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurface"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="10" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurface"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="11" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurface"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="12" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurface"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="13" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurface"/>
+    </LinearLayout>
+
+    <!-- Row 3: 14..20 (16 = today, highlighted) -->
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="4dp">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="14" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurface"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="15" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurface"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="16"
+            android:gravity="center" android:textSize="10sp" android:textColor="#FFFFFF"
+            android:background="?attr/colorPrimary" android:textStyle="bold"
+            android:paddingTop="4dp" android:paddingBottom="4dp"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="17" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurface"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="18" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurface"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="19" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurface"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="20" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurface"/>
+    </LinearLayout>
+
+    <!-- Row 4: 21..27 -->
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="4dp">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="21" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurface"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="22" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurface"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="23" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurface"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="24" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurface"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="25" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurface"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="26" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurface"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="27" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurface"/>
+    </LinearLayout>
+
+    <!-- Row 5: 28..30 -->
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="4dp">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="28" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurface"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="29" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurface"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="30" android:gravity="center" android:textSize="10sp" android:textColor="?attr/colorOnSurface"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="" android:gravity="center" android:textSize="10sp"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="" android:gravity="center" android:textSize="10sp"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="" android:gravity="center" android:textSize="10sp"/>
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="" android:gravity="center" android:textSize="10sp"/>
+    </LinearLayout>
+
+</LinearLayout>
