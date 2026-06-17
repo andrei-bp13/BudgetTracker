@@ -37,35 +37,50 @@ import com.pardonmyspending.app.R
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-// ── Adaptive colour theme ─────────────────────────────────────────────────
+// ── M3 Expressive colour palette ──────────────────────────────────────────
 
 private class WidgetColors(
-    val bg:        GlanceColorProvider,
-    val onBg:      GlanceColorProvider,
-    val subtext:   GlanceColorProvider,
-    val primary:   GlanceColorProvider,
-    val onPrimary: GlanceColorProvider,
-    val green:     GlanceColorProvider,
-    val error:     GlanceColorProvider,
-    val track:     GlanceColorProvider,
+    val bg:                  GlanceColorProvider,
+    val onBg:                GlanceColorProvider,
+    val subtext:             GlanceColorProvider,
+    val primary:             GlanceColorProvider,
+    val onPrimary:           GlanceColorProvider,
+    val primaryContainer:    GlanceColorProvider,
+    val onPrimaryContainer:  GlanceColorProvider,
+    val green:               GlanceColorProvider,
+    val greenContainer:      GlanceColorProvider,
+    val onGreenContainer:    GlanceColorProvider,
+    val error:               GlanceColorProvider,
+    val errorContainer:      GlanceColorProvider,
+    val onErrorContainer:    GlanceColorProvider,
+    val track:               GlanceColorProvider,
 )
 
-// ColorProvider(day, night) is @Composable — must be called inside composable scope
+// ColorProvider(day, night) must be called inside composable scope
 @Composable
 private fun widgetColors() = WidgetColors(
-    bg        = ColorProvider(day = Color(0xFFFFFFFF), night = Color(0xFF1C1B1F)),
-    onBg      = ColorProvider(day = Color(0xFF1C1B1F), night = Color(0xFFE6E1E5)),
-    subtext   = ColorProvider(day = Color(0xFF6B7280), night = Color(0xFFA0A0A0)),
-    primary   = ColorProvider(day = Color(0xFF6750A4), night = Color(0xFFCEBDFF)),
-    onPrimary = ColorProvider(day = Color(0xFFFFFFFF), night = Color(0xFF1C1B1F)),
-    green     = ColorProvider(day = Color(0xFF2E7D32), night = Color(0xFF81C784)),
-    error     = ColorProvider(day = Color(0xFFB00020), night = Color(0xFFCF6679)),
-    track     = ColorProvider(day = Color(0x22000000), night = Color(0x33FFFFFF)),
+    bg                 = ColorProvider(day = Color(0xFFF3EDF7), night = Color(0xFF1D1B20)),
+    onBg               = ColorProvider(day = Color(0xFF1C1B1F), night = Color(0xFFE6E1E5)),
+    subtext            = ColorProvider(day = Color(0xFF49454F), night = Color(0xFFCAC4D0)),
+    primary            = ColorProvider(day = Color(0xFF6750A4), night = Color(0xFFD0BCFF)),
+    onPrimary          = ColorProvider(day = Color(0xFFFFFFFF), night = Color(0xFF381E72)),
+    primaryContainer   = ColorProvider(day = Color(0xFFEADDFF), night = Color(0xFF4F378B)),
+    onPrimaryContainer = ColorProvider(day = Color(0xFF21005D), night = Color(0xFFEADDFF)),
+    green              = ColorProvider(day = Color(0xFF1A6D21), night = Color(0xFF6DD58C)),
+    greenContainer     = ColorProvider(day = Color(0xFFC2EDBA), night = Color(0xFF003910)),
+    onGreenContainer   = ColorProvider(day = Color(0xFF002204), night = Color(0xFF6DD58C)),
+    error              = ColorProvider(day = Color(0xFFB3261E), night = Color(0xFFF2B8B5)),
+    errorContainer     = ColorProvider(day = Color(0xFFF9DEDC), night = Color(0xFF8C1D18)),
+    onErrorContainer   = ColorProvider(day = Color(0xFF410E0B), night = Color(0xFFF9DEDC)),
+    track              = ColorProvider(day = Color(0xFFE7E0EC), night = Color(0xFF49454F)),
 )
 
 private val shortDate = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.getDefault())
 
-// ── Shared card shell ─────────────────────────────────────────────────────
+// ── Shared card shell — 28dp corners, tinted surface bg ──────────────────
+// Note: content lambda uses WidgetColors receiver; do NOT use defaultWeight()
+// inside WidgetCard (ColumnScope is blocked by @DslMarker). Use inline layouts
+// for widgets that need defaultWeight (MonthSummary, Calendar, BudgetProgress).
 
 @Composable
 private fun WidgetCard(content: @Composable WidgetColors.() -> Unit) {
@@ -74,7 +89,7 @@ private fun WidgetCard(content: @Composable WidgetColors.() -> Unit) {
         modifier = GlanceModifier
             .fillMaxSize()
             .background(clr.bg)
-            .cornerRadius(16.dp)
+            .cornerRadius(28.dp)
             .padding(16.dp),
         contentAlignment = Alignment.TopStart
     ) {
@@ -93,13 +108,20 @@ class TotalSpentWidget : GlanceAppWidget() {
         val total  = repo.totalSpentThisMonth()
         provideContent {
             WidgetCard {
-                Text("Total Spent", style = TextStyle(color = subtext, fontSize = 11.sp))
-                Spacer(GlanceModifier.height(4.dp))
+                // M3E label chip
+                Box(
+                    modifier = GlanceModifier
+                        .background(errorContainer).cornerRadius(8.dp)
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                ) {
+                    Text("Total Spent", style = TextStyle(color = onErrorContainer, fontSize = 10.sp, fontWeight = FontWeight.Medium))
+                }
+                Spacer(GlanceModifier.height(12.dp))
                 Text(
                     "$symbol ${"%.2f".format(total)}",
-                    style = TextStyle(color = error, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                    style = TextStyle(color = error, fontSize = 24.sp, fontWeight = FontWeight.Bold)
                 )
-                Spacer(GlanceModifier.height(2.dp))
+                Spacer(GlanceModifier.height(3.dp))
                 Text("This month", style = TextStyle(color = subtext, fontSize = 11.sp))
             }
         }
@@ -119,13 +141,19 @@ class TotalEarnedWidget : GlanceAppWidget() {
         val total  = repo.totalEarnedThisMonth()
         provideContent {
             WidgetCard {
-                Text("Total Earned", style = TextStyle(color = subtext, fontSize = 11.sp))
-                Spacer(GlanceModifier.height(4.dp))
+                Box(
+                    modifier = GlanceModifier
+                        .background(greenContainer).cornerRadius(8.dp)
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                ) {
+                    Text("Total Earned", style = TextStyle(color = onGreenContainer, fontSize = 10.sp, fontWeight = FontWeight.Medium))
+                }
+                Spacer(GlanceModifier.height(12.dp))
                 Text(
                     "+$symbol ${"%.2f".format(total)}",
-                    style = TextStyle(color = green, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                    style = TextStyle(color = green, fontSize = 24.sp, fontWeight = FontWeight.Bold)
                 )
-                Spacer(GlanceModifier.height(2.dp))
+                Spacer(GlanceModifier.height(3.dp))
                 Text("This month", style = TextStyle(color = subtext, fontSize = 11.sp))
             }
         }
@@ -145,13 +173,19 @@ class TotalSavingsWidget : GlanceAppWidget() {
         val total  = repo.totalSavings()
         provideContent {
             WidgetCard {
-                Text("Total Savings", style = TextStyle(color = subtext, fontSize = 11.sp))
-                Spacer(GlanceModifier.height(4.dp))
+                Box(
+                    modifier = GlanceModifier
+                        .background(primaryContainer).cornerRadius(8.dp)
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                ) {
+                    Text("Total Savings", style = TextStyle(color = onPrimaryContainer, fontSize = 10.sp, fontWeight = FontWeight.Medium))
+                }
+                Spacer(GlanceModifier.height(12.dp))
                 Text(
                     "$symbol ${"%.2f".format(total)}",
-                    style = TextStyle(color = primary, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                    style = TextStyle(color = primary, fontSize = 24.sp, fontWeight = FontWeight.Bold)
                 )
-                Spacer(GlanceModifier.height(2.dp))
+                Spacer(GlanceModifier.height(3.dp))
                 Text("Savings & investments", style = TextStyle(color = subtext, fontSize = 11.sp))
             }
         }
@@ -171,22 +205,24 @@ class HighestExpenseWidget : GlanceAppWidget() {
         val txn    = repo.highestExpense()
         provideContent {
             WidgetCard {
-                Text("Highest Expense", style = TextStyle(color = subtext, fontSize = 11.sp))
-                Spacer(GlanceModifier.height(4.dp))
+                Box(
+                    modifier = GlanceModifier
+                        .background(errorContainer).cornerRadius(8.dp)
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                ) {
+                    Text("Highest Expense", style = TextStyle(color = onErrorContainer, fontSize = 10.sp, fontWeight = FontWeight.Medium))
+                }
+                Spacer(GlanceModifier.height(12.dp))
                 if (txn == null) {
-                    Text("No transactions", style = TextStyle(color = onBg, fontSize = 14.sp))
+                    Text("No transactions", style = TextStyle(color = subtext, fontSize = 13.sp))
                 } else {
-                    Text(
-                        txn.title,
-                        style = TextStyle(color = onBg, fontSize = 13.sp, fontWeight = FontWeight.Medium),
-                        maxLines = 1
-                    )
-                    Spacer(GlanceModifier.height(2.dp))
+                    Text(txn.title, style = TextStyle(color = onBg, fontSize = 12.sp, fontWeight = FontWeight.Medium), maxLines = 1)
+                    Spacer(GlanceModifier.height(4.dp))
                     Text(
                         "-$symbol ${"%.2f".format(txn.amount)}",
-                        style = TextStyle(color = error, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        style = TextStyle(color = error, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                     )
-                    Spacer(GlanceModifier.height(2.dp))
+                    Spacer(GlanceModifier.height(3.dp))
                     Text(txn.date.format(shortDate), style = TextStyle(color = subtext, fontSize = 11.sp))
                 }
             }
@@ -207,22 +243,24 @@ class HighestIncomeWidget : GlanceAppWidget() {
         val txn    = repo.highestIncome()
         provideContent {
             WidgetCard {
-                Text("Highest Income", style = TextStyle(color = subtext, fontSize = 11.sp))
-                Spacer(GlanceModifier.height(4.dp))
+                Box(
+                    modifier = GlanceModifier
+                        .background(greenContainer).cornerRadius(8.dp)
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                ) {
+                    Text("Highest Income", style = TextStyle(color = onGreenContainer, fontSize = 10.sp, fontWeight = FontWeight.Medium))
+                }
+                Spacer(GlanceModifier.height(12.dp))
                 if (txn == null) {
-                    Text("No transactions", style = TextStyle(color = onBg, fontSize = 14.sp))
+                    Text("No transactions", style = TextStyle(color = subtext, fontSize = 13.sp))
                 } else {
-                    Text(
-                        txn.title,
-                        style = TextStyle(color = onBg, fontSize = 13.sp, fontWeight = FontWeight.Medium),
-                        maxLines = 1
-                    )
-                    Spacer(GlanceModifier.height(2.dp))
+                    Text(txn.title, style = TextStyle(color = onBg, fontSize = 12.sp, fontWeight = FontWeight.Medium), maxLines = 1)
+                    Spacer(GlanceModifier.height(4.dp))
                     Text(
                         "+$symbol ${"%.2f".format(txn.amount)}",
-                        style = TextStyle(color = green, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        style = TextStyle(color = green, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                     )
-                    Spacer(GlanceModifier.height(2.dp))
+                    Spacer(GlanceModifier.height(3.dp))
                     Text(txn.date.format(shortDate), style = TextStyle(color = subtext, fontSize = 11.sp))
                 }
             }
@@ -235,6 +273,7 @@ class HighestIncomeReceiver : GlanceAppWidgetReceiver() {
 }
 
 // ── Budget Progress ───────────────────────────────────────────────────────
+// Uses inline layout for defaultWeight() support.
 
 class BudgetProgressWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
@@ -242,51 +281,58 @@ class BudgetProgressWidget : GlanceAppWidget() {
         val symbol   = repo.currencySymbol()
         val progress = repo.budgetProgress()
         provideContent {
-            WidgetCard {
-                Text("Budget Progress", style = TextStyle(color = subtext, fontSize = 11.sp))
-                Spacer(GlanceModifier.height(4.dp))
-                if (progress == null) {
-                    Text("No active budget", style = TextStyle(color = onBg, fontSize = 14.sp))
-                } else {
-                    val (spent, limit, budgetTitle) = progress
-                    val fraction   = (spent / limit).coerceIn(0.0, 1.0).toFloat()
-                    val overBudget = spent > limit
-                    val fillColor  = if (overBudget) error else primary
-
-                    Text(
-                        budgetTitle,
-                        style = TextStyle(color = onBg, fontSize = 13.sp, fontWeight = FontWeight.Medium),
-                        maxLines = 1
-                    )
-                    Spacer(GlanceModifier.height(6.dp))
-
-                    // Progress bar — LocalSize gives widget width; subtract horizontal padding (2×16dp)
-                    val barWidth = (LocalSize.current.width - 32.dp) * fraction
-                    Box(modifier = GlanceModifier.fillMaxWidth().height(8.dp)) {
-                        Box(
-                            modifier = GlanceModifier
-                                .fillMaxSize()
-                                .background(track)
-                                .cornerRadius(4.dp)
-                        ) {}
-                        Box(
-                            modifier = GlanceModifier
-                                .width(barWidth)
-                                .fillMaxHeight()
-                                .background(fillColor)
-                                .cornerRadius(4.dp)
-                        ) {}
+            val clr = widgetColors()
+            Box(
+                modifier = GlanceModifier
+                    .fillMaxSize()
+                    .background(clr.bg)
+                    .cornerRadius(28.dp)
+                    .padding(16.dp),
+                contentAlignment = Alignment.TopStart
+            ) {
+                Column(modifier = GlanceModifier.fillMaxSize()) {
+                    // Label chip
+                    Box(
+                        modifier = GlanceModifier
+                            .background(clr.primaryContainer).cornerRadius(8.dp)
+                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                    ) {
+                        Text("Budget Progress", style = TextStyle(color = clr.onPrimaryContainer, fontSize = 10.sp, fontWeight = FontWeight.Medium))
                     }
 
-                    Spacer(GlanceModifier.height(6.dp))
-                    Text(
-                        "$symbol ${"%.0f".format(spent)} / $symbol ${"%.0f".format(limit)}" +
-                            "  (${(fraction * 100).toInt()}%)",
-                        style = TextStyle(
-                            color    = if (overBudget) error else onBg,
-                            fontSize = 11.sp
+                    if (progress == null) {
+                        Spacer(GlanceModifier.height(12.dp))
+                        Text("No active budget", style = TextStyle(color = clr.subtext, fontSize = 13.sp))
+                    } else {
+                        val (spent, limit, budgetTitle) = progress
+                        val fraction   = (spent / limit).coerceIn(0.0, 1.0).toFloat()
+                        val overBudget = spent > limit
+                        val fillColor  = if (overBudget || fraction > 0.85f) clr.error else clr.primary
+
+                        Spacer(GlanceModifier.height(10.dp))
+                        Text(budgetTitle, style = TextStyle(color = clr.onBg, fontSize = 14.sp, fontWeight = FontWeight.Bold), maxLines = 1)
+
+                        Spacer(GlanceModifier.defaultWeight())
+
+                        // Taller M3E progress bar (12dp, fully rounded)
+                        val barWidth = (LocalSize.current.width - 32.dp) * fraction
+                        Box(modifier = GlanceModifier.fillMaxWidth().height(12.dp)) {
+                            Box(modifier = GlanceModifier.fillMaxSize().background(clr.track).cornerRadius(6.dp)) {}
+                            if (fraction > 0f) {
+                                Box(modifier = GlanceModifier.width(barWidth).fillMaxHeight().background(fillColor).cornerRadius(6.dp)) {}
+                            }
+                        }
+                        Spacer(GlanceModifier.height(8.dp))
+                        Text(
+                            "$symbol ${"%.0f".format(spent)} / $symbol ${"%.0f".format(limit)}" +
+                                "  (${(fraction * 100).toInt()}%)",
+                            style = TextStyle(
+                                color      = if (overBudget) clr.error else clr.onBg,
+                                fontSize   = 11.sp,
+                                fontWeight = FontWeight.Medium
+                            )
                         )
-                    )
+                    }
                 }
             }
         }
@@ -298,6 +344,7 @@ class BudgetProgressReceiver : GlanceAppWidgetReceiver() {
 }
 
 // ── Month Summary ─────────────────────────────────────────────────────────
+// Uses inline layout for defaultWeight() support.
 
 class MonthSummaryWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
@@ -306,61 +353,61 @@ class MonthSummaryWidget : GlanceAppWidget() {
         val (spent, earned, paymentRows) = repo.monthSummary()
         provideContent {
             val clr        = widgetColors()
-            val availWidth = LocalSize.current.width - 32.dp
-            val halfWidth  = availWidth / 2
+            val availWidth = LocalSize.current.width - 32.dp   // 16dp × 2 padding
+            val colWidth   = (availWidth - 8.dp) / 2           // gap 8dp between blocks
             val thirdWidth = availWidth / 3
 
-            // Inline card shell so ColumnScope is available for defaultWeight()
             Box(
                 modifier = GlanceModifier
                     .fillMaxSize()
                     .background(clr.bg)
-                    .cornerRadius(16.dp)
+                    .cornerRadius(28.dp)
                     .padding(16.dp),
                 contentAlignment = Alignment.TopStart
             ) {
                 Column(modifier = GlanceModifier.fillMaxSize()) {
 
-                    // ── Total Spent | Total Income ────────────────────
+                    // ── Two M3E colour-block columns ──────────────────
                     Row(modifier = GlanceModifier.fillMaxWidth()) {
-                        Column(modifier = GlanceModifier.width(halfWidth)) {
-                            Text(
-                                "Total spent this month",
-                                style    = TextStyle(color = clr.subtext, fontSize = 10.sp),
-                                maxLines = 2
-                            )
+                        Column(
+                            modifier = GlanceModifier
+                                .width(colWidth)
+                                .background(clr.errorContainer)
+                                .cornerRadius(16.dp)
+                                .padding(horizontal = 10.dp, vertical = 8.dp)
+                        ) {
+                            Text("Total spent", style = TextStyle(color = clr.onErrorContainer, fontSize = 10.sp))
                             Spacer(GlanceModifier.height(4.dp))
                             Text(
                                 "$symbol ${"%.2f".format(spent)}",
-                                style = TextStyle(color = clr.error, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                                style = TextStyle(color = clr.error, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                             )
                         }
+                        Spacer(GlanceModifier.width(8.dp))
                         Column(
-                            modifier            = GlanceModifier.width(halfWidth),
-                            horizontalAlignment = Alignment.End
+                            modifier = GlanceModifier
+                                .width(colWidth)
+                                .background(clr.greenContainer)
+                                .cornerRadius(16.dp)
+                                .padding(horizontal = 10.dp, vertical = 8.dp)
                         ) {
-                            Text(
-                                "Total income this month",
-                                style    = TextStyle(color = clr.subtext, fontSize = 10.sp),
-                                maxLines = 2
-                            )
+                            Text("Total earned", style = TextStyle(color = clr.onGreenContainer, fontSize = 10.sp))
                             Spacer(GlanceModifier.height(4.dp))
                             Text(
                                 "$symbol ${"%.2f".format(earned)}",
-                                style = TextStyle(color = clr.green, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                                style = TextStyle(color = clr.green, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                             )
                         }
                     }
 
-                    // Fill space so payment types sit at the bottom
                     Spacer(GlanceModifier.defaultWeight())
 
-                    // ── Divider ───────────────────────────────────────
+                    // ── Divider ────────────────────────────────────────
                     Box(modifier = GlanceModifier.fillMaxWidth().height(1.dp).background(clr.track)) {}
 
                     Spacer(GlanceModifier.height(10.dp))
 
-                    // ── Per-payment-type breakdown ────────────────────
+                    // ── Per-payment-type breakdown ─────────────────────
                     Row(modifier = GlanceModifier.fillMaxWidth()) {
                         paymentRows.forEach { row ->
                             val iconRes = if (row.label == "Cash") R.drawable.ic_widget_payments
@@ -377,15 +424,9 @@ class MonthSummaryWidget : GlanceAppWidget() {
                                 )
                                 Spacer(GlanceModifier.height(3.dp))
                                 Row {
-                                    Text(
-                                        "$symbol${"%.0f".format(row.expense)}",
-                                        style = TextStyle(color = clr.error, fontSize = 11.sp, fontWeight = FontWeight.Medium)
-                                    )
-                                    Text("/", style = TextStyle(color = clr.subtext, fontSize = 11.sp))
-                                    Text(
-                                        "${"%.0f".format(row.income)}",
-                                        style = TextStyle(color = clr.green, fontSize = 11.sp, fontWeight = FontWeight.Medium)
-                                    )
+                                    Text("$symbol${"%.0f".format(row.expense)}", style = TextStyle(color = clr.error,   fontSize = 11.sp, fontWeight = FontWeight.Medium))
+                                    Text("/",                                     style = TextStyle(color = clr.subtext, fontSize = 11.sp))
+                                    Text("${"%.0f".format(row.income)}",          style = TextStyle(color = clr.green,  fontSize = 11.sp, fontWeight = FontWeight.Medium))
                                 }
                                 Spacer(GlanceModifier.height(2.dp))
                                 Text(row.label, style = TextStyle(color = clr.subtext, fontSize = 10.sp))
@@ -403,6 +444,7 @@ class MonthSummaryReceiver : GlanceAppWidgetReceiver() {
 }
 
 // ── Calendar ──────────────────────────────────────────────────────────────
+// Uses inline layout for defaultWeight() support.
 
 class CalendarWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
@@ -410,47 +452,44 @@ class CalendarWidget : GlanceAppWidget() {
         val data = repo.calendarData()
         provideContent {
             val clr        = widgetColors()
-            val availWidth = LocalSize.current.width - 24.dp   // subtract 12dp × 2 padding
+            val availWidth = LocalSize.current.width - 32.dp   // 16dp × 2 padding
             val cellWidth  = availWidth / 7
 
             Box(
                 modifier = GlanceModifier
                     .fillMaxSize()
                     .background(clr.bg)
-                    .cornerRadius(16.dp)
-                    .padding(horizontal = 12.dp, vertical = 12.dp),
+                    .cornerRadius(28.dp)
+                    .padding(horizontal = 16.dp, vertical = 16.dp),
                 contentAlignment = Alignment.TopStart
             ) {
                 Column(modifier = GlanceModifier.fillMaxSize()) {
 
-                    // ── Month / year header ───────────────────────────
+                    // ── Month / year header in primary ────────────────
                     Row(
                         modifier            = GlanceModifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
                             "${data.monthName} ${data.year}",
-                            style = TextStyle(color = clr.onBg, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                            style = TextStyle(color = clr.primary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
                         )
                     }
 
-                    Spacer(GlanceModifier.height(8.dp))
+                    Spacer(GlanceModifier.height(10.dp))
 
-                    // ── Day-of-week headers ───────────────────────────
+                    // ── Day-of-week headers in primary ────────────────
                     Row(modifier = GlanceModifier.fillMaxWidth()) {
                         listOf("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su").forEach { label ->
-                            Box(
-                                modifier         = GlanceModifier.width(cellWidth),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(label, style = TextStyle(color = clr.subtext, fontSize = 10.sp))
+                            Box(modifier = GlanceModifier.width(cellWidth), contentAlignment = Alignment.Center) {
+                                Text(label, style = TextStyle(color = clr.primary, fontSize = 10.sp, fontWeight = FontWeight.Medium))
                             }
                         }
                     }
 
-                    Spacer(GlanceModifier.height(4.dp))
+                    Spacer(GlanceModifier.height(6.dp))
 
-                    // ── Day grid ──────────────────────────────────────
+                    // ── Day grid ───────────────────────────────────────
                     val rows = ((data.firstDayOffset + data.daysInMonth) + 6) / 7
                     repeat(rows) { row ->
                         Row(modifier = GlanceModifier.fillMaxWidth()) {
@@ -466,18 +505,12 @@ class CalendarWidget : GlanceAppWidget() {
                                     contentAlignment = Alignment.Center
                                 ) {
                                     if (isValid) {
-                                        Column(
-                                            horizontalAlignment = Alignment.CenterHorizontally
-                                        ) {
-                                            // Day number circle
-                                            val circleModifier = GlanceModifier
-                                                .size(28.dp)
-                                                .cornerRadius(14.dp)
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            val circleMod = GlanceModifier
+                                                .size(30.dp)
+                                                .cornerRadius(15.dp)
                                                 .let { if (isToday) it.background(clr.primary) else it }
-                                            Box(
-                                                modifier         = circleModifier,
-                                                contentAlignment = Alignment.Center
-                                            ) {
+                                            Box(modifier = circleMod, contentAlignment = Alignment.Center) {
                                                 Text(
                                                     dayNum.toString(),
                                                     style = TextStyle(
@@ -487,13 +520,12 @@ class CalendarWidget : GlanceAppWidget() {
                                                     )
                                                 )
                                             }
-                                            // Transaction dot (keeps height consistent)
                                             Spacer(GlanceModifier.height(2.dp))
                                             Box(
                                                 modifier = GlanceModifier
-                                                    .size(4.dp)
-                                                    .cornerRadius(2.dp)
-                                                    .let { if (hasDot) it.background(clr.primary) else it }
+                                                    .size(5.dp)
+                                                    .cornerRadius(3.dp)
+                                                    .let { if (hasDot) it.background(clr.primaryContainer) else it }
                                             ) {}
                                         }
                                     }
