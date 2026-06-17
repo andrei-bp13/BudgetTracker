@@ -11,14 +11,14 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Total Spent"
-        android:textColor="?attr/colorOnSurfaceVariant"
+        android:textColor="#49454F"
         android:textSize="11sp" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="$ 0.00"
-        android:textColor="?attr/colorError"
+        android:textColor="#B3261E"
         android:textSize="22sp"
         android:textStyle="bold"
         android:layout_marginTop="4dp" />
@@ -27,7 +27,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="This month"
-        android:textColor="?attr/colorOnSurfaceVariant"
+        android:textColor="#49454F"
         android:textSize="11sp"
         android:layout_marginTop="2dp" />
 

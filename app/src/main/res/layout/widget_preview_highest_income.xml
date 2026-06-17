@@ -11,14 +11,14 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Highest Income"
-        android:textColor="?attr/colorOnSurfaceVariant"
+        android:textColor="#49454F"
         android:textSize="11sp" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Monthly Salary"
-        android:textColor="?attr/colorOnSurface"
+        android:textColor="#1C1B1F"
         android:textSize="13sp"
         android:textStyle="bold"
         android:layout_marginTop="4dp" />
@@ -27,7 +27,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="+ $ 2,500.00"
-        android:textColor="#2E7D32"
+        android:textColor="#1A6D21"
         android:textSize="18sp"
         android:textStyle="bold"
         android:layout_marginTop="2dp" />

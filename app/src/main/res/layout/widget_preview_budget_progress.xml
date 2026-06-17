@@ -11,32 +11,32 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Budget Progress"
-        android:textColor="?attr/colorOnSurfaceVariant"
+        android:textColor="#49454F"
         android:textSize="11sp" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Food &amp; Groceries"
-        android:textColor="?attr/colorOnSurface"
+        android:textColor="#1C1B1F"
         android:textSize="13sp"
         android:textStyle="bold"
         android:layout_marginTop="4dp" />
 
     <ProgressBar
         android:layout_width="match_parent"
-        android:layout_height="8dp"
+        android:layout_height="12dp"
         android:layout_marginTop="8dp"
         style="?android:attr/progressBarStyleHorizontal"
         android:progress="40"
-        android:progressTint="?attr/colorPrimary"
-        android:progressBackgroundTint="?attr/colorSurfaceVariant" />
+        android:progressTint="#6750A4"
+        android:progressBackgroundTint="#E7E0EC" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="$ 200 / $ 500  (40%)"
-        android:textColor="?attr/colorOnSurface"
+        android:textColor="#1C1B1F"
         android:textSize="11sp"
         android:layout_marginTop="6dp" />
 

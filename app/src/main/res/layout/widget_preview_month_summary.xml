@@ -16,40 +16,45 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:background="#F9DEDC"
+            android:padding="8dp">
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Total spent this month"
-                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textColor="#410E0B"
                 android:textSize="10sp" />
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="$ 1,240.50"
-                android:textColor="?attr/colorError"
+                android:textColor="#B3261E"
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:layout_marginTop="3dp" />
         </LinearLayout>
+
+        <View android:layout_width="8dp" android:layout_height="match_parent" />
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical"
-            android:gravity="end">
+            android:background="#C2EDBA"
+            android:padding="8dp">
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Total income this month"
-                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textColor="#002204"
                 android:textSize="10sp" />
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="$ 3,500.00"
-                android:textColor="#2E7D32"
+                android:textColor="#1A6D21"
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:layout_marginTop="3dp" />
@@ -63,7 +68,7 @@
         android:layout_height="1dp"
         android:layout_marginTop="10dp"
         android:layout_marginBottom="8dp"
-        android:background="?attr/colorOutlineVariant" />
+        android:background="#CAC4D0" />
 
     <!-- Debit | Credit | Cash -->
     <LinearLayout
@@ -74,27 +79,27 @@
         <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
             android:layout_weight="1" android:orientation="vertical" android:gravity="center">
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="Debit" android:textColor="?attr/colorOnSurfaceVariant" android:textSize="10sp"/>
+                android:text="Debit" android:textColor="#49454F" android:textSize="10sp"/>
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="$800/0" android:textColor="?attr/colorError" android:textSize="11sp"
+                android:text="$800/0" android:textColor="#B3261E" android:textSize="11sp"
                 android:textStyle="bold" android:layout_marginTop="2dp"/>
         </LinearLayout>
 
         <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
             android:layout_weight="1" android:orientation="vertical" android:gravity="center">
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="Credit" android:textColor="?attr/colorOnSurfaceVariant" android:textSize="10sp"/>
+                android:text="Credit" android:textColor="#49454F" android:textSize="10sp"/>
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="$350/0" android:textColor="?attr/colorError" android:textSize="11sp"
+                android:text="$350/0" android:textColor="#B3261E" android:textSize="11sp"
                 android:textStyle="bold" android:layout_marginTop="2dp"/>
         </LinearLayout>
 
         <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
             android:layout_weight="1" android:orientation="vertical" android:gravity="center">
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="Cash" android:textColor="?attr/colorOnSurfaceVariant" android:textSize="10sp"/>
+                android:text="Cash" android:textColor="#49454F" android:textSize="10sp"/>
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="$90/0" android:textColor="?attr/colorError" android:textSize="11sp"
+                android:text="$90/0" android:textColor="#B3261E" android:textSize="11sp"
                 android:textStyle="bold" android:layout_marginTop="2dp"/>
         </LinearLayout>
 
