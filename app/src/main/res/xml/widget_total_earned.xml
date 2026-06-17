@@ -7,6 +7,8 @@
     android:updatePeriodMillis="1800000"
     android:widgetCategory="home_screen"
     android:resizeMode="horizontal|vertical"
+    android:minResizeWidth="120dp"
+    android:minResizeHeight="80dp"
     android:previewLayout="@layout/widget_preview_total_earned"
     android:previewImage="@mipmap/ic_launcher_round"
     android:initialLayout="@layout/widget_loading" />
