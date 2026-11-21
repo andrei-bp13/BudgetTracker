@@ -1,8 +1,13 @@
 package com.pardonmyspending.app.widget
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.RectF
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.ColorFilter
@@ -37,6 +42,7 @@ import androidx.glance.unit.ColorProvider as GlanceColorProvider
 import com.pardonmyspending.app.R
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlin.math.abs
 
 // ── M3 Expressive colour palette ──────────────────────────────────────────
 
@@ -100,6 +106,71 @@ private fun WidgetCard(content: @Composable WidgetColors.() -> Unit) {
     }
 }
 
+/** Thin coloured bar for a bolder, more premium top accent on every card. */
+@Composable
+private fun AccentStripe(color: GlanceColorProvider) {
+    Box(modifier = GlanceModifier.fillMaxWidth().height(4.dp).cornerRadius(2.dp).background(color)) {}
+}
+
+/**
+ * Month-over-month trend badge: an up/down arrow + percentage, coloured green when the
+ * change is favourable and red when it isn't (favourability depends on [goodWhenUp]).
+ */
+@Composable
+private fun WidgetColors.TrendRow(changePercent: Double?, goodWhenUp: Boolean) {
+    if (changePercent == null) return
+    val isUp  = changePercent >= 0
+    val good  = if (goodWhenUp) isUp else !isUp
+    val tint  = if (good) green else error
+    val icon  = if (isUp) R.drawable.ic_widget_trend_up else R.drawable.ic_widget_trend_down
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Image(
+            provider           = ImageProvider(icon),
+            contentDescription = if (isUp) "Up" else "Down",
+            modifier           = GlanceModifier.size(12.dp),
+            colorFilter        = ColorFilter.tint(tint)
+        )
+        Spacer(GlanceModifier.width(3.dp))
+        Text(
+            "${"%.0f".format(abs(changePercent))}% vs last month",
+            style = TextStyle(color = tint, fontSize = 10.sp, fontWeight = FontWeight.Medium)
+        )
+    }
+}
+
+/** Renders a ring progress indicator to a Bitmap — Glance has no Canvas/arc drawing API. */
+private fun renderProgressRing(
+    sizePx: Int,
+    strokePx: Float,
+    fraction: Float,
+    trackColor: Int,
+    fillColor: Int
+): Bitmap {
+    val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+    val inset  = strokePx / 2f + 2f
+    val rect   = RectF(inset, inset, sizePx - inset, sizePx - inset)
+
+    val trackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style       = Paint.Style.STROKE
+        strokeWidth = strokePx
+        strokeCap   = Paint.Cap.ROUND
+        color       = trackColor
+    }
+    canvas.drawArc(rect, 0f, 360f, false, trackPaint)
+
+    if (fraction > 0f) {
+        val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style       = Paint.Style.STROKE
+            strokeWidth = strokePx
+            strokeCap   = Paint.Cap.ROUND
+            color       = fillColor
+        }
+        canvas.drawArc(rect, -90f, 360f * fraction, false, fillPaint)
+    }
+    return bitmap
+}
+
 // ── Total Spent ───────────────────────────────────────────────────────────
 
 class TotalSpentWidget : GlanceAppWidget() {
@@ -107,10 +178,11 @@ class TotalSpentWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val repo   = WidgetDataRepository(context)
         val symbol = repo.currencySymbol()
-        val total  = repo.totalSpentThisMonth()
+        val trend  = repo.totalSpentTrend()
         provideContent {
             WidgetCard {
-                // M3E label chip
+                AccentStripe(error)
+                Spacer(GlanceModifier.height(10.dp))
                 Box(
                     modifier = GlanceModifier
                         .background(errorContainer).cornerRadius(8.dp)
@@ -120,11 +192,15 @@ class TotalSpentWidget : GlanceAppWidget() {
                 }
                 Spacer(GlanceModifier.height(12.dp))
                 Text(
-                    "$symbol ${"%.2f".format(total)}",
-                    style = TextStyle(color = error, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                    "$symbol ${"%.2f".format(trend.current)}",
+                    style = TextStyle(color = error, fontSize = 26.sp, fontWeight = FontWeight.Bold)
                 )
-                Spacer(GlanceModifier.height(3.dp))
-                Text("This month", style = TextStyle(color = subtext, fontSize = 11.sp))
+                Spacer(GlanceModifier.height(4.dp))
+                if (trend.changePercent != null) {
+                    TrendRow(trend.changePercent, goodWhenUp = false)
+                } else {
+                    Text("This month", style = TextStyle(color = subtext, fontSize = 11.sp))
+                }
             }
         }
     }
@@ -141,9 +217,11 @@ class TotalEarnedWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val repo   = WidgetDataRepository(context)
         val symbol = repo.currencySymbol()
-        val total  = repo.totalEarnedThisMonth()
+        val trend  = repo.totalEarnedTrend()
         provideContent {
             WidgetCard {
+                AccentStripe(green)
+                Spacer(GlanceModifier.height(10.dp))
                 Box(
                     modifier = GlanceModifier
                         .background(greenContainer).cornerRadius(8.dp)
@@ -153,11 +231,15 @@ class TotalEarnedWidget : GlanceAppWidget() {
                 }
                 Spacer(GlanceModifier.height(12.dp))
                 Text(
-                    "+$symbol ${"%.2f".format(total)}",
-                    style = TextStyle(color = green, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                    "+$symbol ${"%.2f".format(trend.current)}",
+                    style = TextStyle(color = green, fontSize = 26.sp, fontWeight = FontWeight.Bold)
                 )
-                Spacer(GlanceModifier.height(3.dp))
-                Text("This month", style = TextStyle(color = subtext, fontSize = 11.sp))
+                Spacer(GlanceModifier.height(4.dp))
+                if (trend.changePercent != null) {
+                    TrendRow(trend.changePercent, goodWhenUp = true)
+                } else {
+                    Text("This month", style = TextStyle(color = subtext, fontSize = 11.sp))
+                }
             }
         }
     }
@@ -177,6 +259,8 @@ class TotalSavingsWidget : GlanceAppWidget() {
         val total  = repo.totalSavings()
         provideContent {
             WidgetCard {
+                AccentStripe(primary)
+                Spacer(GlanceModifier.height(10.dp))
                 Box(
                     modifier = GlanceModifier
                         .background(primaryContainer).cornerRadius(8.dp)
@@ -187,9 +271,9 @@ class TotalSavingsWidget : GlanceAppWidget() {
                 Spacer(GlanceModifier.height(12.dp))
                 Text(
                     "$symbol ${"%.2f".format(total)}",
-                    style = TextStyle(color = primary, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                    style = TextStyle(color = primary, fontSize = 26.sp, fontWeight = FontWeight.Bold)
                 )
-                Spacer(GlanceModifier.height(3.dp))
+                Spacer(GlanceModifier.height(4.dp))
                 Text("Savings & investments", style = TextStyle(color = subtext, fontSize = 11.sp))
             }
         }
@@ -210,6 +294,8 @@ class HighestExpenseWidget : GlanceAppWidget() {
         val txn    = repo.highestExpense()
         provideContent {
             WidgetCard {
+                AccentStripe(error)
+                Spacer(GlanceModifier.height(10.dp))
                 Box(
                     modifier = GlanceModifier
                         .background(errorContainer).cornerRadius(8.dp)
@@ -225,7 +311,7 @@ class HighestExpenseWidget : GlanceAppWidget() {
                     Spacer(GlanceModifier.height(4.dp))
                     Text(
                         "-$symbol ${"%.2f".format(txn.amount)}",
-                        style = TextStyle(color = error, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                        style = TextStyle(color = error, fontSize = 24.sp, fontWeight = FontWeight.Bold)
                     )
                     Spacer(GlanceModifier.height(3.dp))
                     Text(txn.date.format(shortDate), style = TextStyle(color = subtext, fontSize = 11.sp))
@@ -249,6 +335,8 @@ class HighestIncomeWidget : GlanceAppWidget() {
         val txn    = repo.highestIncome()
         provideContent {
             WidgetCard {
+                AccentStripe(green)
+                Spacer(GlanceModifier.height(10.dp))
                 Box(
                     modifier = GlanceModifier
                         .background(greenContainer).cornerRadius(8.dp)
@@ -264,7 +352,7 @@ class HighestIncomeWidget : GlanceAppWidget() {
                     Spacer(GlanceModifier.height(4.dp))
                     Text(
                         "+$symbol ${"%.2f".format(txn.amount)}",
-                        style = TextStyle(color = green, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                        style = TextStyle(color = green, fontSize = 24.sp, fontWeight = FontWeight.Bold)
                     )
                     Spacer(GlanceModifier.height(3.dp))
                     Text(txn.date.format(shortDate), style = TextStyle(color = subtext, fontSize = 11.sp))
@@ -279,7 +367,8 @@ class HighestIncomeReceiver : GlanceAppWidgetReceiver() {
 }
 
 // ── Budget Progress ───────────────────────────────────────────────────────
-// Uses inline layout for defaultWeight() support.
+// Uses inline layout for defaultWeight() support. Progress is drawn as a ring
+// (rendered to a Bitmap with android.graphics.Canvas — Glance has no arc API).
 
 class BudgetProgressWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Exact
@@ -298,6 +387,9 @@ class BudgetProgressWidget : GlanceAppWidget() {
                 contentAlignment = Alignment.TopStart
             ) {
                 Column(modifier = GlanceModifier.fillMaxSize()) {
+                    AccentStripe(clr.primary)
+                    Spacer(GlanceModifier.height(10.dp))
+
                     // Label chip
                     Box(
                         modifier = GlanceModifier
@@ -316,29 +408,53 @@ class BudgetProgressWidget : GlanceAppWidget() {
                         val overBudget = spent > limit
                         val fillColor  = if (overBudget || fraction > 0.85f) clr.error else clr.primary
 
-                        Spacer(GlanceModifier.height(10.dp))
+                        Spacer(GlanceModifier.height(8.dp))
                         Text(budgetTitle, style = TextStyle(color = clr.onBg, fontSize = 14.sp, fontWeight = FontWeight.Bold), maxLines = 1)
 
                         Spacer(GlanceModifier.defaultWeight())
 
-                        // Taller M3E progress bar (12dp, fully rounded)
-                        val barWidth = (LocalSize.current.width - 32.dp) * fraction
-                        Box(modifier = GlanceModifier.fillMaxWidth().height(12.dp)) {
-                            Box(modifier = GlanceModifier.fillMaxSize().background(clr.track).cornerRadius(6.dp)) {}
-                            if (fraction > 0f) {
-                                Box(modifier = GlanceModifier.width(barWidth).fillMaxHeight().background(fillColor).cornerRadius(6.dp)) {}
+                        val ringBitmap = renderProgressRing(
+                            sizePx     = 220,
+                            strokePx   = 26f,
+                            fraction   = fraction,
+                            trackColor = clr.track.getColor(context).toArgb(),
+                            fillColor  = fillColor.getColor(context).toArgb()
+                        )
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Image(
+                                    provider           = ImageProvider(ringBitmap),
+                                    contentDescription = "Budget progress ring",
+                                    modifier           = GlanceModifier.size(72.dp)
+                                )
+                                Text(
+                                    "${(fraction * 100).toInt()}%",
+                                    style = TextStyle(
+                                        color      = if (overBudget) clr.error else clr.onBg,
+                                        fontSize   = 15.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                )
+                            }
+                            Spacer(GlanceModifier.width(14.dp))
+                            Column {
+                                Text(
+                                    "$symbol ${"%.0f".format(spent)}",
+                                    style = TextStyle(
+                                        color      = if (overBudget) clr.error else clr.onBg,
+                                        fontSize   = 16.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                )
+                                Text(
+                                    "of $symbol ${"%.0f".format(limit)}",
+                                    style = TextStyle(color = clr.subtext, fontSize = 11.sp)
+                                )
                             }
                         }
-                        Spacer(GlanceModifier.height(8.dp))
-                        Text(
-                            "$symbol ${"%.0f".format(spent)} / $symbol ${"%.0f".format(limit)}" +
-                                "  (${(fraction * 100).toInt()}%)",
-                            style = TextStyle(
-                                color      = if (overBudget) clr.error else clr.onBg,
-                                fontSize   = 11.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                        )
+
+                        Spacer(GlanceModifier.defaultWeight())
                     }
                 }
             }
@@ -356,9 +472,9 @@ class BudgetProgressReceiver : GlanceAppWidgetReceiver() {
 class MonthSummaryWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Exact
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val repo   = WidgetDataRepository(context)
-        val symbol = repo.currencySymbol()
-        val (spent, earned, paymentRows) = repo.monthSummary()
+        val repo    = WidgetDataRepository(context)
+        val symbol  = repo.currencySymbol()
+        val summary = repo.monthSummary()
         provideContent {
             val clr        = widgetColors()
             val availWidth = LocalSize.current.width - 32.dp   // 16dp × 2 padding
@@ -374,6 +490,8 @@ class MonthSummaryWidget : GlanceAppWidget() {
                 contentAlignment = Alignment.TopStart
             ) {
                 Column(modifier = GlanceModifier.fillMaxSize()) {
+                    AccentStripe(clr.primary)
+                    Spacer(GlanceModifier.height(10.dp))
 
                     // ── Two M3E colour-block columns ──────────────────
                     Row(modifier = GlanceModifier.fillMaxWidth()) {
@@ -387,9 +505,13 @@ class MonthSummaryWidget : GlanceAppWidget() {
                             Text("Total spent", style = TextStyle(color = clr.onErrorContainer, fontSize = 10.sp))
                             Spacer(GlanceModifier.height(4.dp))
                             Text(
-                                "$symbol ${"%.2f".format(spent)}",
+                                "$symbol ${"%.2f".format(summary.spentTrend.current)}",
                                 style = TextStyle(color = clr.error, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                             )
+                            if (summary.spentTrend.changePercent != null) {
+                                Spacer(GlanceModifier.height(3.dp))
+                                clr.TrendRow(summary.spentTrend.changePercent, goodWhenUp = false)
+                            }
                         }
                         Spacer(GlanceModifier.width(8.dp))
                         Column(
@@ -402,9 +524,13 @@ class MonthSummaryWidget : GlanceAppWidget() {
                             Text("Total earned", style = TextStyle(color = clr.onGreenContainer, fontSize = 10.sp))
                             Spacer(GlanceModifier.height(4.dp))
                             Text(
-                                "$symbol ${"%.2f".format(earned)}",
+                                "$symbol ${"%.2f".format(summary.earnedTrend.current)}",
                                 style = TextStyle(color = clr.green, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                             )
+                            if (summary.earnedTrend.changePercent != null) {
+                                Spacer(GlanceModifier.height(3.dp))
+                                clr.TrendRow(summary.earnedTrend.changePercent, goodWhenUp = true)
+                            }
                         }
                     }
 
@@ -417,7 +543,7 @@ class MonthSummaryWidget : GlanceAppWidget() {
 
                     // ── Per-payment-type breakdown ─────────────────────
                     Row(modifier = GlanceModifier.fillMaxWidth()) {
-                        paymentRows.forEach { row ->
+                        summary.paymentRows.forEach { row ->
                             val iconRes = if (row.label == "Cash") R.drawable.ic_widget_payments
                                           else                     R.drawable.ic_widget_credit_card
                             Column(
@@ -473,6 +599,8 @@ class CalendarWidget : GlanceAppWidget() {
                 contentAlignment = Alignment.TopStart
             ) {
                 Column(modifier = GlanceModifier.fillMaxSize()) {
+                    AccentStripe(clr.primary)
+                    Spacer(GlanceModifier.height(10.dp))
 
                     // ── Month / year header in primary ────────────────
                     Row(
@@ -515,19 +643,30 @@ class CalendarWidget : GlanceAppWidget() {
                                 ) {
                                     if (isValid) {
                                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            val circleMod = GlanceModifier
-                                                .size(30.dp)
-                                                .cornerRadius(15.dp)
-                                                .let { if (isToday) it.background(clr.primary) else it }
-                                            Box(modifier = circleMod, contentAlignment = Alignment.Center) {
-                                                Text(
-                                                    dayNum.toString(),
-                                                    style = TextStyle(
-                                                        color      = if (isToday) clr.onPrimary else clr.onBg,
-                                                        fontSize   = 11.sp,
-                                                        fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal
+                                            Box(contentAlignment = Alignment.Center) {
+                                                // Halo glow behind today for a bolder, more premium highlight
+                                                if (isToday) {
+                                                    Box(
+                                                        modifier = GlanceModifier
+                                                            .size(38.dp)
+                                                            .cornerRadius(19.dp)
+                                                            .background(clr.primaryContainer)
+                                                    ) {}
+                                                }
+                                                val circleMod = GlanceModifier
+                                                    .size(30.dp)
+                                                    .cornerRadius(15.dp)
+                                                    .let { if (isToday) it.background(clr.primary) else it }
+                                                Box(modifier = circleMod, contentAlignment = Alignment.Center) {
+                                                    Text(
+                                                        dayNum.toString(),
+                                                        style = TextStyle(
+                                                            color      = if (isToday) clr.onPrimary else clr.onBg,
+                                                            fontSize   = 11.sp,
+                                                            fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal
+                                                        )
                                                     )
-                                                )
+                                                }
                                             }
                                             Spacer(GlanceModifier.height(2.dp))
                                             Box(

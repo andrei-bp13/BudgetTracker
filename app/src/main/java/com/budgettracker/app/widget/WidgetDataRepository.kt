@@ -20,6 +20,15 @@ import java.util.Locale
 
 data class PaymentTypeRow(val label: String, val expense: Double, val income: Double)
 
+/** [changePercent] is null when there's no prior-month data to compare against. */
+data class TrendValue(val current: Double, val changePercent: Double?)
+
+data class MonthSummaryData(
+    val spentTrend: TrendValue,
+    val earnedTrend: TrendValue,
+    val paymentRows: List<PaymentTypeRow>
+)
+
 data class CalendarWidgetData(
     val monthName: String,
     val year: Int,
@@ -52,6 +61,17 @@ class WidgetDataRepository(context: Context) {
     suspend fun totalEarnedThisMonth(): Double =
         monthTotal(transactions(), YearMonth.now(), TransactionType.INCOME)
 
+    private fun trendOf(txns: List<Transaction>, type: TransactionType): TrendValue {
+        val now      = YearMonth.now()
+        val current  = monthTotal(txns, now, type)
+        val previous = monthTotal(txns, now.minusMonths(1), type)
+        val pct      = if (previous > 0.01) (current - previous) / previous * 100.0 else null
+        return TrendValue(current, pct)
+    }
+
+    suspend fun totalSpentTrend(): TrendValue  = trendOf(transactions(), TransactionType.EXPENSE)
+    suspend fun totalEarnedTrend(): TrendValue = trendOf(transactions(), TransactionType.INCOME)
+
     suspend fun totalSavings(): Double {
         val savingsCategories = setOf("Savings", "Investment")
         return transactions().filter { it.category in savingsCategories }.sumOf { it.amount }
@@ -69,11 +89,10 @@ class WidgetDataRepository(context: Context) {
         return Triple(spent, budget.amount, budget.title)
     }
 
-    suspend fun monthSummary(): Triple<Double, Double, List<PaymentTypeRow>> {
+    suspend fun monthSummary(): MonthSummaryData {
+        val all  = transactions()
         val now  = YearMonth.now()
-        val txns = transactions().filter { YearMonth.from(it.date) == now }
-        val totalSpent  = txns.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
-        val totalEarned = txns.filter { it.type == TransactionType.INCOME  }.sumOf { it.amount }
+        val txns = all.filter { YearMonth.from(it.date) == now }
         val rows = PaymentType.values().map { pt ->
             val exp = txns.filter { it.type == TransactionType.EXPENSE && it.paymentType == pt }.sumOf { it.amount }
             val inc = txns.filter { it.type == TransactionType.INCOME  && it.paymentType == pt }.sumOf { it.amount }
@@ -83,7 +102,11 @@ class WidgetDataRepository(context: Context) {
                 income  = inc
             )
         }
-        return Triple(totalSpent, totalEarned, rows)
+        return MonthSummaryData(
+            spentTrend  = trendOf(all, TransactionType.EXPENSE),
+            earnedTrend = trendOf(all, TransactionType.INCOME),
+            paymentRows = rows
+        )
     }
 
     suspend fun calendarData(): CalendarWidgetData {
