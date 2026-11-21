@@ -899,7 +899,7 @@ fun DonutChart(
     viewModel: TransactionViewModel,
     modifier: Modifier = Modifier
 ) {
-    val total    = categories.sumOf { it.second }.coerceAtLeast(0.01)
+    val total    = categories.sumOf { it.second.coerceAtLeast(0.0) }.coerceAtLeast(0.01)
     val colors   = categories.mapIndexed { i, (cat, _) -> chartColor(i, cat) }
     val animProg by animateFloatAsState(
         targetValue   = 1f,
@@ -914,7 +914,7 @@ fun DonutChart(
 
         var startAngle = -90f
         categories.forEachIndexed { i, (_, amount) ->
-            val sweep = (amount / total * 360f * animProg).toFloat()
+            val sweep = (amount.coerceAtLeast(0.0) / total * 360f * animProg).toFloat()
             drawArc(
                 color      = colors[i],
                 startAngle = startAngle,
@@ -936,7 +936,7 @@ fun CategoryLegend(
     onCategoryClick: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val total = categories.sumOf { it.second }.coerceAtLeast(0.01)
+    val total = categories.sumOf { it.second.coerceAtLeast(0.0) }.coerceAtLeast(0.01)
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         categories.forEachIndexed { i, (cat, amount) ->
             val dotColor  = chartColor(i, cat)
@@ -965,7 +965,7 @@ fun CategoryLegend(
                     maxLines = 1
                 )
                 Text(
-                    "${"%.0f".format(amount / total * 100)}%",
+                    "${"%.0f".format(amount.coerceAtLeast(0.0) / total * 100)}%",
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                     color = if (isOther) MaterialTheme.colorScheme.onSurfaceVariant
                             else MaterialTheme.colorScheme.onSurface
