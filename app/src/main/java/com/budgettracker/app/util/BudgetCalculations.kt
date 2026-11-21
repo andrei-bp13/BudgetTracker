@@ -23,6 +23,27 @@ data class CatPeriod(
 
 // â"€â"€ Bar-chart helpers (context-aware, fully injectable for tests) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
+/** Mon-Sun-ish 7-day windows covering a month: (label, start, end). Shared by computeWeeklyBars and catPeriods. */
+private fun weekWindows(year: Int, month: Int): List<Triple<String, LocalDate, LocalDate>> {
+    val ym  = YearMonth.of(year, month)
+    val dim = ym.lengthOfMonth()
+    return buildList {
+        var day = 1
+        while (day <= dim) {
+            val endDay = minOf(day + 6, dim)
+            val label  = if (day == endDay) "$day" else "$day-$endDay"
+            add(Triple(label, ym.atDay(day), ym.atDay(endDay)))
+            day += 7
+        }
+    }
+}
+
+/** Earliest transaction year through [today]'s year. Shared by computeYearlyBars and catPeriods. */
+private fun yearRange(transactions: List<Transaction>, today: LocalDate): IntRange {
+    val firstYear = transactions.minOfOrNull { it.date.year } ?: today.year
+    return firstYear..today.year
+}
+
 fun computeMonthlyBars(
     transactions: List<Transaction>,
     year: Int,
@@ -43,22 +64,12 @@ fun computeWeeklyBars(
     month: Int,
     type: TransactionType = TransactionType.EXPENSE
 ): List<ChartBar> {
-    val ym   = YearMonth.of(year, month)
-    val dim  = ym.lengthOfMonth()
-    val abbr = ym.month.getDisplayName(TextStyle.SHORT, Locale.getDefault())
-    return buildList {
-        var day = 1
-        while (day <= dim) {
-            val endDay = minOf(day + 6, dim)
-            val start  = ym.atDay(day)
-            val end    = ym.atDay(endDay)
-            val lbl    = if (day == endDay) "$day" else "$day-$endDay"
-            val total  = transactions.filter {
-                it.type == type && !it.date.isBefore(start) && !it.date.isAfter(end)
-            }.sumOf { it.amount }
-            add(ChartBar(lbl, "$abbr $lbl $year", total, start, end))
-            day += 7
-        }
+    val abbr = YearMonth.of(year, month).month.getDisplayName(TextStyle.SHORT, Locale.getDefault())
+    return weekWindows(year, month).map { (label, start, end) ->
+        val total = transactions.filter {
+            it.type == type && !it.date.isBefore(start) && !it.date.isAfter(end)
+        }.sumOf { it.amount }
+        ChartBar(label, "$abbr $label $year", total, start, end)
     }
 }
 
@@ -66,15 +77,13 @@ fun computeYearlyBars(
     transactions: List<Transaction>,
     today: LocalDate = LocalDate.now(),
     type: TransactionType = TransactionType.EXPENSE
-): List<ChartBar> {
-    val firstYear = transactions.minOfOrNull { it.date.year } ?: today.year
-    return (firstYear..today.year).map { y ->
+): List<ChartBar> =
+    yearRange(transactions, today).map { y ->
         val total = transactions.filter {
             it.type == type && it.date.year == y
         }.sumOf { it.amount }
         ChartBar("$y", "$y", total, LocalDate.of(y, 1, 1), LocalDate.of(y, 12, 31))
     }
-}
 
 // â"€â"€ Category-card period helpers â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
@@ -86,24 +95,13 @@ fun catPeriods(
     today: LocalDate = LocalDate.now()
 ): List<CatPeriod> = when (granularity) {
     "weekly" -> {
-        val ym   = YearMonth.of(contextYear, contextMonth)
-        val dim  = ym.lengthOfMonth()
-        val abbr = ym.month.getDisplayName(TextStyle.SHORT, Locale.getDefault())
-        buildList {
-            var day = 1
-            while (day <= dim) {
-                val endDay = minOf(day + 6, dim)
-                val lbl = if (day == endDay) "$day" else "$day-$endDay"
-                add(CatPeriod(lbl, "$abbr $lbl $contextYear", ym.atDay(day), ym.atDay(endDay)))
-                day += 7
-            }
+        val abbr = YearMonth.of(contextYear, contextMonth).month.getDisplayName(TextStyle.SHORT, Locale.getDefault())
+        weekWindows(contextYear, contextMonth).map { (label, start, end) ->
+            CatPeriod(label, "$abbr $label $contextYear", start, end)
         }
     }
-    "yearly" -> {
-        val firstYear = transactions.minOfOrNull { it.date.year } ?: today.year
-        (firstYear..today.year).map { y ->
-            CatPeriod("$y", "$y", LocalDate.of(y, 1, 1), LocalDate.of(y, 12, 31))
-        }
+    "yearly" -> yearRange(transactions, today).map { y ->
+        CatPeriod("$y", "$y", LocalDate.of(y, 1, 1), LocalDate.of(y, 12, 31))
     }
     else -> (1..12).map { m ->
         val ym  = YearMonth.of(contextYear, m)
@@ -167,57 +165,18 @@ fun monthlyExpensesLast6(
     }
 
 fun monthlyExpensesForYear(list: List<Transaction>, year: Int): List<ChartBar> =
-    (1..12).map { m ->
-        val ym    = YearMonth.of(year, m)
-        val start = ym.atDay(1)
-        val end   = ym.atEndOfMonth()
-        val abbr  = ym.month.getDisplayName(TextStyle.SHORT, Locale.getDefault())
-        val full  = ym.month.getDisplayName(TextStyle.FULL, Locale.getDefault())
-        ChartBar(
-            label     = abbr,
-            title     = "$full $year",
-            value     = monthTotal(list, ym, TransactionType.EXPENSE),
-            startDate = start,
-            endDate   = end
-        )
-    }
+    computeMonthlyBars(list, year, TransactionType.EXPENSE)
 
 fun weeklyExpensesForMonth(
     list: List<Transaction>,
     year: Int,
     month: Int
-): List<ChartBar> {
-    val ym          = YearMonth.of(year, month)
-    val daysInMonth = ym.lengthOfMonth()
-    val monthAbbr   = ym.month.getDisplayName(TextStyle.SHORT, Locale.getDefault())
-    return buildList {
-        var day = 1
-        while (day <= daysInMonth) {
-            val endDay = minOf(day + 6, daysInMonth)
-            val start  = ym.atDay(day)
-            val end    = ym.atDay(endDay)
-            val label  = if (day == endDay) "$day" else "$day-$endDay"
-            val total  = list.filter {
-                it.type == TransactionType.EXPENSE &&
-                !it.date.isBefore(start) && !it.date.isAfter(end)
-            }.sumOf { it.amount }
-            add(ChartBar(label, "$monthAbbr $label", total, start, end))
-            day += 7
-        }
-    }
-}
+): List<ChartBar> = computeWeeklyBars(list, year, month, TransactionType.EXPENSE)
 
 fun yearlyExpenses(
     list: List<Transaction>,
     currentYear: Int = LocalDate.now().year
-): List<ChartBar> {
-    val firstYear = list.minOfOrNull { it.date.year } ?: currentYear
-    return (firstYear..currentYear).map { y ->
-        val total = list.filter { it.type == TransactionType.EXPENSE && it.date.year == y }
-                        .sumOf { it.amount }
-        ChartBar("$y", "$y", total, LocalDate.of(y, 1, 1), LocalDate.of(y, 12, 31))
-    }
-}
+): List<ChartBar> = computeYearlyBars(list, LocalDate.of(currentYear, 1, 1), TransactionType.EXPENSE)
 
 fun monthTotal(list: List<Transaction>, month: YearMonth, type: TransactionType): Double =
     list.filter { it.type == type && YearMonth.from(it.date) == month }.sumOf { it.amount }
@@ -236,9 +195,7 @@ fun filterExpensesByDateRange(
     transactions: List<Transaction>,
     start: LocalDate,
     end: LocalDate
-): List<Transaction> = transactions.filter {
-    it.type == TransactionType.EXPENSE && !it.date.isBefore(start) && !it.date.isAfter(end)
-}
+): List<Transaction> = filterByTypeAndDateRange(transactions, start, end, TransactionType.EXPENSE)
 
 /** Returns transactions of [type] in [start]..[end] inclusive. */
 fun filterByTypeAndDateRange(

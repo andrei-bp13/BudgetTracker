@@ -438,4 +438,134 @@ class BudgetCalculationsTest {
         val result = budgetSpentAmount(emptyList(), budget(BudgetPeriod.MONTHLY))
         assertEquals(0.0, result)
     }
+
+    @Test fun `budgetSpentAmount picks up WEEKLY and YEARLY budgets too, not just MONTHLY`() {
+        // Regression test: WidgetDataRepository.budgetProgress() used to only handle
+        // MONTHLY budgets by reimplementing this filter instead of calling budgetSpentAmount.
+        val ref = LocalDate.of(2025, 6, 1)
+        val txns = listOf(expense(100.0, "2025-06-01"), expense(999.0, "2024-01-01"))
+        val weeklyResult = budgetSpentAmount(txns, budget(BudgetPeriod.WEEKLY), ref)
+        val yearlyResult = budgetSpentAmount(txns, budget(BudgetPeriod.YEARLY), ref)
+        assertEquals(100.0, weeklyResult)
+        assertEquals(100.0, yearlyResult)
+    }
+
+    // ── filterInDateRange ─────────────────────────────────────────────────────
+
+    @Test fun `filterInDateRange includes both income and expense within range`() {
+        val txns = listOf(
+            expense(10.0, "2025-01-05"),
+            income(20.0,  "2025-01-10"),
+            expense(30.0, "2025-02-01"), // outside range
+        )
+        val result = filterInDateRange(txns, LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 31))
+        assertEquals(2, result.size)
+    }
+
+    @Test fun `filterInDateRange is inclusive of boundary dates`() {
+        val txns = listOf(expense(10.0, "2025-01-01"), expense(20.0, "2025-01-31"))
+        val result = filterInDateRange(txns, LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 31))
+        assertEquals(2, result.size)
+    }
+
+    @Test fun `filterInDateRange excludes dates outside range`() {
+        val txns = listOf(expense(10.0, "2024-12-31"), expense(20.0, "2025-02-01"))
+        val result = filterInDateRange(txns, LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 31))
+        assertTrue(result.isEmpty())
+    }
+
+    // ── filterByTypeAndDateRange ──────────────────────────────────────────────
+
+    @Test fun `filterByTypeAndDateRange filters by type and date together`() {
+        val txns = listOf(
+            expense(10.0, "2025-01-05"),
+            income(20.0,  "2025-01-05"),
+        )
+        val result = filterByTypeAndDateRange(
+            txns, LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 31), TransactionType.INCOME
+        )
+        assertEquals(1, result.size)
+        assertEquals(20.0, result[0].amount)
+    }
+
+    @Test fun `filterByTypeAndDateRange returns empty when no match in range`() {
+        val txns = listOf(income(20.0, "2025-01-05"))
+        val result = filterByTypeAndDateRange(
+            txns, LocalDate.of(2025, 2, 1), LocalDate.of(2025, 2, 28), TransactionType.INCOME
+        )
+        assertTrue(result.isEmpty())
+    }
+
+    // ── filterExpensesByDateRange ─────────────────────────────────────────────
+
+    @Test fun `filterExpensesByDateRange excludes income in the same range`() {
+        val txns = listOf(
+            expense(10.0, "2025-01-05"),
+            income(999.0, "2025-01-05"),
+        )
+        val result = filterExpensesByDateRange(txns, LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 31))
+        assertEquals(1, result.size)
+        assertEquals(10.0, result[0].amount)
+    }
+
+    @Test fun `filterExpensesByDateRange matches filterByTypeAndDateRange with EXPENSE`() {
+        val txns = listOf(expense(10.0, "2025-01-05"), expense(20.0, "2025-01-20"), income(30.0, "2025-01-10"))
+        val start = LocalDate.of(2025, 1, 1)
+        val end   = LocalDate.of(2025, 1, 31)
+        assertEquals(
+            filterByTypeAndDateRange(txns, start, end, TransactionType.EXPENSE),
+            filterExpensesByDateRange(txns, start, end)
+        )
+    }
+
+    // ── computeCategoryTotals ─────────────────────────────────────────────────
+
+    @Test fun `computeCategoryTotals groups and sums by category`() {
+        val txns = listOf(
+            expense(10.0, "2025-01-01", "Food"),
+            expense(5.0,  "2025-01-02", "Food"),
+            expense(20.0, "2025-01-03", "Shopping"),
+        )
+        val result = computeCategoryTotals(txns)
+        assertEquals(2, result.size)
+        assertEquals("Shopping" to 20.0, result[0])
+        assertEquals("Food" to 15.0, result[1])
+    }
+
+    @Test fun `computeCategoryTotals sorts descending by total`() {
+        val txns = listOf(
+            expense(1.0, "2025-01-01", "A"),
+            expense(5.0, "2025-01-01", "B"),
+            expense(3.0, "2025-01-01", "C"),
+        )
+        val result = computeCategoryTotals(txns)
+        assertEquals(listOf("B", "C", "A"), result.map { it.first })
+    }
+
+    @Test fun `computeCategoryTotals returns empty list for no transactions`() {
+        assertTrue(computeCategoryTotals(emptyList()).isEmpty())
+    }
+
+    // ── delegation sanity: monthly-month-summary wrappers vs computeXBars ────
+
+    @Test fun `monthlyExpensesForYear matches computeMonthlyBars with EXPENSE type`() {
+        val txns = listOf(expense(100.0, "2025-03-15"), income(999.0, "2025-03-10"))
+        assertEquals(computeMonthlyBars(txns, 2025, TransactionType.EXPENSE), monthlyExpensesForYear(txns, 2025))
+    }
+
+    @Test fun `weeklyExpensesForMonth matches computeWeeklyBars with EXPENSE type`() {
+        val txns = listOf(expense(50.0, "2025-02-03"))
+        assertEquals(
+            computeWeeklyBars(txns, 2025, 2, TransactionType.EXPENSE),
+            weeklyExpensesForMonth(txns, 2025, 2)
+        )
+    }
+
+    @Test fun `yearlyExpenses matches computeYearlyBars with EXPENSE type`() {
+        val txns = listOf(expense(50.0, "2023-02-03"))
+        assertEquals(
+            computeYearlyBars(txns, LocalDate.of(2025, 1, 1), TransactionType.EXPENSE),
+            yearlyExpenses(txns, 2025)
+        )
+    }
 }
