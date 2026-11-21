@@ -107,12 +107,6 @@ private fun WidgetCard(content: @Composable WidgetColors.() -> Unit) {
     }
 }
 
-/** Thin coloured bar for a bolder, more premium top accent on every card. */
-@Composable
-private fun AccentStripe(color: GlanceColorProvider) {
-    Box(modifier = GlanceModifier.fillMaxWidth().height(4.dp).cornerRadius(2.dp).background(color)) {}
-}
-
 /**
  * Month-over-month trend badge: an up/down arrow + percentage, coloured green when the
  * change is favourable and red when it isn't (favourability depends on [goodWhenUp]).
@@ -184,8 +178,6 @@ class TotalSpentWidget : GlanceAppWidget() {
         val trend  = repo.totalSpentTrend()
         provideContent {
             WidgetCard {
-                AccentStripe(error)
-                Spacer(GlanceModifier.height(10.dp))
                 Box(
                     modifier = GlanceModifier
                         .background(errorContainer).cornerRadius(8.dp)
@@ -223,8 +215,6 @@ class TotalEarnedWidget : GlanceAppWidget() {
         val trend  = repo.totalEarnedTrend()
         provideContent {
             WidgetCard {
-                AccentStripe(green)
-                Spacer(GlanceModifier.height(10.dp))
                 Box(
                     modifier = GlanceModifier
                         .background(greenContainer).cornerRadius(8.dp)
@@ -262,8 +252,6 @@ class TotalSavingsWidget : GlanceAppWidget() {
         val total  = repo.totalSavings()
         provideContent {
             WidgetCard {
-                AccentStripe(primary)
-                Spacer(GlanceModifier.height(10.dp))
                 Box(
                     modifier = GlanceModifier
                         .background(primaryContainer).cornerRadius(8.dp)
@@ -299,8 +287,6 @@ class HighestExpenseWidget : GlanceAppWidget() {
         val txn    = repo.highestExpense()
         provideContent {
             WidgetCard {
-                AccentStripe(error)
-                Spacer(GlanceModifier.height(10.dp))
                 Box(
                     modifier = GlanceModifier
                         .background(errorContainer).cornerRadius(8.dp)
@@ -340,8 +326,6 @@ class HighestIncomeWidget : GlanceAppWidget() {
         val txn    = repo.highestIncome()
         provideContent {
             WidgetCard {
-                AccentStripe(green)
-                Spacer(GlanceModifier.height(10.dp))
                 Box(
                     modifier = GlanceModifier
                         .background(greenContainer).cornerRadius(8.dp)
@@ -394,9 +378,6 @@ class BudgetProgressWidget : GlanceAppWidget() {
                 contentAlignment = Alignment.TopStart
             ) {
                 Column(modifier = GlanceModifier.fillMaxSize()) {
-                    AccentStripe(clr.primary)
-                    Spacer(GlanceModifier.height(10.dp))
-
                     // Label chip
                     Box(
                         modifier = GlanceModifier
@@ -485,10 +466,7 @@ class MonthSummaryWidget : GlanceAppWidget() {
         val symbol  = repo.currencySymbol()
         val summary = repo.monthSummary()
         provideContent {
-            val clr        = widgetColors()
-            val availWidth = LocalSize.current.width - 32.dp   // 16dp × 2 padding
-            val colWidth   = (availWidth - 8.dp) / 2           // gap 8dp between blocks
-            val thirdWidth = availWidth / 3
+            val clr = widgetColors()
 
             Box(
                 modifier = GlanceModifier
@@ -499,14 +477,11 @@ class MonthSummaryWidget : GlanceAppWidget() {
                 contentAlignment = Alignment.TopStart
             ) {
                 Column(modifier = GlanceModifier.fillMaxSize()) {
-                    AccentStripe(clr.primary)
-                    Spacer(GlanceModifier.height(10.dp))
-
                     // ── Two M3E colour-block columns ──────────────────
                     Row(modifier = GlanceModifier.fillMaxWidth()) {
                         Column(
                             modifier = GlanceModifier
-                                .width(colWidth)
+                                .defaultWeight()
                                 .background(clr.errorContainer)
                                 .cornerRadius(16.dp)
                                 .padding(horizontal = 10.dp, vertical = 8.dp)
@@ -525,7 +500,7 @@ class MonthSummaryWidget : GlanceAppWidget() {
                         Spacer(GlanceModifier.width(8.dp))
                         Column(
                             modifier = GlanceModifier
-                                .width(colWidth)
+                                .defaultWeight()
                                 .background(clr.greenContainer)
                                 .cornerRadius(16.dp)
                                 .padding(horizontal = 10.dp, vertical = 8.dp)
@@ -548,7 +523,7 @@ class MonthSummaryWidget : GlanceAppWidget() {
                     // ── Divider ────────────────────────────────────────
                     Box(modifier = GlanceModifier.fillMaxWidth().height(1.dp).background(clr.track)) {}
 
-                    Spacer(GlanceModifier.height(10.dp))
+                    Spacer(GlanceModifier.defaultWeight())
 
                     // ── Per-payment-type breakdown ─────────────────────
                     Row(modifier = GlanceModifier.fillMaxWidth()) {
@@ -556,7 +531,7 @@ class MonthSummaryWidget : GlanceAppWidget() {
                             val iconRes = if (row.label == "Cash") R.drawable.ic_widget_payments
                                           else                     R.drawable.ic_widget_credit_card
                             Column(
-                                modifier            = GlanceModifier.width(thirdWidth),
+                                modifier            = GlanceModifier.defaultWeight(),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Image(
@@ -610,9 +585,6 @@ class CalendarWidget : GlanceAppWidget() {
                 contentAlignment = Alignment.TopStart
             ) {
                 Column(modifier = GlanceModifier.fillMaxSize()) {
-                    AccentStripe(clr.primary)
-                    Spacer(GlanceModifier.height(10.dp))
-
                     // ── Month / year header in primary ────────────────
                     Row(
                         modifier            = GlanceModifier.fillMaxWidth(),
