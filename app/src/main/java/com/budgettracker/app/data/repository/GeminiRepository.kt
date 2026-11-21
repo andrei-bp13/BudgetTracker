@@ -81,7 +81,7 @@ class AiRepository {
             val json = callMistral(apiKey, prompt)
             ParsedTransaction(
                 title       = json.getString("title"),
-                amount      = json.getDouble("amount"),
+                amount      = kotlin.math.abs(json.getDouble("amount")),
                 category    = json.getString("category"),
                 paymentType = runCatching { PaymentType.valueOf(json.getString("paymentType")) }.getOrDefault(PaymentType.DEBIT),
                 type        = runCatching { TransactionType.valueOf(json.getString("type")) }.getOrDefault(TransactionType.EXPENSE),

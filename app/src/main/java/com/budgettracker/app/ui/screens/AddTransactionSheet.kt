@@ -59,7 +59,7 @@ fun AddTransactionSheet(
 
     var transactionType by remember { mutableStateOf(initialTransaction?.type ?: TransactionType.EXPENSE) }
     var title          by remember { mutableStateOf(initialTransaction?.title    ?: "") }
-    var amount         by remember { mutableStateOf(initialTransaction?.amount?.toString() ?: "") }
+    var amount         by remember { mutableStateOf(initialTransaction?.amount?.let { kotlin.math.abs(it) }?.toString() ?: "") }
     var note           by remember { mutableStateOf(initialTransaction?.note     ?: "") }
     var paymentType    by remember { mutableStateOf(initialTransaction?.paymentType ?: PaymentType.DEBIT) }
     var selectedCat    by remember { mutableStateOf(initialTransaction?.category ?: "Food & Dining") }
