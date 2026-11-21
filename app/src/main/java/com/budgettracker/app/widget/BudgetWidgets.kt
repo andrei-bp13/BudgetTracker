@@ -8,7 +8,6 @@ import android.graphics.RectF
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.ColorFilter
@@ -168,10 +167,8 @@ private fun renderProgressRing(
 
 // ── Total Spent ───────────────────────────────────────────────────────────
 
-private val SimpleValueWidgetSizes = setOf(DpSize(120.dp, 80.dp), DpSize(180.dp, 110.dp), DpSize(250.dp, 110.dp))
-
 class TotalSpentWidget : GlanceAppWidget() {
-    override val sizeMode = SizeMode.Responsive(SimpleValueWidgetSizes)
+    override val sizeMode = SizeMode.Exact
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val repo   = WidgetDataRepository(context)
         val symbol = repo.currencySymbol()
@@ -208,7 +205,7 @@ class TotalSpentReceiver : GlanceAppWidgetReceiver() {
 // ── Total Earned ──────────────────────────────────────────────────────────
 
 class TotalEarnedWidget : GlanceAppWidget() {
-    override val sizeMode = SizeMode.Responsive(SimpleValueWidgetSizes)
+    override val sizeMode = SizeMode.Exact
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val repo   = WidgetDataRepository(context)
         val symbol = repo.currencySymbol()
@@ -245,7 +242,7 @@ class TotalEarnedReceiver : GlanceAppWidgetReceiver() {
 // ── Total Savings ─────────────────────────────────────────────────────────
 
 class TotalSavingsWidget : GlanceAppWidget() {
-    override val sizeMode = SizeMode.Responsive(SimpleValueWidgetSizes)
+    override val sizeMode = SizeMode.Exact
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val repo   = WidgetDataRepository(context)
         val symbol = repo.currencySymbol()
@@ -277,10 +274,8 @@ class TotalSavingsReceiver : GlanceAppWidgetReceiver() {
 
 // ── Highest Expense ───────────────────────────────────────────────────────
 
-private val HighestTxnWidgetSizes = setOf(DpSize(140.dp, 100.dp), DpSize(180.dp, 110.dp), DpSize(250.dp, 110.dp))
-
 class HighestExpenseWidget : GlanceAppWidget() {
-    override val sizeMode = SizeMode.Responsive(HighestTxnWidgetSizes)
+    override val sizeMode = SizeMode.Exact
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val repo   = WidgetDataRepository(context)
         val symbol = repo.currencySymbol()
@@ -319,7 +314,7 @@ class HighestExpenseReceiver : GlanceAppWidgetReceiver() {
 // ── Highest Income ────────────────────────────────────────────────────────
 
 class HighestIncomeWidget : GlanceAppWidget() {
-    override val sizeMode = SizeMode.Responsive(HighestTxnWidgetSizes)
+    override val sizeMode = SizeMode.Exact
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val repo   = WidgetDataRepository(context)
         val symbol = repo.currencySymbol()
@@ -360,9 +355,7 @@ class HighestIncomeReceiver : GlanceAppWidgetReceiver() {
 // (rendered to a Bitmap with android.graphics.Canvas — Glance has no arc API).
 
 class BudgetProgressWidget : GlanceAppWidget() {
-    override val sizeMode = SizeMode.Responsive(
-        setOf(DpSize(160.dp, 100.dp), DpSize(180.dp, 110.dp), DpSize(250.dp, 110.dp))
-    )
+    override val sizeMode = SizeMode.Exact
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val repo     = WidgetDataRepository(context)
         val symbol   = repo.currencySymbol()
@@ -458,9 +451,7 @@ class BudgetProgressReceiver : GlanceAppWidgetReceiver() {
 // Uses inline layout for defaultWeight() support.
 
 class MonthSummaryWidget : GlanceAppWidget() {
-    override val sizeMode = SizeMode.Responsive(
-        setOf(DpSize(200.dp, 130.dp), DpSize(250.dp, 160.dp), DpSize(320.dp, 200.dp))
-    )
+    override val sizeMode = SizeMode.Exact
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val repo    = WidgetDataRepository(context)
         val symbol  = repo.currencySymbol()
@@ -565,9 +556,7 @@ class MonthSummaryReceiver : GlanceAppWidgetReceiver() {
 // Uses inline layout for defaultWeight() support.
 
 class CalendarWidget : GlanceAppWidget() {
-    override val sizeMode = SizeMode.Responsive(
-        setOf(DpSize(200.dp, 200.dp), DpSize(250.dp, 250.dp), DpSize(320.dp, 320.dp))
-    )
+    override val sizeMode = SizeMode.Exact
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val repo = WidgetDataRepository(context)
         val data = repo.calendarData()
