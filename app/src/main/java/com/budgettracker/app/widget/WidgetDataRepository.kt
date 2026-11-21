@@ -6,11 +6,11 @@ import com.pardonmyspending.app.data.db.toBudget
 import com.pardonmyspending.app.data.db.toTransaction
 import com.pardonmyspending.app.data.model.AllCurrencies
 import com.pardonmyspending.app.data.model.Budget
-import com.pardonmyspending.app.data.model.BudgetPeriod
 import com.pardonmyspending.app.data.model.PaymentType
 import com.pardonmyspending.app.data.model.Transaction
 import com.pardonmyspending.app.data.model.TransactionType
 import com.pardonmyspending.app.data.repository.PreferencesRepository
+import com.pardonmyspending.app.util.budgetSpentAmount
 import com.pardonmyspending.app.util.monthTotal
 import kotlinx.coroutines.flow.first
 import java.time.LocalDate
@@ -64,11 +64,8 @@ class WidgetDataRepository(context: Context) {
         transactions().filter { it.type == TransactionType.INCOME }.maxByOrNull { it.amount }
 
     suspend fun budgetProgress(): Triple<Double, Double, String>? {
-        val budget = budgets().firstOrNull { it.period == BudgetPeriod.MONTHLY } ?: return null
-        val spent  = transactions()
-            .filter { it.type == TransactionType.EXPENSE && it.category == budget.categoryName }
-            .filter { YearMonth.from(it.date) == YearMonth.now() }
-            .sumOf { it.amount }
+        val budget = budgets().firstOrNull() ?: return null
+        val spent  = budgetSpentAmount(transactions(), budget)
         return Triple(spent, budget.amount, budget.title)
     }
 
