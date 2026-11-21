@@ -2225,3 +2225,423 @@ e0612b74-0363-4922-b89b-004d988d3941,Fast food,31.54,EXPENSE,Food & Dining,2026-
 19abd840-3fc7-4d81-a670-435c0c846f90,Train ticket,27.31,EXPENSE,Transportation,2026-06-15,,CASH
 bf0b8d74-2c05-4cf0-b5b7-12aa4f07f3ec,Coffee shop,41.38,EXPENSE,Food & Dining,2026-06-15,,CREDIT
 62b4f4ef-98f0-4ebb-8797-7b496cdef59a,Pharmacy,24.31,EXPENSE,Healthcare,2026-06-15,,DEBIT
+8506be83-0076-467b-b607-0f6699fe07ca,Interest income,443.92,INCOME,Investment,2026-06-17,,CASH
+ba7fcf3f-8504-4691-b548-25dfc8c092e2,Flight ticket,268.98,EXPENSE,Travel,2026-06-17,,CREDIT
+b420c6e0-cc4b-4d8a-ade0-7e320eb5ad99,Pizza delivery,43.5,EXPENSE,Food & Dining,2026-06-17,,DEBIT
+2872e73c-a7d0-41f9-a461-facc7eca4cf6,Travel insurance,192.11,EXPENSE,Travel,2026-06-18,,CASH
+6fb2f43d-644e-4efc-bedc-a3dd6a07b62b,Toll fee,22.24,EXPENSE,Transportation,2026-06-18,,CREDIT
+6a2d439a-e49e-4743-a3f3-576b3c68624e,Gas bill,41.23,EXPENSE,Utilities,2026-06-18,,CREDIT
+1fc1a346-a178-41ff-bb3b-96b5ecc97c55,Haircut,21.89,EXPENSE,Personal Care,2026-06-18,,CASH
+3b2ab8f3-a965-4962-9c60-026bb5cd1e41,Cafe breakfast,25.82,EXPENSE,Food & Dining,2026-06-18,,CASH
+15ead915-a150-44b6-ba0b-c8a403440c13,Restaurant dinner,13.51,EXPENSE,Food & Dining,2026-06-19,,DEBIT
+df524d39-e7f9-4aed-940f-80356258314b,Gas station,13.5,EXPENSE,Transportation,2026-06-19,,CREDIT
+0582255c-1da1-4deb-9658-67ef645bc652,Barber,53.0,EXPENSE,Personal Care,2026-06-19,,CASH
+9156f6fa-b03a-4c5a-94d9-3fa36de25491,Grocery shopping,107.38,EXPENSE,Food & Dining,2026-06-20,,CREDIT
+36bf06c1-edc1-4ac4-bb68-0347143b3b79,Shoes,140.97,EXPENSE,Shopping,2026-06-20,,CREDIT
+7fe744cd-1a8f-45df-b3f3-74956936fa1b,Refund,574.16,INCOME,Other Income,2026-06-20,,CREDIT
+954f4cf0-dc3c-40c5-83a6-9d86de6629cb,Gym membership,94.24,EXPENSE,Healthcare,2026-06-21,,DEBIT
+995d4974-c5fe-409f-b499-89abcc9009ff,Home decor,48.7,EXPENSE,Shopping,2026-06-22,,CREDIT
+b69a8716-c5cf-44cc-a671-ee2e6c605c8d,Cafe breakfast,22.78,EXPENSE,Food & Dining,2026-06-22,,CASH
+999e2fbe-d351-4d23-89f5-f99bb3ef9a1b,Coffee shop,36.49,EXPENSE,Food & Dining,2026-06-23,,CREDIT
+15a8f04f-1cae-4950-9255-55ea9c61829c,Travel insurance,235.2,EXPENSE,Travel,2026-06-24,,CASH
+34793d62-45d6-4af8-806a-e41b74f27c0d,Pharmacy,74.03,EXPENSE,Healthcare,2026-06-24,,CASH
+e0972924-c3b4-4c19-a51a-a1b55960c594,Grocery shopping,92.92,EXPENSE,Food & Dining,2026-06-25,,CREDIT
+a8dc2acb-42ad-434f-a96f-4f53143fbbec,Cinema tickets,63.19,EXPENSE,Entertainment,2026-06-25,,DEBIT
+c09b151c-e841-4ec3-8eff-b71e6448a1d2,Dental checkup,80.94,EXPENSE,Healthcare,2026-06-26,,CASH
+00280edd-1ab6-4e70-9985-e2670802367f,Textbooks,81.8,EXPENSE,Education,2026-06-26,,CASH
+0a0616e2-2115-4329-8dff-0ae0064bae51,Car maintenance,39.98,EXPENSE,Transportation,2026-06-27,,DEBIT
+20ceff66-f1f5-42da-bce3-836b545da430,Toll fee,13.71,EXPENSE,Transportation,2026-06-27,,CASH
+9e45e17d-da26-42f1-a72b-e3bb0ed64996,Books,77.5,EXPENSE,Shopping,2026-06-27,,DEBIT
+f215f836-ab51-45b2-ae6c-1144a4874a89,Coffee shop,41.03,EXPENSE,Food & Dining,2026-06-27,,CASH
+d70879d0-23d2-40ab-95fd-37e2d8ed4198,Doctor visit,77.13,EXPENSE,Healthcare,2026-06-28,,CREDIT
+0aa78d4a-ae75-4660-8312-0f431ee0b74f,Doctor visit,52.01,EXPENSE,Healthcare,2026-06-28,,CREDIT
+ac56496d-7001-4797-be78-378dbbe24602,Fast food,51.59,EXPENSE,Food & Dining,2026-06-28,,CREDIT
+56fef268-85ea-49d2-83d7-eaffff15d690,Clothing store,77.49,EXPENSE,Shopping,2026-06-29,,CASH
+f73c61db-bb04-454f-9f95-249ba4b80b9a,Sushi bar,25.84,EXPENSE,Food & Dining,2026-06-29,,CREDIT
+79c93263-d16e-473e-8387-6cff203f2fc0,Cinema tickets,32.62,EXPENSE,Entertainment,2026-06-30,,CASH
+910dec00-b9bc-405f-8347-f781feb8020c,Monthly salary,4033.89,INCOME,Salary,2026-07-01,,DEBIT
+363f086c-aff0-433e-944e-2485057927e2,Monthly rent,466.24,EXPENSE,Housing,2026-07-01,,CREDIT
+a6803a42-1329-4db4-85bc-9cdbc718af4f,Gas station,19.17,EXPENSE,Transportation,2026-07-01,,DEBIT
+1eb6e137-1a72-4a03-bebf-ac303f7f38e1,Pizza delivery,18.9,EXPENSE,Food & Dining,2026-07-01,,CREDIT
+1449d0ef-e544-4506-94cd-a0b4b61e7816,Electronics,40.4,EXPENSE,Shopping,2026-07-02,,DEBIT
+0a859a77-c072-4a40-adf9-c7817b012a16,Restaurant dinner,31.38,EXPENSE,Food & Dining,2026-07-02,,DEBIT
+e2325606-8aec-489b-8f41-a1abc64b8192,Home decor,87.39,EXPENSE,Shopping,2026-07-02,,CASH
+57a63564-7be0-444e-86a4-48a2f88a03ed,Grocery shopping,101.49,EXPENSE,Food & Dining,2026-07-03,,DEBIT
+c48ce964-5236-4bfd-a601-94808557290a,Consulting fee,157.21,INCOME,Freelance,2026-07-03,,CREDIT
+fa363687-c352-448e-8098-cf6142e55c8d,Restaurant dinner,30.5,EXPENSE,Food & Dining,2026-07-04,,CREDIT
+d9fa127e-bd6f-4616-aea3-52c908c69d6b,Video game,57.42,EXPENSE,Entertainment,2026-07-04,,CREDIT
+7d4e108b-2f9c-4b7f-8d67-08df97204a1e,Electric bill,63.04,EXPENSE,Utilities,2026-07-05,,DEBIT
+fa9bb680-55cd-4ec6-8c61-e165e3ba4bfe,Internet bill,52.62,EXPENSE,Utilities,2026-07-05,,DEBIT
+ba5b44e3-9712-4162-8e43-f80c6baa595c,Phone bill,45.68,EXPENSE,Utilities,2026-07-05,,CREDIT
+77ad9de4-def4-45ac-93a0-928976ecc1e2,Haircut,30.12,EXPENSE,Personal Care,2026-07-05,,DEBIT
+eb2e0687-4545-4e7f-a2df-f99540b4036f,Barber,31.61,EXPENSE,Personal Care,2026-07-05,,CASH
+e9dcd89a-0580-48fc-8ea6-0a210a1a58d8,Sushi bar,43.3,EXPENSE,Food & Dining,2026-07-05,,DEBIT
+8efa6bc6-da04-46fc-8153-ca6bc0f09e8f,Mortgage payment,120.17,EXPENSE,Housing,2026-07-06,,DEBIT
+ada36843-a4e5-4ad7-a322-26beeb6aca34,Bus pass,19.38,EXPENSE,Transportation,2026-07-06,,DEBIT
+b3fbbb5c-0996-4882-b772-e99a3d55e997,Grocery shopping,124.3,EXPENSE,Food & Dining,2026-07-07,,CREDIT
+ee19116c-476b-4203-9f86-7965ace03bb6,Online order,80.49,EXPENSE,Shopping,2026-07-07,,DEBIT
+b4f8d7d2-fa62-4a6a-85cb-d55034ec718b,Cafe breakfast,30.03,EXPENSE,Food & Dining,2026-07-07,,DEBIT
+2d9334b9-c234-4824-bc0a-0c2f32f851af,Mortgage payment,107.39,EXPENSE,Housing,2026-07-07,,CREDIT
+ac12399c-9db1-4e84-a2aa-d8c8f07ef423,Nail salon,47.46,EXPENSE,Personal Care,2026-07-08,,CREDIT
+7e9efeca-7db3-458d-9158-37c55e9613cc,Skincare products,30.96,EXPENSE,Personal Care,2026-07-08,,DEBIT
+78a7abd6-b75e-4ea3-948d-672e0a70b274,Fast food,24.57,EXPENSE,Food & Dining,2026-07-10,,CASH
+1f6e7843-9a14-4b8f-b497-1b88a36e0925,Museum entry,41.65,EXPENSE,Entertainment,2026-07-10,,DEBIT
+fd838f86-2d96-46da-a65b-a55b19972d2b,Concert,44.45,EXPENSE,Entertainment,2026-07-10,,DEBIT
+35d2eb5f-c265-4551-864b-d5113aa5cfc4,Lunch takeout,35.99,EXPENSE,Food & Dining,2026-07-11,,CASH
+48376d62-0845-4f6c-ac0c-304d0528658c,Books,98.94,EXPENSE,Shopping,2026-07-12,,DEBIT
+98d79c3b-9e1d-4f64-b34d-e89247cc2e37,Pizza delivery,14.21,EXPENSE,Food & Dining,2026-07-12,,CASH
+2f159f1c-ce7e-4d84-9d25-759ee1903602,Lab tests,46.2,EXPENSE,Healthcare,2026-07-12,,CREDIT
+cc358a9a-f3ca-4a0b-8e26-94487ae17dc3,Grocery shopping,96.6,EXPENSE,Food & Dining,2026-07-12,,DEBIT
+a1d1137f-1fec-4d54-b6f8-afe70f504b05,Pizza delivery,33.85,EXPENSE,Food & Dining,2026-07-12,,CREDIT
+19eb0910-cd42-46c9-9242-aca15a81f22e,Home decor,88.67,EXPENSE,Shopping,2026-07-13,,CREDIT
+ea3cc1e5-138f-43f0-b93b-51431ab93914,Grocery shopping,63.94,EXPENSE,Food & Dining,2026-07-13,,CREDIT
+e44c00b7-4e0f-4373-b92e-47a2fee92687,Sushi bar,31.24,EXPENSE,Food & Dining,2026-07-13,,CREDIT
+f701db7f-91db-4d65-91b0-47d4658a96c1,Tutoring,81.67,EXPENSE,Education,2026-07-14,,DEBIT
+485c04f3-84d1-4d80-94d6-94e9e53447de,Lunch takeout,26.21,EXPENSE,Food & Dining,2026-07-14,,CREDIT
+f9f07c74-5dd0-47bd-a444-cc673f0aabbb,Restaurant dinner,9.87,EXPENSE,Food & Dining,2026-07-14,,DEBIT
+22084d3c-19f3-4496-90bd-9994eda9fcb8,Gym membership,26.18,EXPENSE,Healthcare,2026-07-15,,CASH
+a64b3644-cee5-4865-b963-f48050d956b1,Cafe breakfast,50.33,EXPENSE,Food & Dining,2026-07-15,,CASH
+884ff99d-6203-4f54-8970-479f66eb27e0,Restaurant dinner,11.84,EXPENSE,Food & Dining,2026-07-15,,DEBIT
+124e81fb-c387-41fe-81fe-6ee3da081c02,Hotel booking,317.91,EXPENSE,Travel,2026-07-15,,DEBIT
+bff87b64-70c4-4173-b8af-9830aeedff69,Gym membership,37.58,EXPENSE,Healthcare,2026-07-16,,CREDIT
+c19fb4fd-faf7-42f3-bcbd-bf36731b5dbb,Grocery shopping,110.92,EXPENSE,Food & Dining,2026-07-17,,CREDIT
+fdcce4a9-04d1-4053-9d3b-14f399a11ae8,Gym membership,83.97,EXPENSE,Healthcare,2026-07-17,,CASH
+3e90e029-cd2f-40e6-b637-d9ec53fe9585,Fast food,28.64,EXPENSE,Food & Dining,2026-07-18,,DEBIT
+19c6fc38-0daf-4f1c-8a0d-db25a0c6ebb1,Books,120.33,EXPENSE,Shopping,2026-07-18,,DEBIT
+bf022cf1-18d4-4ac7-b6bb-4dc11c17933e,Spa treatment,33.35,EXPENSE,Personal Care,2026-07-19,,DEBIT
+fda4053c-2669-420a-aff0-5e1607616d0f,Online order,103.68,EXPENSE,Shopping,2026-07-19,,DEBIT
+29aca021-2c95-48ed-8084-0a0bb3e45fa3,Gas station,20.61,EXPENSE,Transportation,2026-07-19,,CREDIT
+698903a1-f6d9-4f69-bc27-c78c3da1ab02,Fast food,28.0,EXPENSE,Food & Dining,2026-07-20,,CREDIT
+442dc34e-40e0-4f76-8753-b1b763897892,Shoes,85.32,EXPENSE,Shopping,2026-07-20,,DEBIT
+f7ba294c-41ba-4664-bc02-18cca4114bce,Sushi bar,20.33,EXPENSE,Food & Dining,2026-07-21,,CREDIT
+8d2871c1-72ba-4b46-85e0-0c7b4332b96e,Grocery shopping,56.19,EXPENSE,Food & Dining,2026-07-21,,CREDIT
+b0fdafcf-b4f2-4fb7-a3ff-4df5b4df327f,Cafe breakfast,50.67,EXPENSE,Food & Dining,2026-07-21,,CREDIT
+3ada0387-361a-47f4-a33f-f2c8fd99929c,Escape room,35.99,EXPENSE,Entertainment,2026-07-22,,CREDIT
+b4c032b9-9b51-4494-9243-2386394af201,Haircut,31.51,EXPENSE,Personal Care,2026-07-22,,CREDIT
+2bb546aa-3e30-466d-92d2-44ac9c805490,Books,161.06,EXPENSE,Shopping,2026-07-22,,CREDIT
+a6c9abde-8782-4e9f-a988-aa69832b12b4,Clothing store,156.22,EXPENSE,Shopping,2026-07-22,,DEBIT
+534eba56-ecc2-46cd-aec8-07752372ac48,Grocery shopping,52.89,EXPENSE,Food & Dining,2026-07-23,,CREDIT
+49976efa-1891-4401-8401-8994ae33b2ff,Cinema tickets,47.73,EXPENSE,Entertainment,2026-07-23,,DEBIT
+6f99c008-5982-4bcd-87fd-69e7e364dffd,Books,80.65,EXPENSE,Shopping,2026-07-23,,DEBIT
+ce14cc28-e88b-485a-81db-b0dc11a025bc,Bus pass,22.37,EXPENSE,Transportation,2026-07-24,,CASH
+e12f9ced-050b-4adb-b533-68d5092485d0,Dental checkup,55.58,EXPENSE,Healthcare,2026-07-24,,CASH
+fc80bb99-7ab0-42e7-b637-e18945f003cd,Haircut,31.61,EXPENSE,Personal Care,2026-07-24,,CASH
+8ff14219-3912-4750-93ca-8201be760741,Grocery shopping,86.21,EXPENSE,Food & Dining,2026-07-25,,DEBIT
+368f1543-4485-4d42-81f6-ad872ad6e712,Dental checkup,42.37,EXPENSE,Healthcare,2026-07-26,,DEBIT
+d38cbebb-ce36-4b05-b245-b6c4c9c6d7e3,Bus pass,17.98,EXPENSE,Transportation,2026-07-26,,CREDIT
+30e2e0ef-3820-4dc5-a27c-a85d28b6863e,Pizza delivery,59.63,EXPENSE,Food & Dining,2026-07-27,,DEBIT
+663f1148-1706-48e8-9cf6-7111ab7ca541,Luggage,409.33,EXPENSE,Travel,2026-07-28,,DEBIT
+928e8cd2-0ccb-4e90-8281-47e70016cc35,Cinema tickets,49.53,EXPENSE,Entertainment,2026-07-28,,DEBIT
+fe2821b0-7b5c-43e9-a5e6-6d7e1ba1fdfe,Grocery shopping,95.86,EXPENSE,Food & Dining,2026-07-28,,DEBIT
+946ba30b-d624-408f-ad1e-2c53223fb5b8,Doctor visit,51.72,EXPENSE,Healthcare,2026-07-29,,CREDIT
+c2300043-68a0-44be-bc0e-b112fb670e99,Fast food,29.47,EXPENSE,Food & Dining,2026-07-29,,CREDIT
+1777ef96-9f53-4f60-80ae-116950be66a3,Gym membership,45.78,EXPENSE,Healthcare,2026-07-30,,CREDIT
+30d1c2c8-2f36-4a45-8cf8-393a11819338,Grocery shopping,85.85,EXPENSE,Food & Dining,2026-07-30,,CREDIT
+97a877fc-dd62-4b23-bcf4-fc952112d75e,Barber,28.06,EXPENSE,Personal Care,2026-07-31,,DEBIT
+88ce4bae-dd0d-4214-b40d-700d53ee83e0,Sports gear,151.11,EXPENSE,Shopping,2026-07-31,,CASH
+f09b5e30-6b98-478e-9a31-fec237861545,Car maintenance,18.42,EXPENSE,Transportation,2026-07-31,,CASH
+22820dca-4da6-4f9d-9a64-0a4fc228d5ca,Monthly salary,3692.52,INCOME,Salary,2026-08-01,,DEBIT
+d3116d94-b544-4896-b1e4-7a79ef6b97f9,Monthly rent,990.14,EXPENSE,Housing,2026-08-01,,DEBIT
+7ee86d3c-a2cd-4a30-baa6-47421c2951bd,Haircut,29.54,EXPENSE,Personal Care,2026-08-01,,CASH
+0c31cf72-d137-413e-ba4a-e46898f3b39d,Home decor,103.29,EXPENSE,Shopping,2026-08-01,,CASH
+3377a3d1-46e8-4290-81de-bf526920c717,Cafe breakfast,14.86,EXPENSE,Food & Dining,2026-08-02,,CASH
+e9bd63a7-306d-45b6-8538-d1d65d6c4c9a,Skincare products,37.21,EXPENSE,Personal Care,2026-08-03,,CASH
+ac9521eb-3c0d-4cc0-bc90-096a568b1990,Sushi bar,29.08,EXPENSE,Food & Dining,2026-08-03,,DEBIT
+b3c30064-9b95-4f48-9cd5-94c31b66a3db,Bus pass,36.69,EXPENSE,Transportation,2026-08-04,,CASH
+ffd8827b-c6ed-4804-86a6-d7d1a1424be7,Doctor visit,60.17,EXPENSE,Healthcare,2026-08-04,,CASH
+56f754f0-4b92-4208-9be2-5db939d87195,Electric bill,106.17,EXPENSE,Utilities,2026-08-05,,CREDIT
+cee05178-e8b6-4446-a02f-973aa6283b11,Internet bill,60.62,EXPENSE,Utilities,2026-08-05,,DEBIT
+3118c514-a332-42f7-837f-4f48ed40e446,Phone bill,77.72,EXPENSE,Utilities,2026-08-05,,DEBIT
+af00d738-a6c9-485f-9d5f-5d7609d9f023,Home decor,135.74,EXPENSE,Shopping,2026-08-05,,CASH
+ffaaf01f-231b-4096-b802-8cfc018e15f0,Tutoring,96.09,EXPENSE,Education,2026-08-06,,CASH
+0c16a4b8-e03b-4862-9e12-5a7094bbb3fb,Sushi bar,59.02,EXPENSE,Food & Dining,2026-08-06,,CASH
+eed1c107-0c18-4e22-9a00-5b17f3fb9bd7,Shoes,97.94,EXPENSE,Shopping,2026-08-07,,CREDIT
+e5582a42-c2f2-4b1a-b7ce-943e3b8783cd,Pharmacy,63.27,EXPENSE,Healthcare,2026-08-07,,DEBIT
+d2d651ad-c9a6-4407-a846-2bdb9fc9c6ed,Train ticket,33.12,EXPENSE,Transportation,2026-08-08,,CASH
+977b627b-63d0-4ce0-9708-f82b2a37bcd9,Souvenir,242.02,EXPENSE,Travel,2026-08-08,,CREDIT
+fcb33dc1-ed9a-455d-abd7-bffb7647333b,Gas station,23.63,EXPENSE,Transportation,2026-08-09,,DEBIT
+6bd71c43-5ed5-4b8b-a83b-ca432fdaf947,Certification exam,135.0,EXPENSE,Education,2026-08-09,,CASH
+2bd8881c-c109-4264-bb8e-ec9cf2542187,Books,76.84,EXPENSE,Shopping,2026-08-09,,DEBIT
+7629c2cd-16e0-4b89-8e00-4cb4a69b4617,Shoes,157.3,EXPENSE,Shopping,2026-08-09,,DEBIT
+318759f2-93a4-45f4-afa9-4d19981312bd,Gym membership,94.38,EXPENSE,Healthcare,2026-08-09,,CASH
+a97256b4-dcf7-4278-b473-d429f8bf5b6f,Shoes,52.73,EXPENSE,Shopping,2026-08-10,,DEBIT
+3cfe1f7b-ce10-4798-882c-1182f78bdce8,Sushi bar,50.39,EXPENSE,Food & Dining,2026-08-10,,DEBIT
+6cc584f5-1975-4752-8a48-007452850156,Gym membership,64.47,EXPENSE,Healthcare,2026-08-11,,CASH
+c3c0a30f-953a-4d83-86d2-ada20fca3852,Bus pass,15.32,EXPENSE,Transportation,2026-08-12,,DEBIT
+554462af-23e3-4f67-b5af-379970c30393,Lunch takeout,23.32,EXPENSE,Food & Dining,2026-08-12,,DEBIT
+eede0e77-289f-4ae8-920a-5f5988e50634,Pizza delivery,27.87,EXPENSE,Food & Dining,2026-08-13,,CREDIT
+66efd471-491b-43fa-b335-1f1a4e34e30b,Pharmacy,83.97,EXPENSE,Healthcare,2026-08-14,,CREDIT
+f10b8f69-5516-4af4-8fad-4cc47bf853aa,Travel insurance,373.08,EXPENSE,Travel,2026-08-14,,CASH
+a6252d14-d463-4fb8-b745-df1ab44300f1,Clothing store,95.04,EXPENSE,Shopping,2026-08-14,,CREDIT
+5e3ef3c5-7a5e-4777-92d1-689935516763,Shoes,84.02,EXPENSE,Shopping,2026-08-14,,CASH
+40a460c9-f6e9-447d-88ad-5d8180bd187f,Nail salon,61.87,EXPENSE,Personal Care,2026-08-14,,CREDIT
+dd0d31dd-0009-4a56-9c98-82bee22de236,Grocery shopping,48.37,EXPENSE,Food & Dining,2026-08-15,,CASH
+ecba7a59-761e-45d3-95d0-63e343f4458c,Parking fee,39.69,EXPENSE,Transportation,2026-08-15,,CREDIT
+5aaf57f2-2bd7-400e-bb8a-8e521aa035ac,Train ticket,39.41,EXPENSE,Transportation,2026-08-16,,CASH
+5cd0383d-906c-436c-88db-0cd4a91b3c53,Pizza delivery,27.71,EXPENSE,Food & Dining,2026-08-16,,DEBIT
+07f484d1-4d57-480e-93d1-b507940bad74,Concert,26.91,EXPENSE,Entertainment,2026-08-16,,CREDIT
+879ba593-1a21-42e0-b73f-bfa6eebb99f0,Spa treatment,35.41,EXPENSE,Personal Care,2026-08-16,,CREDIT
+bfac6a9e-859b-4419-8927-575b32575649,Concert,40.11,EXPENSE,Entertainment,2026-08-17,,CREDIT
+8a0e2a03-914c-4aa0-af8f-ea3f0ea46bab,Cafe breakfast,48.18,EXPENSE,Food & Dining,2026-08-17,,DEBIT
+22520dd6-09f0-474b-9b7d-fe6627c86266,Gym membership,44.93,EXPENSE,Healthcare,2026-08-17,,DEBIT
+e0ec1397-9668-4ef0-9228-648f23dcc663,Sushi bar,26.85,EXPENSE,Food & Dining,2026-08-17,,CREDIT
+22d5f035-5c80-4f3a-974a-8924c9741e99,Dental checkup,50.58,EXPENSE,Healthcare,2026-08-19,,DEBIT
+3d6bc3b6-df97-4c3d-8a39-2a4d56065b2a,Sports gear,75.16,EXPENSE,Shopping,2026-08-20,,DEBIT
+4dc69a7f-71dd-43ad-b383-a54469cc0d54,Books,118.45,EXPENSE,Shopping,2026-08-20,,CREDIT
+d2a9b32f-c63e-4916-9ac9-6bd242f20b40,Concert,47.31,EXPENSE,Entertainment,2026-08-20,,CREDIT
+3cca76d3-6249-4a6f-92c1-e2e967bd477b,Grocery shopping,46.92,EXPENSE,Food & Dining,2026-08-21,,DEBIT
+bb4e6d50-bad9-4ee6-a454-2782cb3ad813,Concert,48.74,EXPENSE,Entertainment,2026-08-21,,CASH
+e3f1b8b4-3da9-41f1-9663-5c4330f9bb1d,Clothing store,183.89,EXPENSE,Shopping,2026-08-21,,CASH
+91daeafc-9c2f-45c8-ae2b-57ae1fc5b592,Clothing store,202.48,EXPENSE,Shopping,2026-08-21,,CASH
+5b60bd75-3c61-4a4f-ac94-31368c7359e2,Concert,18.17,EXPENSE,Entertainment,2026-08-22,,DEBIT
+b1f76aa9-e514-4677-a4f4-2806f7325167,Cafe breakfast,19.89,EXPENSE,Food & Dining,2026-08-22,,CASH
+e2294df3-c2af-4022-b377-30bd1941cf0c,Restaurant dinner,50.49,EXPENSE,Food & Dining,2026-08-23,,DEBIT
+eeee8927-47e9-4db9-90f4-c8f47f6e6933,Sports gear,110.61,EXPENSE,Shopping,2026-08-24,,DEBIT
+621ec790-19b5-4458-8799-e6f68b3ac13a,Home repair,169.4,EXPENSE,Housing,2026-08-24,,DEBIT
+54eaf34f-8636-4f7a-93d3-48b77b0db42c,Grocery shopping,100.05,EXPENSE,Food & Dining,2026-08-24,,DEBIT
+7b8273c7-7a1d-4bda-9e14-38a367705da9,Uber ride,19.92,EXPENSE,Transportation,2026-08-25,,CREDIT
+b6fc8e98-e207-496b-bc48-9cdddd8ccb4c,Online order,106.81,EXPENSE,Shopping,2026-08-25,,DEBIT
+e8bc5d1e-5044-45d7-b0dc-7f396122ebdd,Stock gain,738.1,INCOME,Investment,2026-08-25,,DEBIT
+eda51022-91e7-4aff-8a18-f654644f6ef3,Cafe breakfast,33.47,EXPENSE,Food & Dining,2026-08-25,,DEBIT
+7c0d55e9-8e11-41d7-8856-4397434c382b,Online order,109.69,EXPENSE,Shopping,2026-08-25,,CREDIT
+2981fddc-dff2-48d0-8f18-f36b3cdc6cf5,Grocery shopping,88.29,EXPENSE,Food & Dining,2026-08-26,,DEBIT
+7c9f587c-cbe2-4896-bd6d-5de17ec68fa9,Electronics,164.92,EXPENSE,Shopping,2026-08-26,,DEBIT
+7f30e05d-09ab-430b-b190-63cf374e61bf,Grocery shopping,106.71,EXPENSE,Food & Dining,2026-08-27,,CASH
+73fb189f-a10d-4995-b7cf-50866a48143d,Toll fee,18.78,EXPENSE,Transportation,2026-08-27,,CREDIT
+88f33486-701b-41b2-b824-83eca1159634,Gym membership,85.47,EXPENSE,Healthcare,2026-08-27,,DEBIT
+54230a79-ebb5-4237-94d4-33d66483099e,Shoes,94.9,EXPENSE,Shopping,2026-08-29,,CREDIT
+f4c343dd-5a87-4151-9318-3853ad9af934,Train ticket,15.16,EXPENSE,Transportation,2026-08-29,,CREDIT
+99bdd645-4653-4aa5-a0c8-de1b363ab498,Sports gear,86.27,EXPENSE,Shopping,2026-08-29,,CREDIT
+e61caafc-8366-4270-b078-412fe2f1c78b,Grocery shopping,125.47,EXPENSE,Food & Dining,2026-08-30,,DEBIT
+d5267f90-5abb-4727-820e-68da6bcd5a6c,Home repair,150.99,EXPENSE,Housing,2026-08-30,,CASH
+982a2359-4d6b-4554-9471-f695dd41f466,Sushi bar,41.31,EXPENSE,Food & Dining,2026-08-31,,CASH
+a6004d90-a05b-4933-ae38-fcf97e888b0a,Restaurant dinner,18.2,EXPENSE,Food & Dining,2026-08-31,,DEBIT
+ea58f7a0-f64a-4a4b-a261-e1af6d75d9de,Dental checkup,74.91,EXPENSE,Healthcare,2026-08-31,,DEBIT
+78a40920-f70f-445e-923e-6b2db0c86822,Monthly salary,4000.02,INCOME,Salary,2026-09-01,,CREDIT
+0c3975d1-b525-4170-a658-32e655b727bd,Monthly rent,930.24,EXPENSE,Housing,2026-09-01,,CREDIT
+fe1f7035-2594-4549-bbb4-1a8087d4fe75,Video game,58.37,EXPENSE,Entertainment,2026-09-02,,CASH
+e5788791-1fa8-4b1e-a964-592e2fc9370b,Spa treatment,30.08,EXPENSE,Personal Care,2026-09-03,,CREDIT
+41fbf64b-134d-410f-bea1-091639352f00,Pizza delivery,43.8,EXPENSE,Food & Dining,2026-09-04,,DEBIT
+a5fbfa59-5f7e-4a4a-9614-3fb78a7ae9a5,Video game,45.95,EXPENSE,Entertainment,2026-09-04,,DEBIT
+eddea46d-898a-4001-9a33-6147281b9604,Electric bill,40.38,EXPENSE,Utilities,2026-09-05,,DEBIT
+b00ed1c7-6fc6-48c5-a2fb-f7dfbb13aa69,Internet bill,77.1,EXPENSE,Utilities,2026-09-05,,DEBIT
+6660be4c-6bb9-442b-8cd4-78fa0841d9be,Phone bill,73.26,EXPENSE,Utilities,2026-09-05,,CASH
+0b77c020-c3a1-4534-adeb-27be89b735c2,Pizza delivery,15.92,EXPENSE,Food & Dining,2026-09-06,,CREDIT
+943f774a-9363-41a2-82b6-9eee7181ad74,Flight ticket,327.55,EXPENSE,Travel,2026-09-06,,DEBIT
+6ce53fd7-152b-441d-acfe-ba7f8bcb1136,Grocery shopping,119.14,EXPENSE,Food & Dining,2026-09-06,,DEBIT
+2409f9a6-b242-4b73-9e41-44c48c40632f,Barber,34.03,EXPENSE,Personal Care,2026-09-06,,DEBIT
+84805476-6f0f-48ed-a96e-e54174e6e9b4,Spa treatment,27.23,EXPENSE,Personal Care,2026-09-07,,CREDIT
+55ac3639-f6b6-450a-9015-50b56a32b1fa,Textbooks,29.41,EXPENSE,Education,2026-09-07,,DEBIT
+4efdfec6-3eaf-43d5-a98d-29ac01719825,Cafe breakfast,47.26,EXPENSE,Food & Dining,2026-09-07,,DEBIT
+825bf89f-1e58-4381-a8c0-95002d4958a6,Grocery shopping,65.53,EXPENSE,Food & Dining,2026-09-08,,DEBIT
+ca050d1f-0635-4c82-afd7-3438d2291dde,Concert,49.1,EXPENSE,Entertainment,2026-09-08,,DEBIT
+52faa157-2e49-4901-9c31-872676e1f23c,Sports gear,219.48,EXPENSE,Shopping,2026-09-08,,CASH
+46bd0fcc-9b23-41e6-85dd-255846360991,Hotel booking,289.54,EXPENSE,Travel,2026-09-09,,CREDIT
+234b545e-2e08-413e-8599-d414b985e2e0,Restaurant dinner,45.44,EXPENSE,Food & Dining,2026-09-09,,CREDIT
+66bf917c-5ddb-481f-8d5d-3b16bb00036e,Coffee shop,42.22,EXPENSE,Food & Dining,2026-09-09,,DEBIT
+8bff44cd-62d6-428d-866c-d19ca868321d,Pizza delivery,37.69,EXPENSE,Food & Dining,2026-09-10,,DEBIT
+6cb29332-5bf7-4f72-8d8d-6ef76f4f71e1,Pizza delivery,49.23,EXPENSE,Food & Dining,2026-09-10,,CREDIT
+9b31bf65-4cc8-40a0-b830-1d9db5c53680,Gym membership,69.8,EXPENSE,Healthcare,2026-09-11,,CREDIT
+0697c8a5-b256-4e60-b114-1762df8e4817,Home decor,91.27,EXPENSE,Shopping,2026-09-11,,CREDIT
+153bdbc5-83e8-49c9-a715-497517fe9ea2,Skincare products,18.03,EXPENSE,Personal Care,2026-09-12,,DEBIT
+3b2b27bb-835d-4402-ba14-3723ac8614f4,Skincare products,47.91,EXPENSE,Personal Care,2026-09-12,,CREDIT
+36dd842e-1646-4094-b74b-b60b58c328e8,Shoes,185.67,EXPENSE,Shopping,2026-09-13,,CREDIT
+7b0c5ce5-ec16-4a05-97d1-08d6ef2be110,Vitamins,31.57,EXPENSE,Healthcare,2026-09-13,,DEBIT
+5c250006-9000-45a7-aba5-c3d12f2bf2b0,Dental checkup,25.32,EXPENSE,Healthcare,2026-09-13,,CASH
+8feb9976-8146-4396-adec-6c30b77cd85f,Hotel booking,315.52,EXPENSE,Travel,2026-09-14,,CASH
+ec672548-3a05-47bd-bedd-f034fab3690d,Textbooks,128.97,EXPENSE,Education,2026-09-14,,DEBIT
+706bb073-4f63-4987-b36f-1bb0bfe94f02,Gym membership,37.35,EXPENSE,Healthcare,2026-09-14,,CASH
+1e26bd92-677f-4d51-9696-2c0add7e3ce3,Clothing store,79.9,EXPENSE,Shopping,2026-09-15,,CREDIT
+139e6257-b4bb-4e5d-ab44-6306c1548144,Water bill,57.85,EXPENSE,Utilities,2026-09-15,,DEBIT
+8adac71b-11ca-4eb6-b882-3b01a454a0d4,Uber ride,13.0,EXPENSE,Transportation,2026-09-15,,DEBIT
+b793aa89-7eeb-45a7-b759-dba44d25c07c,Cinema tickets,46.94,EXPENSE,Entertainment,2026-09-16,,CASH
+bd086a62-7010-479f-ab6c-29f0e2bffdac,Toll fee,31.17,EXPENSE,Transportation,2026-09-16,,CREDIT
+41ba6a0c-e2ef-4e8b-99b0-781ef6c740bb,Bowling night,56.74,EXPENSE,Entertainment,2026-09-18,,CASH
+c89c7399-282f-4b28-a8a6-67e40338f50c,Dental checkup,58.43,EXPENSE,Healthcare,2026-09-18,,CASH
+d6693e83-7bfc-4da4-8ea5-ac0d085bf035,Grocery shopping,77.61,EXPENSE,Food & Dining,2026-09-18,,CREDIT
+065ea9cf-2440-4c94-8d17-630345736abb,Grocery shopping,83.52,EXPENSE,Food & Dining,2026-09-20,,DEBIT
+e69cabe3-373a-4ea7-a308-5e8236319c64,Fast food,43.63,EXPENSE,Food & Dining,2026-09-21,,CASH
+dbd755e6-11f0-4d7c-adc4-fd86a494c2aa,Books,220.18,EXPENSE,Shopping,2026-09-21,,DEBIT
+5b69d7e2-eb4e-4b53-9036-5a4549fb323f,Cinema tickets,78.35,EXPENSE,Entertainment,2026-09-22,,CREDIT
+1422a3ec-54fb-40bd-8d37-444da8f60bcc,Grocery shopping,99.55,EXPENSE,Food & Dining,2026-09-22,,CREDIT
+c2b4bc24-7fdc-4507-9b65-9a16cba3c5ac,Bus pass,24.43,EXPENSE,Transportation,2026-09-23,,CASH
+43fea7fa-5489-4013-8d25-a82e2cfe7c32,Shoes,107.64,EXPENSE,Shopping,2026-09-23,,CASH
+1629b9ed-3eae-4124-9cff-992141448df3,Bowling night,58.88,EXPENSE,Entertainment,2026-09-24,,DEBIT
+4361294f-1d3b-4c0f-a879-79ffb4666c67,Grocery shopping,84.07,EXPENSE,Food & Dining,2026-09-24,,DEBIT
+189f0a8f-fca2-45ca-94ed-db5e9a871ff7,Grocery shopping,82.75,EXPENSE,Food & Dining,2026-09-25,,CREDIT
+1f8f9b05-d71f-4ffa-b419-f6b585269866,Gas station,29.7,EXPENSE,Transportation,2026-09-25,,CASH
+438a7a01-7258-4e04-8b3f-02878021c6fd,Grocery shopping,108.63,EXPENSE,Food & Dining,2026-09-26,,CREDIT
+d4611699-07fa-4fef-8d22-b44ea9cd8a6c,Lab tests,94.21,EXPENSE,Healthcare,2026-09-26,,DEBIT
+45bdf4f0-7dfb-4247-abea-9853821d63f3,Lunch takeout,52.26,EXPENSE,Food & Dining,2026-09-26,,CREDIT
+dcdd1a07-a0c2-4ae6-bf73-86dc597150f9,Concert,51.86,EXPENSE,Entertainment,2026-09-27,,DEBIT
+fc8aca40-d0b8-4aa7-a408-4c022152f4b8,Museum entry,19.59,EXPENSE,Entertainment,2026-09-27,,DEBIT
+b2d8e9d5-6219-4643-bd0a-3a9fdbdada5c,Coffee shop,15.0,EXPENSE,Food & Dining,2026-09-28,,CREDIT
+74df0859-58f0-45c6-9be9-260d7b912937,Gym membership,51.29,EXPENSE,Healthcare,2026-09-28,,DEBIT
+d7a246b3-01a0-4c5b-90f3-c4c6b73c95ef,Gas station,20.83,EXPENSE,Transportation,2026-09-29,,CREDIT
+66367451-f5ec-4917-8bf6-ddb3d542b0de,Skincare products,27.67,EXPENSE,Personal Care,2026-09-29,,DEBIT
+74d3a982-a42a-4b5b-825c-da6ed796e604,Uber ride,16.65,EXPENSE,Transportation,2026-09-30,,DEBIT
+58ea013d-7e89-494f-bb77-a6325079bfec,Gym membership,38.95,EXPENSE,Healthcare,2026-09-30,,CREDIT
+92275f9c-ccc0-46ad-9a9e-cff9559d5e8f,Uber ride,13.65,EXPENSE,Transportation,2026-09-30,,CASH
+3689bec4-16fa-443b-88e4-3b1cb1ed7970,Monthly salary,3683.1,INCOME,Salary,2026-10-01,,DEBIT
+046c9e72-595e-4c2a-ba0c-0ab4a8385f5a,Monthly rent,524.79,EXPENSE,Housing,2026-10-01,,CREDIT
+d50b1cf3-f729-48cf-88c9-f2fa440564be,Haircut,49.64,EXPENSE,Personal Care,2026-10-01,,CREDIT
+2b2fbeb3-964e-4798-af77-0d0f8d01fb97,Haircut,48.25,EXPENSE,Personal Care,2026-10-01,,DEBIT
+fe1a4b0e-edd6-4d87-a762-f4aee0b9c180,Haircut,57.06,EXPENSE,Personal Care,2026-10-01,,CREDIT
+aecfbdd3-f020-4271-987c-2ae755088e35,Sushi bar,31.5,EXPENSE,Food & Dining,2026-10-01,,DEBIT
+e1bda3ec-cb87-4b64-859c-238c079f3063,Textbooks,99.36,EXPENSE,Education,2026-10-02,,CREDIT
+06a6dd69-9994-4ae7-a837-34ff1781bedf,Fast food,27.29,EXPENSE,Food & Dining,2026-10-02,,CREDIT
+fe0a7ee4-97d5-4d70-b993-4388c0ec0bee,Restaurant dinner,23.59,EXPENSE,Food & Dining,2026-10-02,,DEBIT
+e75f6e5c-129d-4310-a9fd-64224b0bc8a0,Grocery shopping,127.27,EXPENSE,Food & Dining,2026-10-02,,DEBIT
+64e899f4-69a1-498a-900b-a4f5ccb08ddf,Escape room,56.9,EXPENSE,Entertainment,2026-10-03,,DEBIT
+02e88c50-c1c5-4852-ab70-c83284ecee7b,Shoes,213.43,EXPENSE,Shopping,2026-10-03,,DEBIT
+4bac45e3-5c8e-4bb3-897b-55256815d543,Eye glasses,90.67,EXPENSE,Healthcare,2026-10-03,,CREDIT
+971f7895-cee2-431e-bf3d-337482be632f,Grocery shopping,99.73,EXPENSE,Food & Dining,2026-10-04,,CASH
+937bbc36-c176-4b05-a142-91186409cf47,Gym membership,73.01,EXPENSE,Healthcare,2026-10-04,,DEBIT
+3e27837c-c1e5-475c-bfbd-0217a27302c5,Vitamins,87.68,EXPENSE,Healthcare,2026-10-04,,DEBIT
+513a6a6f-6750-4fc2-a10f-0e21809d22fe,Electric bill,102.17,EXPENSE,Utilities,2026-10-05,,CREDIT
+fbb8c4a3-524d-4e75-b7f5-f542d4e84cf5,Internet bill,70.99,EXPENSE,Utilities,2026-10-05,,DEBIT
+eb82a333-003d-41af-b5ef-dfdf42122013,Phone bill,78.64,EXPENSE,Utilities,2026-10-05,,DEBIT
+dacf8ded-613e-4217-9407-69472809b109,Cafe breakfast,41.21,EXPENSE,Food & Dining,2026-10-05,,DEBIT
+a5980414-805c-4cc3-97cd-5939fd42861a,Doctor visit,72.14,EXPENSE,Healthcare,2026-10-05,,CASH
+59999821-dd87-4a48-aa35-02bdc3eb3f71,Video game,47.25,EXPENSE,Entertainment,2026-10-06,,CREDIT
+c2885afc-d98f-4fa4-aab1-631e68726b8f,Grocery shopping,71.23,EXPENSE,Food & Dining,2026-10-06,,DEBIT
+eb427ebc-b2f2-4a2a-8c10-02fa935df27f,Gas station,18.34,EXPENSE,Transportation,2026-10-06,,DEBIT
+baf4248a-91a1-47b5-9560-82ad7c67e6c3,Grocery shopping,72.13,EXPENSE,Food & Dining,2026-10-07,,DEBIT
+d0fab9bb-d55a-4953-bdd8-3df08cd703d1,Cafe breakfast,32.37,EXPENSE,Food & Dining,2026-10-07,,CASH
+b7dd9902-46f1-4809-86b0-6fdb32adcb50,Streaming sub,32.86,EXPENSE,Entertainment,2026-10-07,,CASH
+8c07fb2c-8091-40ad-a1ef-de1d3939bbe2,Lab tests,86.33,EXPENSE,Healthcare,2026-10-08,,DEBIT
+ef950b2a-5b43-49d2-b941-1ad7b78069ec,Barber,29.86,EXPENSE,Personal Care,2026-10-08,,CASH
+b3d9a712-06b4-48f3-9d3a-2dc0fe2a8f71,Shoes,88.44,EXPENSE,Shopping,2026-10-08,,CREDIT
+8e46c566-a88b-42de-a5d0-d369cff44b94,Train ticket,14.67,EXPENSE,Transportation,2026-10-08,,CREDIT
+8d896e0d-a11c-44d4-bbcb-5295fd44c63b,Coffee shop,29.93,EXPENSE,Food & Dining,2026-10-09,,CREDIT
+99f2670d-8133-41fe-9cac-ebe9e7678646,Luggage,249.57,EXPENSE,Travel,2026-10-09,,DEBIT
+42a58097-d1dc-4873-a434-e89f1ba1afba,Nail salon,39.02,EXPENSE,Personal Care,2026-10-09,,DEBIT
+e00375e4-83e0-46a5-9471-ce475da55b7d,Pizza delivery,22.94,EXPENSE,Food & Dining,2026-10-10,,CREDIT
+ff4c80a1-8a44-4e7b-b6a6-dad155e4b47f,Concert,72.87,EXPENSE,Entertainment,2026-10-11,,CASH
+34b786b7-a103-4a71-8ac5-96c35cfc265b,Grocery shopping,82.54,EXPENSE,Food & Dining,2026-10-11,,DEBIT
+8e627410-e6b4-4f0b-95e9-51324a40d46a,Bus pass,16.58,EXPENSE,Transportation,2026-10-12,,CREDIT
+335d1d01-9fc2-4c0d-babf-10e006a3aa24,Coffee shop,21.94,EXPENSE,Food & Dining,2026-10-12,,DEBIT
+237c6501-1cd2-42de-bba5-c1372ac2e844,Grocery shopping,106.87,EXPENSE,Food & Dining,2026-10-12,,CREDIT
+f5557fb5-73e1-4a1e-af88-5e43ddbd49fa,Grocery shopping,97.13,EXPENSE,Food & Dining,2026-10-13,,CASH
+12f57cb8-4f6e-430d-93e0-b8a9e3362c56,Gym membership,87.99,EXPENSE,Healthcare,2026-10-13,,DEBIT
+4c1ca486-81ff-4dd9-922d-c3cd4f2c7be3,Sports gear,104.85,EXPENSE,Shopping,2026-10-14,,DEBIT
+a53c77e2-1da1-428e-9e9f-cff78f72bedd,Barber,34.62,EXPENSE,Personal Care,2026-10-14,,CASH
+fd207957-3843-49c4-aaa2-97a61883393d,Pizza delivery,45.56,EXPENSE,Food & Dining,2026-10-14,,DEBIT
+5e6a1bc4-3d8e-4bc0-a568-56817f7d5dde,Cinema tickets,82.46,EXPENSE,Entertainment,2026-10-15,,DEBIT
+9e993151-2512-4d37-a66d-80a40370f085,Home decor,90.0,EXPENSE,Shopping,2026-10-15,,DEBIT
+dccdcbd4-3a24-4241-b353-e3809a7c1ce8,Eye glasses,95.79,EXPENSE,Healthcare,2026-10-15,,CREDIT
+ee68efe1-4474-415f-ad01-122295abb72c,Restaurant dinner,15.1,EXPENSE,Food & Dining,2026-10-17,,DEBIT
+6f8bdfca-4880-4af7-99f2-d2453ef7a74b,Sports gear,84.39,EXPENSE,Shopping,2026-10-17,,CASH
+a6d2b187-6692-40d9-b3dc-e06415911ee9,Cleaning service,194.3,EXPENSE,Housing,2026-10-17,,DEBIT
+6eb46117-f83c-4d4c-b26d-34c1c0604834,Barber,20.33,EXPENSE,Personal Care,2026-10-17,,CASH
+75a700be-0a3d-4972-b9fe-16ad5c557520,Grocery shopping,90.17,EXPENSE,Food & Dining,2026-10-18,,DEBIT
+90c6ec6c-8efc-4824-855e-b65943fbe8cb,Grocery shopping,123.85,EXPENSE,Food & Dining,2026-10-18,,DEBIT
+4746243a-bed3-4396-a34b-991447620cf2,Travel insurance,333.58,EXPENSE,Travel,2026-10-18,,CREDIT
+35d1a2c3-3215-4942-a4d4-9a004f3df504,Escape room,27.79,EXPENSE,Entertainment,2026-10-18,,CASH
+f72d309b-6a31-481b-bce3-da67e43d9020,Concert,29.38,EXPENSE,Entertainment,2026-10-19,,CREDIT
+dc8a072b-b263-4d3d-b1d2-fb8ad9cf74e1,Tutoring,67.36,EXPENSE,Education,2026-10-19,,DEBIT
+ef430412-8ab0-4064-96c8-c4aae5c9f7cb,Cafe breakfast,56.72,EXPENSE,Food & Dining,2026-10-19,,CASH
+12309b25-5437-453f-9aef-ac811b013058,Airbnb stay,443.65,EXPENSE,Travel,2026-10-20,,DEBIT
+e879bfcc-2706-4e03-922e-de3c04477b61,Dividend payment,372.37,INCOME,Investment,2026-10-21,,CREDIT
+4e301a2b-fda2-4c16-b56d-e30ba6b99464,Escape room,21.6,EXPENSE,Entertainment,2026-10-21,,DEBIT
+e051fa3e-416a-48bc-aa1b-f7a2afaffc69,Sushi bar,46.84,EXPENSE,Food & Dining,2026-10-21,,CREDIT
+212e31b9-ce90-4777-aae3-93655d2c1afe,Train ticket,15.13,EXPENSE,Transportation,2026-10-21,,CREDIT
+08bd56ad-103f-4286-be3e-d751ab3ddb56,Dental checkup,77.28,EXPENSE,Healthcare,2026-10-21,,CREDIT
+4f0c2a3d-f005-4061-9fd4-6defeefae3ef,Escape room,58.58,EXPENSE,Entertainment,2026-10-21,,DEBIT
+4701f202-43fb-4910-bb12-4ff72924f906,Sports gear,174.1,EXPENSE,Shopping,2026-10-22,,CASH
+57144361-acfd-4923-898f-b1c2b43e7418,Grocery shopping,92.85,EXPENSE,Food & Dining,2026-10-22,,CREDIT
+9d596761-85a0-466e-9269-776cc8d898b3,Souvenir,355.14,EXPENSE,Travel,2026-10-22,,CREDIT
+993fd446-cd8c-43b2-a2d3-1938056e125c,Online order,149.16,EXPENSE,Shopping,2026-10-23,,CASH
+a9fea287-54d0-49c3-909d-13c64e50aec2,Sports gear,88.49,EXPENSE,Shopping,2026-10-23,,CASH
+01a966f3-1db9-4485-a9a8-b60070569c32,Restaurant dinner,25.65,EXPENSE,Food & Dining,2026-10-23,,CREDIT
+bc14fc37-972e-40d9-bdb1-62fd327ded8c,Haircut,30.75,EXPENSE,Personal Care,2026-10-23,,DEBIT
+d11622e6-95f4-465e-aae7-4e71048a58f7,Shoes,175.52,EXPENSE,Shopping,2026-10-24,,DEBIT
+00413d17-8ea1-4bef-a5f2-134c23025acc,Cafe breakfast,19.35,EXPENSE,Food & Dining,2026-10-24,,CREDIT
+337c5b5b-abfe-4037-8768-51fb5989cd43,Grocery shopping,68.52,EXPENSE,Food & Dining,2026-10-24,,CREDIT
+bcad7508-8d95-43db-8670-cedf71250322,Grocery shopping,118.48,EXPENSE,Food & Dining,2026-10-24,,DEBIT
+c9deda22-a804-4d47-9fdd-6d697fcfd943,Flight ticket,354.36,EXPENSE,Travel,2026-10-25,,DEBIT
+b0e46f12-fdb1-4868-bffb-5ac68992de90,Barber,32.29,EXPENSE,Personal Care,2026-10-25,,DEBIT
+2d08da42-d648-4f3e-9e0b-671fe0613e89,Cinema tickets,38.72,EXPENSE,Entertainment,2026-10-25,,CREDIT
+61a90db2-13f0-40a8-8351-0299d30606eb,Gas bill,32.44,EXPENSE,Utilities,2026-10-26,,DEBIT
+1441d04d-e753-4a91-97b3-56ea6b6bc586,Sushi bar,24.42,EXPENSE,Food & Dining,2026-10-26,,CREDIT
+58819a88-5f15-494b-92c0-09a1a700a6e6,Cafe breakfast,43.29,EXPENSE,Food & Dining,2026-10-27,,CREDIT
+666bffec-3174-4ee8-9ff9-ac017dddf3d7,Electronics,82.0,EXPENSE,Shopping,2026-10-28,,CASH
+ae764af6-2e98-4994-a212-234b43a573ae,Bus pass,19.57,EXPENSE,Transportation,2026-10-29,,DEBIT
+5d04b816-5d55-4ef7-b193-7faf328bc331,Concert,31.11,EXPENSE,Entertainment,2026-10-29,,DEBIT
+8340da82-728c-4f56-83e3-85aaa478473b,Fast food,29.24,EXPENSE,Food & Dining,2026-10-29,,CREDIT
+cf99525f-f293-4eda-acf5-cc843a24f026,Train ticket,27.29,EXPENSE,Transportation,2026-10-30,,CASH
+d09cd965-3c88-4823-a6f9-8cb8b10faa17,Sushi bar,32.23,EXPENSE,Food & Dining,2026-10-31,,CREDIT
+1789c3e9-3b3a-41b0-9a4f-4ac54334f541,Monthly salary,3724.18,INCOME,Salary,2026-11-01,,CREDIT
+b679fbd4-c82d-4df4-a186-5d28da460707,Monthly rent,498.1,EXPENSE,Housing,2026-11-01,,CREDIT
+2a48be54-4b60-4be6-b20b-80da402dfc24,Fast food,14.35,EXPENSE,Food & Dining,2026-11-01,,DEBIT
+51fcc003-0d54-4a3e-a315-96060552815a,Pizza delivery,22.32,EXPENSE,Food & Dining,2026-11-01,,DEBIT
+4af5b414-6dc6-436e-9486-6e43b5c0adaf,Gas station,18.52,EXPENSE,Transportation,2026-11-02,,CREDIT
+b00b287e-f092-40f1-91e5-4ccd5d452c2d,Cafe breakfast,25.84,EXPENSE,Food & Dining,2026-11-02,,CREDIT
+60e2f6ba-ec2b-41c4-ba94-33aac55802f8,Sports gear,119.55,EXPENSE,Shopping,2026-11-03,,DEBIT
+3d3ae29e-c2e7-4e85-bb16-dc9a3170b6a7,Train ticket,10.38,EXPENSE,Transportation,2026-11-03,,CREDIT
+e7a03dfc-0573-49e8-b45f-c350aee26aa7,Online course,111.61,EXPENSE,Education,2026-11-04,,DEBIT
+cc5a5639-5e8d-4f06-8fc3-68ce6891fd6b,Fast food,13.6,EXPENSE,Food & Dining,2026-11-04,,CREDIT
+2292aad5-24b4-4480-a3d5-7d75eae9f6a0,Electric bill,98.82,EXPENSE,Utilities,2026-11-05,,CREDIT
+edbd9bf5-1358-47e6-b804-e7ad36a9d69a,Internet bill,86.17,EXPENSE,Utilities,2026-11-05,,CASH
+db061c27-dadd-4fc4-b8fd-87c05ccf7c4b,Phone bill,78.88,EXPENSE,Utilities,2026-11-05,,DEBIT
+9c9906e7-61bd-41d4-bac4-87f5e8756da0,Restaurant dinner,15.27,EXPENSE,Food & Dining,2026-11-05,,DEBIT
+9e167fef-9eb1-41f6-90dd-1fbed635e1e3,Restaurant dinner,20.09,EXPENSE,Food & Dining,2026-11-06,,DEBIT
+11eebbf6-8f13-468c-8c41-2365a471ba69,Electronics,63.1,EXPENSE,Shopping,2026-11-06,,DEBIT
+c2812568-53a8-4f0d-b886-1e2d8e239b50,Coffee shop,23.33,EXPENSE,Food & Dining,2026-11-07,,DEBIT
+6ae48071-4cd3-4b50-b829-244253e16fcf,Tutoring,51.29,EXPENSE,Education,2026-11-07,,CREDIT
+b17af487-5ec0-4278-9cf5-2235aae1c531,Gym membership,68.04,EXPENSE,Healthcare,2026-11-08,,DEBIT
+3aa23a50-8668-40a4-89d9-4fa9bc34bbb6,Restaurant dinner,44.07,EXPENSE,Food & Dining,2026-11-08,,DEBIT
+f0b2305d-5a7c-4415-ab7d-30033e8b3ad9,Dental checkup,78.4,EXPENSE,Healthcare,2026-11-08,,CASH
+9af4749f-c808-4629-b1be-af24db4be28a,Train ticket,28.49,EXPENSE,Transportation,2026-11-09,,DEBIT
+8460e057-37ae-4e07-b4f2-24ec772ad285,Barber,33.28,EXPENSE,Personal Care,2026-11-09,,DEBIT
+39ad6b46-6f02-44db-8fdd-f1801d4188ab,Eye glasses,104.91,EXPENSE,Healthcare,2026-11-09,,CREDIT
+e13ff76e-95d4-4baf-9550-883f3378a651,Coffee shop,16.71,EXPENSE,Food & Dining,2026-11-10,,CREDIT
+9684a5ab-2b6f-4234-8d28-076674ebb64f,Dental checkup,61.89,EXPENSE,Healthcare,2026-11-10,,CREDIT
+af1cd6ba-9049-4440-b298-7b2df06b1e26,Gym membership,98.4,EXPENSE,Healthcare,2026-11-11,,CREDIT
+228e8855-5e71-44b3-94a8-30e7e995f9c4,Pizza delivery,44.7,EXPENSE,Food & Dining,2026-11-12,,CREDIT
+720a60f5-3363-42b6-978c-ab9515704848,Grocery shopping,84.43,EXPENSE,Food & Dining,2026-11-12,,DEBIT
+a5282751-6a41-4ca9-8643-ea46a7575021,Eye glasses,45.23,EXPENSE,Healthcare,2026-11-13,,CASH
+61fb8460-9602-4a4f-a06b-ee79e5669d69,Car maintenance,14.68,EXPENSE,Transportation,2026-11-13,,DEBIT
+d4ed9f7c-921b-4638-80c6-79237cc3cbf3,Books,145.31,EXPENSE,Shopping,2026-11-14,,DEBIT
+d038c30a-92b4-4d5d-ac2d-c95b4290828c,Home decor,97.82,EXPENSE,Shopping,2026-11-14,,DEBIT
+9b14fb48-ab50-4072-b734-548101e805c2,Coffee shop,45.17,EXPENSE,Food & Dining,2026-11-14,,DEBIT
+24a016dc-f612-4c41-a78d-d08d4cba733f,Gas bill,40.94,EXPENSE,Utilities,2026-11-15,,DEBIT
+a41bcf8e-a9a2-4547-93eb-826632da068a,Grocery shopping,69.84,EXPENSE,Food & Dining,2026-11-16,,CASH
+9865840b-9400-43f8-afbc-c3bcf53300d2,Pizza delivery,62.31,EXPENSE,Food & Dining,2026-11-17,,DEBIT
+de96a309-a4cf-47ba-9d76-fce924e8ff29,Train ticket,18.52,EXPENSE,Transportation,2026-11-17,,CASH
+6de3ebd0-338b-4fdd-ab64-72f881b2f606,Lunch takeout,44.88,EXPENSE,Food & Dining,2026-11-17,,CREDIT
+cd6a664c-cfe7-42a3-abb5-90b9655158e9,Video game,45.87,EXPENSE,Entertainment,2026-11-17,,DEBIT
+4bc504a0-45e7-47a9-bef6-31e9e553bd49,Museum entry,34.63,EXPENSE,Entertainment,2026-11-18,,CREDIT
+841c0e43-b9b2-48b1-bc0b-c7108edffe37,Concert,35.12,EXPENSE,Entertainment,2026-11-18,,DEBIT
+1b39f6c9-c584-4ec4-8694-439c5627085e,Barber,22.29,EXPENSE,Personal Care,2026-11-19,,DEBIT
+29a198ef-e8ba-494c-8699-af654f15f6fe,Pizza delivery,23.65,EXPENSE,Food & Dining,2026-11-20,,CASH
+83a1e6e4-161d-4b93-9a93-07926a575fb5,Lunch takeout,26.97,EXPENSE,Food & Dining,2026-11-20,,CREDIT
+05fb927a-d50c-493a-8e13-56fc9ec0908d,Restaurant dinner,43.71,EXPENSE,Food & Dining,2026-11-20,,DEBIT
+7e2525d1-6ac8-4080-a5da-0abaefeeae28,Pizza delivery,22.12,EXPENSE,Food & Dining,2026-11-21,,DEBIT
+596a6fd1-228f-403f-bb83-df8f069a71a7,Grocery shopping,59.84,EXPENSE,Food & Dining,2026-11-21,,CASH
+0fbd9c6e-496d-493c-999f-b223b4f187a4,Electronics,126.53,EXPENSE,Shopping,2026-11-22,,CASH
+843e7089-852b-4671-9153-a45f8f32c399,Fast food,49.37,EXPENSE,Food & Dining,2026-11-22,,CASH
+b1a8c241-cd32-40d4-8067-cc92237ad680,Pizza delivery,26.62,EXPENSE,Food & Dining,2026-11-23,,CREDIT
+74ab0cef-2897-47e9-bea8-ca981e5a9a5f,Bowling night,74.12,EXPENSE,Entertainment,2026-11-23,,CREDIT
+bbbe14f3-d5a2-4029-8243-0e8377f445f5,Bowling night,60.57,EXPENSE,Entertainment,2026-11-23,,DEBIT
+55fb5b8b-67a4-49fb-ae53-459db75b333b,Sports gear,46.41,EXPENSE,Shopping,2026-11-24,,CASH
+a8db058d-bb25-4b53-9162-2260d4b93d26,Online order,100.22,EXPENSE,Shopping,2026-11-24,,DEBIT
+d85d343e-eba4-4abe-9f45-c59f7de5e87f,Pizza delivery,29.4,EXPENSE,Food & Dining,2026-11-24,,CREDIT
+2b0468a0-a140-4ad8-ac9b-2d3a0652a27b,Vitamins,86.32,EXPENSE,Healthcare,2026-11-24,,CREDIT
+d82bba8c-bb39-4dd6-bfb4-fb5de68684dd,Grocery shopping,138.5,EXPENSE,Food & Dining,2026-11-25,,CASH
+576eff70-8721-46f5-a370-ace651decde6,Souvenir,442.96,EXPENSE,Travel,2026-11-25,,DEBIT
+f125bde7-3be2-4a84-9059-c1c2b7d98df4,Restaurant dinner,19.44,EXPENSE,Food & Dining,2026-11-25,,DEBIT
+7cb27ffd-fdc2-4b3f-8e3f-e0aaceafdac9,Skincare products,36.65,EXPENSE,Personal Care,2026-11-26,,CASH
+f0a2f927-c5f5-43b1-8524-d6a22590cc06,Concert,62.3,EXPENSE,Entertainment,2026-11-26,,DEBIT
+a970b618-9d74-4672-ad89-2232e371907d,Coffee shop,23.73,EXPENSE,Food & Dining,2026-11-26,,CREDIT
+30cdb8d5-db48-4f92-ab5e-3ed91947933b,Pharmacy,37.97,EXPENSE,Healthcare,2026-11-27,,DEBIT
+70493edc-6dda-4eb3-ba8a-669b9ea39019,Concert,41.08,EXPENSE,Entertainment,2026-11-27,,CREDIT
+1ea148b4-09f4-4492-80b7-db1cc55d180e,Uber ride,17.38,EXPENSE,Transportation,2026-11-27,,DEBIT
+8da8c1d3-dc88-4ab9-8c52-672bb1bf1c58,Sports gear,145.79,EXPENSE,Shopping,2026-11-28,,CREDIT
+68408fa8-0424-4b77-a8eb-c571ffefe9a8,Eye glasses,42.64,EXPENSE,Healthcare,2026-11-28,,DEBIT
+da03084d-a144-4615-b586-a08ac8c161c5,Grocery shopping,104.44,EXPENSE,Food & Dining,2026-11-29,,CREDIT
+f4bdb73d-9a5b-4a5f-aced-78c272174689,Lunch takeout,34.67,EXPENSE,Food & Dining,2026-11-29,,CREDIT
+6164c809-f965-4e12-99a8-308322225d3f,Fast food,17.47,EXPENSE,Food & Dining,2026-11-29,,CASH
+de9344f7-68ae-484a-8711-d7271921e944,Tutoring,76.76,EXPENSE,Education,2026-11-30,,CASH
+1707653a-0007-4cf8-a6f1-cefcb939c42f,Hotel booking,155.7,EXPENSE,Travel,2026-11-30,,DEBIT
+8b15d36d-de2b-49dc-a44e-2098db43e3da,Pizza delivery,14.61,EXPENSE,Food & Dining,2026-11-30,,CASH
