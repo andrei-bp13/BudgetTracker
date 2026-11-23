@@ -1,5 +1,6 @@
 ﻿package com.pardonmyspending.app.ui.screens
 
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -8,7 +9,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import com.pardonmyspending.app.viewmodel.AccountViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -70,9 +73,15 @@ fun SettingsDrawer(
     ) { uri ->
         uri?.let {
             scope.launch {
-                val json = accountViewModel.buildLocalBackupJson()
-                context.contentResolver.openOutputStream(it)?.use { out ->
-                    out.write(json.toByteArray(Charsets.UTF_8))
+                runCatching {
+                    val json = accountViewModel.buildLocalBackupJson()
+                    withContext(Dispatchers.IO) {
+                        context.contentResolver.openOutputStream(it)?.use { out ->
+                            out.write(json.toByteArray(Charsets.UTF_8))
+                        } ?: error("Could not open file for writing")
+                    }
+                }.onFailure { e ->
+                    Toast.makeText(context, "Export failed: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -82,9 +91,18 @@ fun SettingsDrawer(
         ActivityResultContracts.OpenDocument()
     ) { uri ->
         uri?.let {
-            val json = context.contentResolver.openInputStream(it)
-                ?.use { input -> input.bufferedReader().readText() }
-            if (json != null) accountViewModel.applyLocalBackup(json)
+            scope.launch {
+                runCatching {
+                    withContext(Dispatchers.IO) {
+                        context.contentResolver.openInputStream(it)
+                            ?.use { input -> input.bufferedReader().readText() }
+                    }
+                }.onSuccess { json ->
+                    if (json != null) accountViewModel.applyLocalBackup(json)
+                }.onFailure { e ->
+                    Toast.makeText(context, "Import failed: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
         }
     }
 

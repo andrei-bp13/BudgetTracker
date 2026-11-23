@@ -30,7 +30,10 @@ fun MonthlyProgressChart(
     val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
 
     val textMeasurer = rememberTextMeasurer()
-    val labelStyle = TextStyle(fontSize = 9.sp, color = labelColor)
+    val labelStyle = remember(labelColor) { TextStyle(fontSize = 9.sp, color = labelColor) }
+    val dashEffect = remember { PathEffect.dashPathEffect(floatArrayOf(12f, 8f)) }
+    val fillPath   = remember { Path() }
+    val linePath   = remember { Path() }
 
     val animProgress by animateFloatAsState(
         targetValue   = 1f,
@@ -99,21 +102,21 @@ fun MonthlyProgressChart(
                         start       = toOffset(lastMonth[i].first, lastMonth[i].second),
                         end         = toOffset(lastMonth[i + 1].first, lastMonth[i + 1].second),
                         strokeWidth = 2.dp.toPx(),
-                        pathEffect  = PathEffect.dashPathEffect(floatArrayOf(12f, 8f))
+                        pathEffect  = dashEffect
                     )
                 }
             }
 
             // This month -" filled gradient + solid line
             if (thisMonth.size >= 2) {
-                val fillPath = Path().apply {
-                    moveTo(toOffset(thisMonth[0].first, 0.0).x, h)
-                    thisMonth.forEach { (day, value) ->
-                        lineTo(toOffset(day, value).x, toOffset(day, value).y)
-                    }
-                    lineTo(toOffset(thisMonth.last().first, 0.0).x, h)
-                    close()
+                fillPath.reset()
+                fillPath.moveTo(toOffset(thisMonth[0].first, 0.0).x, h)
+                thisMonth.forEach { (day, value) ->
+                    val pt = toOffset(day, value)
+                    fillPath.lineTo(pt.x, pt.y)
                 }
+                fillPath.lineTo(toOffset(thisMonth.last().first, 0.0).x, h)
+                fillPath.close()
                 drawPath(
                     fillPath,
                     brush = Brush.verticalGradient(
@@ -122,12 +125,12 @@ fun MonthlyProgressChart(
                     )
                 )
 
-                val linePath = Path().apply {
-                    val first = toOffset(thisMonth[0].first, thisMonth[0].second)
-                    moveTo(first.x, first.y)
-                    thisMonth.drop(1).forEach { (day, value) ->
-                        lineTo(toOffset(day, value).x, toOffset(day, value).y)
-                    }
+                linePath.reset()
+                val first = toOffset(thisMonth[0].first, thisMonth[0].second)
+                linePath.moveTo(first.x, first.y)
+                for (i in 1 until thisMonth.size) {
+                    val pt = toOffset(thisMonth[i].first, thisMonth[i].second)
+                    linePath.lineTo(pt.x, pt.y)
                 }
                 drawPath(linePath, color = primary,
                     style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))

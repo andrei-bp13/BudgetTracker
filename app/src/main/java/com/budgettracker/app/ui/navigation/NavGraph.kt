@@ -99,6 +99,12 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel, accountViewModel: Acc
     }
 
     LaunchedEffect(Unit) {
+        viewModel.ioErrorEvent.collect { message ->
+            snackbarHostState.showSnackbar(message = message, duration = SnackbarDuration.Long)
+        }
+    }
+
+    LaunchedEffect(Unit) {
         accountViewModel.localBackupStatus.collect { message ->
             snackbarHostState.showSnackbar(message = message, duration = SnackbarDuration.Short)
         }

@@ -1,9 +1,11 @@
 ﻿package com.pardonmyspending.app.viewmodel
 
+import android.content.Context
 import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.room.withTransaction
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonDeserializationContext
@@ -14,10 +16,14 @@ import com.google.gson.JsonSerializationContext
 import com.google.gson.JsonSerializer
 import com.google.gson.reflect.TypeToken
 import com.pardonmyspending.app.data.auth.GoogleAuthManager
+import com.pardonmyspending.app.data.db.AppDatabase
 import com.pardonmyspending.app.data.model.BackupData
 import com.pardonmyspending.app.data.repository.*
+import com.pardonmyspending.app.widget.WidgetUpdater
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.lang.reflect.Type
 import java.time.Instant
 import java.time.LocalDate
@@ -37,7 +43,9 @@ class AccountViewModel(
     private val recurringRepo: RecurringTransactionRepository,
     private val categoryRepo: CategoryRepository,
     private val budgetRepo: BudgetRepository,
-    private val prefsRepo: PreferencesRepository
+    private val prefsRepo: PreferencesRepository,
+    private val database: AppDatabase,
+    private val appContext: Context? = null
 ) : ViewModel() {
 
     private val gson = GsonBuilder()
@@ -116,9 +124,9 @@ class AccountViewModel(
     fun backupNow() = viewModelScope.launch {
         _status.value = BackupUiState.Loading
         runCatching {
-            val token   = authManager.getAccessToken() ?: error("Not signed in")
+            val token    = authManager.getAccessToken() ?: error("Not signed in")
             val settings = currentSettings()
-            val backup  = BackupData(
+            val backup   = BackupData(
                 exportedAt            = Instant.now().toString(),
                 transactions          = transactionRepo.transactions.first(),
                 recurringTransactions = recurringRepo.recurring.first(),
@@ -136,7 +144,8 @@ class AccountViewModel(
                 cardOrder             = settings.cardOrder,
                 cardVisible           = settings.cardVisible
             )
-            val ok = driveRepo.upload(gson.toJson(backup), token)
+            val json = withContext(Dispatchers.Default) { gson.toJson(backup) }
+            val ok = driveRepo.upload(json, token)
             if (!ok) error("Upload failed - check your connection and try again")
         }.onSuccess {
             _status.value = BackupUiState.Success("Backup complete")
@@ -150,12 +159,22 @@ class AccountViewModel(
         runCatching {
             val token  = authManager.getAccessToken() ?: error("Not signed in")
             val json   = driveRepo.downloadLatest(token) ?: error("No backup found on Drive")
-            val backup = gson.fromJson(json, BackupData::class.java)
-            transactionRepo.replaceAll(backup.transactions)
-            recurringRepo.replaceAll(backup.recurringTransactions)
-            if (backup.categories.isNotEmpty()) categoryRepo.save(backup.categories)
-            budgetRepo.replaceAll(backup.budgets)
+            val backup = withContext(Dispatchers.Default) {
+                gson.fromJson(json, BackupData::class.java)
+            } ?: error("Invalid backup format")
+            val txns = backup.transactions.orEmpty()
+            val recs = backup.recurringTransactions.orEmpty()
+            val bgets = backup.budgets.orEmpty()
+            val cats = backup.categories.orEmpty()
+
+            database.withTransaction {
+                transactionRepo.replaceAll(txns)
+                recurringRepo.replaceAll(recs)
+                budgetRepo.replaceAll(bgets)
+            }
+            if (cats.isNotEmpty()) categoryRepo.save(cats)
             applySettings(backup)
+            appContext?.let { withContext(Dispatchers.IO) { WidgetUpdater.updateAllWidgets(it) } }
         }.onSuccess {
             _status.value = BackupUiState.Success("Restored successfully")
         }.onFailure { e ->
@@ -186,16 +205,25 @@ class AccountViewModel(
             cardOrder             = settings.cardOrder,
             cardVisible           = settings.cardVisible
         )
-        return gson.toJson(backup)
+        return withContext(Dispatchers.Default) { gson.toJson(backup) }
     }
 
     fun applyLocalBackup(json: String) = viewModelScope.launch {
         runCatching {
-            val backup = gson.fromJson(json, BackupData::class.java)
-            if (backup.categories.isNotEmpty())            categoryRepo.save(backup.categories)
-            if (backup.budgets.isNotEmpty())               budgetRepo.replaceAll(backup.budgets)
-            if (backup.recurringTransactions.isNotEmpty()) recurringRepo.replaceAll(backup.recurringTransactions)
+            val backup = withContext(Dispatchers.Default) {
+                gson.fromJson(json, BackupData::class.java)
+            } ?: error("Invalid backup file")
+            val cats  = backup.categories.orEmpty()
+            val bgets = backup.budgets.orEmpty()
+            val recs  = backup.recurringTransactions.orEmpty()
+
+            database.withTransaction {
+                if (bgets.isNotEmpty()) budgetRepo.replaceAll(bgets)
+                if (recs.isNotEmpty())  recurringRepo.replaceAll(recs)
+            }
+            if (cats.isNotEmpty()) categoryRepo.save(cats)
             applySettings(backup)
+            appContext?.let { withContext(Dispatchers.IO) { WidgetUpdater.updateAllWidgets(it) } }
         }.onSuccess {
             _localBackupStatus.tryEmit("Backup restored")
         }.onFailure { e ->
@@ -212,12 +240,14 @@ class AccountViewModel(
         private val recurringRepo: RecurringTransactionRepository,
         private val categoryRepo: CategoryRepository,
         private val budgetRepo: BudgetRepository,
-        private val prefsRepo: PreferencesRepository
+        private val prefsRepo: PreferencesRepository,
+        private val database: AppDatabase,
+        private val appContext: Context? = null
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             @Suppress("UNCHECKED_CAST")
             return AccountViewModel(
-                authManager, driveRepo, transactionRepo, recurringRepo, categoryRepo, budgetRepo, prefsRepo
+                authManager, driveRepo, transactionRepo, recurringRepo, categoryRepo, budgetRepo, prefsRepo, database, appContext
             ) as T
         }
     }

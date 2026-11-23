@@ -80,10 +80,11 @@ fun HomeScreen(
     val byPaymentTypeIncome by viewModel.thisMonthIncomeByPaymentType.collectAsState()
     val budgets        by viewModel.budgets.collectAsState()
     val budgetSpent    by viewModel.budgetSpent.collectAsState()
+    val categoriesByName by viewModel.categoriesByName.collectAsState()
 
     val accent = MaterialTheme.colorScheme.primary
-    val resolveColor: (String) -> androidx.compose.ui.graphics.Color = remember(globalColoring, accent) {
-        { name -> if (globalColoring) accent else viewModel.categoryFor(name)?.color ?: accent }
+    val resolveColor: (String) -> androidx.compose.ui.graphics.Color = remember(globalColoring, accent, categoriesByName) {
+        { name -> if (globalColoring) accent else categoriesByName[name]?.color ?: accent }
     }
 
     val currencySymbol = LocalCurrencySymbol.current
@@ -258,21 +259,21 @@ fun HomeScreen(
                 "recent_transactions" -> RecentSpendingCard(
                     transactions = recent,
                     resolveColor = resolveColor,
-                    categoryFor  = { viewModel.categoryFor(it) },
+                    categoryFor  = { categoriesByName[it] },
                     onLongPress  = if (editMode) { _, _ -> } else { txn, bounds -> overlayTransaction = txn; overlayBounds = bounds },
                     modifier     = Modifier.fillMaxWidth()
                 )
                 "top_categories" -> TopCategoriesCard(
                     categories      = topCats,
                     resolveColor    = resolveColor,
-                    categoryFor     = { viewModel.categoryFor(it) },
+                    categoryFor     = { categoriesByName[it] },
                     onCategoryClick = onCategoryClick,
                     modifier        = Modifier.fillMaxWidth()
                 )
                 "budgets" -> BudgetOverviewCard(
                     budgets        = budgets,
                     budgetSpent    = budgetSpent,
-                    categoryFor    = { viewModel.categoryFor(it) },
+                    categoryFor    = { categoriesByName[it] },
                     modifier       = Modifier.fillMaxWidth(),
                     globalColoring = globalColoring
                 )

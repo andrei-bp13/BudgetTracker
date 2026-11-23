@@ -45,9 +45,11 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAdjusters
 import kotlin.math.roundToInt
 
-private val Green   = Color(0xFF4CAF50)
-private val DarkRed = Color(0xFFB71C1C)
-private val monthFmt = DateTimeFormatter.ofPattern("MMMM yyyy")
+private val Green       = Color(0xFF4CAF50)
+private val DarkRed     = Color(0xFFB71C1C)
+private val monthFmt    = DateTimeFormatter.ofPattern("MMMM yyyy")
+private val weekStartFmt = DateTimeFormatter.ofPattern("MMM d")
+private val weekEndFmt   = DateTimeFormatter.ofPattern("MMM d, yyyy")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,11 +62,12 @@ fun BudgetScreen(
     isSignedIn: Boolean = false,
     onToggleEditMode: () -> Unit = {}
 ) {
-    val budgets        by viewModel.budgets.collectAsState()
-    val budgetSpent    by viewModel.budgetSpent.collectAsState()
-    val transactions   by viewModel.transactions.collectAsState()
-    val globalColoring by viewModel.globalColoring.collectAsState()
-    val currencySymbol = LocalCurrencySymbol.current
+    val budgets          by viewModel.budgets.collectAsState()
+    val budgetSpent      by viewModel.budgetSpent.collectAsState()
+    val transactions     by viewModel.transactions.collectAsState()
+    val globalColoring   by viewModel.globalColoring.collectAsState()
+    val categoriesByName by viewModel.categoriesByName.collectAsState()
+    val currencySymbol   = LocalCurrencySymbol.current
 
     var showAddSheet      by remember { mutableStateOf(false) }
     var editTarget        by remember { mutableStateOf<Budget?>(null) }
@@ -198,7 +201,7 @@ fun BudgetScreen(
                     }
                 }
                 items(localList, key = { it.id }) { budget ->
-                    val cat     = viewModel.categoryFor(budget.categoryName)
+                    val cat     = categoriesByName[budget.categoryName]
                     val spent   = budgetSpent[budget.id] ?: 0.0
                     val isDragged = draggedId == budget.id
 
@@ -255,11 +258,11 @@ fun BudgetScreen(
     }
     if (showPastBudgets) {
         PastBudgetsSheet(
-            budgets      = budgets,
-            transactions = transactions,
+            budgets        = budgets,
+            transactions   = transactions,
             currencySymbol = currencySymbol,
-            categoryFor  = { viewModel.categoryFor(it) },
-            onDismiss    = { showPastBudgets = false }
+            categoryFor    = { categoriesByName[it] },
+            onDismiss      = { showPastBudgets = false }
         )
     }
 }
@@ -499,7 +502,9 @@ private fun PastBudgetsSheet(
                         val cat = categoryFor(budget.categoryName)
                         val catColor = cat?.color ?: Color.Gray
                         val iconId   = cat?.iconId ?: "savings"
-                        val pastPeriods = buildPastPeriods(budget, transactions)
+                        val pastPeriods = remember(budget, transactions) {
+                            buildPastPeriods(budget, transactions)
+                        }
 
                         if (pastPeriods.isNotEmpty()) {
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -589,41 +594,70 @@ private fun buildPastPeriods(budget: Budget, transactions: List<Transaction>): L
 
         BudgetPeriod.WEEKLY -> {
             val currentWeekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-            var weekStart = currentWeekStart.minusWeeks(1)
-            while (!weekStart.isBefore(createdDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))) && result.size < 12) {
+            val createdWeekStart = createdDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+            val weekStarts = mutableListOf<LocalDate>()
+            var ws = currentWeekStart.minusWeeks(1)
+            while (!ws.isBefore(createdWeekStart) && weekStarts.size < 12) {
+                weekStarts += ws
+                ws = ws.minusWeeks(1)
+            }
+            if (weekStarts.isEmpty()) return emptyList()
+            val earliest = weekStarts.last()
+            val latest   = weekStarts.first().plusDays(6)
+            val totals   = HashMap<LocalDate, Double>(weekStarts.size)
+            for (t in transactions) {
+                if (t.type == TransactionType.EXPENSE && t.category == budget.categoryName &&
+                    !t.date.isBefore(earliest) && !t.date.isAfter(latest)) {
+                    val bucket = t.date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+                    totals[bucket] = (totals[bucket] ?: 0.0) + t.amount
+                }
+            }
+            for (weekStart in weekStarts) {
                 val weekEnd = weekStart.plusDays(6)
-                val spent   = transactions.filter {
-                    it.type == TransactionType.EXPENSE && it.category == budget.categoryName &&
-                    !it.date.isBefore(weekStart) && !it.date.isAfter(weekEnd)
-                }.sumOf { it.amount }
-                val label = "${weekStart.format(DateTimeFormatter.ofPattern("MMM d"))} - ${weekEnd.format(DateTimeFormatter.ofPattern("MMM d, yyyy"))}"
-                result += label to spent
-                weekStart = weekStart.minusWeeks(1)
+                val label   = "${weekStart.format(weekStartFmt)} - ${weekEnd.format(weekEndFmt)}"
+                result += label to (totals[weekStart] ?: 0.0)
             }
         }
 
         BudgetPeriod.MONTHLY -> {
-            var ym = YearMonth.now().minusMonths(1)
             val createdYM = YearMonth.from(createdDate)
-            while (!ym.isBefore(createdYM) && result.size < 24) {
-                val spent = transactions.filter {
-                    it.type == TransactionType.EXPENSE && it.category == budget.categoryName &&
-                    YearMonth.from(it.date) == ym
-                }.sumOf { it.amount }
-                result += ym.format(monthFmt) to spent
+            val months    = mutableListOf<YearMonth>()
+            var ym        = YearMonth.from(today).minusMonths(1)
+            while (!ym.isBefore(createdYM) && months.size < 24) {
+                months += ym
                 ym = ym.minusMonths(1)
+            }
+            if (months.isEmpty()) return emptyList()
+            val totals = HashMap<YearMonth, Double>(months.size)
+            val monthSet = months.toHashSet()
+            for (t in transactions) {
+                if (t.type == TransactionType.EXPENSE && t.category == budget.categoryName) {
+                    val tYm = YearMonth.from(t.date)
+                    if (tYm in monthSet) totals[tYm] = (totals[tYm] ?: 0.0) + t.amount
+                }
+            }
+            for (m in months) {
+                result += m.format(monthFmt) to (totals[m] ?: 0.0)
             }
         }
 
         BudgetPeriod.YEARLY -> {
-            var year = today.year - 1
-            while (year >= createdDate.year && result.size < 10) {
-                val spent = transactions.filter {
-                    it.type == TransactionType.EXPENSE && it.category == budget.categoryName &&
-                    it.date.year == year
-                }.sumOf { it.amount }
-                result += "$year" to spent
-                year--
+            val years = mutableListOf<Int>()
+            var y     = today.year - 1
+            while (y >= createdDate.year && years.size < 10) {
+                years += y
+                y--
+            }
+            if (years.isEmpty()) return emptyList()
+            val totals  = HashMap<Int, Double>(years.size)
+            val yearSet = years.toHashSet()
+            for (t in transactions) {
+                if (t.type == TransactionType.EXPENSE && t.category == budget.categoryName && t.date.year in yearSet) {
+                    totals[t.date.year] = (totals[t.date.year] ?: 0.0) + t.amount
+                }
+            }
+            for (year in years) {
+                result += "$year" to (totals[year] ?: 0.0)
             }
         }
     }

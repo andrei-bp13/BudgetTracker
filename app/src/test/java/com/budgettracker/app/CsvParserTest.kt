@@ -60,6 +60,11 @@ class CsvParserTest {
         assertEquals("\"say \"\"hi\"\"\"", result)
     }
 
+    @Test fun `escapeCsv wraps field containing newline in quotes`() {
+        assertEquals("\"line1\nline2\"", escapeCsv("line1\nline2"))
+        assertEquals("\"line1\r\nline2\"", escapeCsv("line1\r\nline2"))
+    }
+
     @Test fun `escapeCsv roundtrips through splitCsvLine`() {
         val original = "Coffee, snacks & \"treats\""
         val escaped  = escapeCsv(original)

@@ -259,6 +259,28 @@ fun ReportsScreen(
     val incomeCatTitle = selectedIncomeCatPeriod?.let { "Income by Category - ${it.title}" }
         ?: "Income by Category"
 
+    // â"€â"€ Card order & visibility (hoisted so hidden summary cards skip computation) â"€â"€
+    val cardOrder   = remember { mutableStateListOf(
+        "expense_chart", "spending_category", "income_chart", "income_category",
+        "highest_expense", "highest_income", "total_spent", "total_earned", "total_savings"
+    ) }
+    val cardVisible = remember { mutableStateMapOf(
+        "expense_chart"     to true,
+        "spending_category" to true,
+        "income_chart"      to true,
+        "income_category"   to true,
+        "highest_expense"   to false,
+        "highest_income"    to false,
+        "total_spent"       to false,
+        "total_earned"      to false,
+        "total_savings"     to false
+    ) }
+    val showHighestExpense = editMode || cardVisible["highest_expense"] == true
+    val showHighestIncome  = editMode || cardVisible["highest_income"] == true
+    val showTotalSpent     = editMode || cardVisible["total_spent"] == true
+    val showTotalEarned    = editMode || cardVisible["total_earned"] == true
+    val showTotalSavings   = editMode || cardVisible["total_savings"] == true
+
     // â"€â"€ Highlight & total summaries â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
     var expenseHighlightFilter by remember { mutableStateOf("all") }
     var incomeHighlightFilter  by remember { mutableStateOf("all") }
@@ -270,34 +292,38 @@ fun ReportsScreen(
 
     fun List<Transaction>.applyHighlightFilter(filter: String): List<Transaction> = when (filter) {
         "year"  -> filter { it.date.year == today.year }
-        "month" -> filter { YearMonth.from(it.date) == YearMonth.now() }
+        "month" -> filter { YearMonth.from(it.date) == YearMonth.from(today) }
         else    -> this
     }
 
     fun List<Transaction>.applyTotalFilter(filter: String): List<Transaction> = when (filter) {
         "year"  -> filter { it.date.year == today.year }
-        "month" -> filter { YearMonth.from(it.date) == YearMonth.now() }
+        "month" -> filter { YearMonth.from(it.date) == YearMonth.from(today) }
         "week"  -> filter { !it.date.isBefore(weekStart) && !it.date.isAfter(weekEnd) }
         else    -> this
     }
 
-    val highestExpense = remember(allTransactions, expenseHighlightFilter) {
-        allTransactions.filter { it.type == TransactionType.EXPENSE }
+    val highestExpense = remember(allTransactions, expenseHighlightFilter, showHighestExpense) {
+        if (!showHighestExpense) null
+        else allTransactions.filter { it.type == TransactionType.EXPENSE }
             .applyHighlightFilter(expenseHighlightFilter)
             .maxByOrNull { it.amount }
     }
-    val highestIncome = remember(allTransactions, incomeHighlightFilter) {
-        allTransactions.filter { it.type == TransactionType.INCOME }
+    val highestIncome = remember(allTransactions, incomeHighlightFilter, showHighestIncome) {
+        if (!showHighestIncome) null
+        else allTransactions.filter { it.type == TransactionType.INCOME }
             .applyHighlightFilter(incomeHighlightFilter)
             .maxByOrNull { it.amount }
     }
-    val totalSpent = remember(allTransactions, totalSpentFilter) {
-        allTransactions.filter { it.type == TransactionType.EXPENSE }
+    val totalSpent = remember(allTransactions, totalSpentFilter, showTotalSpent) {
+        if (!showTotalSpent) 0.0
+        else allTransactions.filter { it.type == TransactionType.EXPENSE }
             .applyTotalFilter(totalSpentFilter)
             .sumOf { it.amount }
     }
-    val totalEarned = remember(allTransactions, totalEarnedFilter) {
-        allTransactions.filter { it.type == TransactionType.INCOME }
+    val totalEarned = remember(allTransactions, totalEarnedFilter, showTotalEarned) {
+        if (!showTotalEarned) 0.0
+        else allTransactions.filter { it.type == TransactionType.INCOME }
             .applyTotalFilter(totalEarnedFilter)
             .sumOf { it.amount }
     }
@@ -306,8 +332,9 @@ fun ReportsScreen(
     var totalSavingsFilter by remember { mutableStateOf("all") }
     val savingsCategories = remember { setOf("Savings", "Investment") }
 
-    val savingsTransactions = remember(allTransactions, totalSavingsFilter) {
-        allTransactions
+    val savingsTransactions = remember(allTransactions, totalSavingsFilter, showTotalSavings) {
+        if (!showTotalSavings) emptyList()
+        else allTransactions
             .filter { it.category in savingsCategories }
             .applyHighlightFilter(totalSavingsFilter)
             .sortedByDescending { it.date.atTime(it.time) }
@@ -335,22 +362,6 @@ fun ReportsScreen(
         }
     }
 
-    // â"€â"€ Card order & visibility â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
-    val cardOrder   = remember { mutableStateListOf(
-        "expense_chart", "spending_category", "income_chart", "income_category",
-        "highest_expense", "highest_income", "total_spent", "total_earned", "total_savings"
-    ) }
-    val cardVisible = remember { mutableStateMapOf(
-        "expense_chart"     to true,
-        "spending_category" to true,
-        "income_chart"      to true,
-        "income_category"   to true,
-        "highest_expense"   to false,
-        "highest_income"    to false,
-        "total_spent"       to false,
-        "total_earned"      to false,
-        "total_savings"     to false
-    ) }
     fun swapCards(a: String, b: String) {
         val i = cardOrder.indexOf(a); val j = cardOrder.indexOf(b)
         if (i >= 0 && j >= 0) { cardOrder[i] = b; cardOrder[j] = a }

@@ -14,7 +14,9 @@ data class CategoryItem(
     val isDefault: Boolean = true,
     val type: CategoryType = CategoryType.EXPENSE
 ) {
-    val color: Color = Color(android.graphics.Color.parseColor(colorHex))
+    val color: Color
+        get() = runCatching { Color(android.graphics.Color.parseColor(colorHex)) }
+            .getOrDefault(Color(0xFF757575))
 }
 
 val DefaultCategories: List<CategoryItem> = listOf(

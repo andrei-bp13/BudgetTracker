@@ -39,9 +39,9 @@ class GoogleAuthManager(private val context: Context) {
     }
 
     suspend fun getAccessToken(): String? = withContext(Dispatchers.IO) {
-        val account = getSignedInAccount() ?: return@withContext null
+        val androidAccount = getSignedInAccount()?.account ?: return@withContext null
         try {
-            GoogleAuthUtil.getToken(context, account.account!!, "oauth2:$DRIVE_APPDATA_SCOPE")
+            GoogleAuthUtil.getToken(context, androidAccount, "oauth2:$DRIVE_APPDATA_SCOPE")
         } catch (e: Exception) {
             null
         }

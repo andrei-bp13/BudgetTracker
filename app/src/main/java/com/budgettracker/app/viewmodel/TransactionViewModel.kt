@@ -1,5 +1,6 @@
 ﻿package com.pardonmyspending.app.viewmodel
 
+import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -15,13 +16,11 @@ import com.pardonmyspending.app.data.repository.PreferencesRepository
 import com.pardonmyspending.app.data.repository.RecurringTransactionRepository
 import com.pardonmyspending.app.data.repository.TransactionRepository
 import com.pardonmyspending.app.util.budgetSpentAmount
-import com.pardonmyspending.app.util.dailyExpenses
-import com.pardonmyspending.app.util.monthTotal
 import com.pardonmyspending.app.util.monthlyExpensesForYear
-import com.pardonmyspending.app.util.monthlyExpensesLast6
-import com.pardonmyspending.app.util.topCats
 import com.pardonmyspending.app.util.weeklyExpensesForMonth
 import com.pardonmyspending.app.util.yearlyExpenses
+import com.pardonmyspending.app.widget.WidgetUpdater
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.json.JSONArray
@@ -44,10 +43,18 @@ class TransactionViewModel(
     private val prefs: PreferencesRepository,
     private val catRepo: CategoryRepository,
     private val recurringRepo: RecurringTransactionRepository,
-    private val budgetRepo: BudgetRepository
+    private val budgetRepo: BudgetRepository,
+    private val appContext: Context? = null
 ) : ViewModel() {
 
     private val prefsState = PreferencesState(prefs, viewModelScope)
+
+    private fun refreshWidgets() {
+        val ctx = appContext ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            WidgetUpdater.updateAllWidgets(ctx)
+        }
+    }
 
     // â"€â"€ UI preferences (delegated) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
     val themeMode:        StateFlow<String>  = prefsState.themeMode
@@ -72,15 +79,14 @@ class TransactionViewModel(
     val transactions: StateFlow<List<Transaction>> = repo.transactions
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyList())
 
-    // Single combine pass: all derived aggregates computed together so that one
-    // transaction change triggers one list iteration instead of 10+.
+    // True single-pass aggregation off the main thread; chart granularity bars
+    // are computed separately so toggling granularity doesn't redo all aggregates.
     private data class ProcessedTransactions(
         val thisMonthDailyExpenses: List<Pair<Int, Double>>,
         val lastMonthDailyExpenses: List<Pair<Int, Double>>,
         val recentExpenses: List<Transaction>,
         val recentTransactions: List<Transaction>,
         val topCategories: List<Pair<String, Double>>,
-        val expenseChartBars: List<ChartBar>,
         val monthlyTotals: List<Pair<String, Double>>,
         val categoryTotalsThisMonth: List<Pair<String, Double>>,
         val thisMonthExpense: Double,
@@ -90,41 +96,88 @@ class TransactionViewModel(
     )
 
     private val processed: StateFlow<ProcessedTransactions> =
-        combine(transactions, chartGranularity) { txns, gran ->
+        transactions.map { txns ->
             val today  = LocalDate.now()
-            val now    = YearMonth.now()
+            val now    = YearMonth.from(today)
             val lastMo = now.minusMonths(1)
+
+            val thisMonthDays = today.dayOfMonth.coerceIn(1, now.lengthOfMonth())
+            val lastMonthDays = lastMo.lengthOfMonth()
+            val thisMonthByDay = DoubleArray(thisMonthDays + 1)
+            val lastMonthByDay = DoubleArray(lastMonthDays + 1)
+
+            val last6Months = (5 downTo 0).map { now.minusMonths(it.toLong()) }
+            val last6Idx = HashMap<YearMonth, Int>(8).apply {
+                last6Months.forEachIndexed { i, ym -> put(ym, i) }
+            }
+            val last6Totals = DoubleArray(6)
+
+            val recentExp = ArrayList<Transaction>(5)
+            val catTotals = HashMap<String, Double>()
+            val expByPt   = HashMap<PaymentType, Double>(allPaymentTypes.size).apply {
+                allPaymentTypes.forEach { put(it, 0.0) }
+            }
+            val incByPt   = HashMap<PaymentType, Double>(allPaymentTypes.size).apply {
+                allPaymentTypes.forEach { put(it, 0.0) }
+            }
+            var monthExp = 0.0
+            var monthInc = 0.0
+
+            for (t in txns) {
+                val ym = YearMonth.from(t.date)
+                if (t.type == TransactionType.EXPENSE) {
+                    if (recentExp.size < 5) recentExp.add(t)
+                    val l6 = last6Idx[ym]
+                    if (l6 != null) last6Totals[l6] += t.amount
+                    if (ym == now) {
+                        monthExp += t.amount
+                        val d = t.date.dayOfMonth
+                        if (d in 1..thisMonthDays) thisMonthByDay[d] += t.amount
+                        catTotals[t.category] = (catTotals[t.category] ?: 0.0) + t.amount
+                        expByPt[t.paymentType] = (expByPt[t.paymentType] ?: 0.0) + t.amount
+                    } else if (ym == lastMo) {
+                        val d = t.date.dayOfMonth
+                        if (d in 1..lastMonthDays) lastMonthByDay[d] += t.amount
+                    }
+                } else if (ym == now) {
+                    monthInc += t.amount
+                    incByPt[t.paymentType] = (incByPt[t.paymentType] ?: 0.0) + t.amount
+                }
+            }
+
+            var cumThis = 0.0
+            val thisMonthDaily = (1..thisMonthDays).map { d ->
+                cumThis += thisMonthByDay[d]
+                d to cumThis
+            }
+            var cumLast = 0.0
+            val lastMonthDaily = (1..lastMonthDays).map { d ->
+                cumLast += lastMonthByDay[d]
+                d to cumLast
+            }
+            val sortedCats = catTotals.entries
+                .sortedByDescending { it.value }
+                .map { it.key to it.value }
+            val monthly6 = last6Months.mapIndexed { i, m ->
+                "${m.month.name.take(3)} ${m.year}" to last6Totals[i]
+            }
+
             ProcessedTransactions(
-                thisMonthDailyExpenses       = dailyExpenses(txns, now, today.dayOfMonth),
-                lastMonthDailyExpenses       = dailyExpenses(txns, lastMo),
-                recentExpenses               = txns.filter { it.type == TransactionType.EXPENSE }.take(5),
+                thisMonthDailyExpenses       = thisMonthDaily,
+                lastMonthDailyExpenses       = lastMonthDaily,
+                recentExpenses               = recentExp,
                 recentTransactions           = txns.take(5),
-                topCategories                = topCats(txns, now),
-                expenseChartBars             = when (gran) {
-                    "weekly" -> weeklyExpensesForMonth(txns, today.year, today.monthValue)
-                    "yearly" -> yearlyExpenses(txns, today.year)
-                    else     -> monthlyExpensesForYear(txns, today.year)
-                },
-                monthlyTotals                = monthlyExpensesLast6(txns),
-                categoryTotalsThisMonth      = topCats(txns, now, limit = 10),
-                thisMonthExpense             = monthTotal(txns, now, TransactionType.EXPENSE),
-                thisMonthIncome              = monthTotal(txns, now, TransactionType.INCOME),
-                thisMonthByPaymentType       = allPaymentTypes.associateWith { pt ->
-                    txns.sumOf {
-                        if (it.type == TransactionType.EXPENSE &&
-                            YearMonth.from(it.date) == now &&
-                            it.paymentType == pt) it.amount else 0.0
-                    }
-                },
-                thisMonthIncomeByPaymentType = allPaymentTypes.associateWith { pt ->
-                    txns.sumOf {
-                        if (it.type == TransactionType.INCOME &&
-                            YearMonth.from(it.date) == now &&
-                            it.paymentType == pt) it.amount else 0.0
-                    }
-                },
+                topCategories                = sortedCats.take(5),
+                monthlyTotals                = monthly6,
+                categoryTotalsThisMonth      = sortedCats.take(10),
+                thisMonthExpense             = monthExp,
+                thisMonthIncome              = monthInc,
+                thisMonthByPaymentType       = expByPt,
+                thisMonthIncomeByPaymentType = incByPt,
             )
-        }.stateIn(
+        }
+        .flowOn(Dispatchers.Default)
+        .stateIn(
             viewModelScope,
             SharingStarted.WhileSubscribed(5_000L),
             ProcessedTransactions(
@@ -133,7 +186,6 @@ class TransactionViewModel(
                 recentExpenses               = emptyList(),
                 recentTransactions           = emptyList(),
                 topCategories                = emptyList(),
-                expenseChartBars             = emptyList(),
                 monthlyTotals                = emptyList(),
                 categoryTotalsThisMonth      = emptyList(),
                 thisMonthExpense             = 0.0,
@@ -142,6 +194,18 @@ class TransactionViewModel(
                 thisMonthIncomeByPaymentType = emptyMap(),
             )
         )
+
+    val expenseChartBars: StateFlow<List<ChartBar>> =
+        combine(transactions, chartGranularity) { txns, gran ->
+            val today = LocalDate.now()
+            when (gran) {
+                "weekly" -> weeklyExpensesForMonth(txns, today.year, today.monthValue)
+                "yearly" -> yearlyExpenses(txns, today.year)
+                else     -> monthlyExpensesForYear(txns, today.year)
+            }
+        }
+        .flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyList())
 
     val thisMonthDailyExpenses: StateFlow<List<Pair<Int, Double>>> =
         processed.map { it.thisMonthDailyExpenses }
@@ -161,10 +225,6 @@ class TransactionViewModel(
 
     val topCategories: StateFlow<List<Pair<String, Double>>> =
         processed.map { it.topCategories }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyList())
-
-    val expenseChartBars: StateFlow<List<ChartBar>> =
-        processed.map { it.expenseChartBars }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyList())
 
     val monthlyTotals: StateFlow<List<Pair<String, Double>>> =
@@ -196,11 +256,24 @@ class TransactionViewModel(
     val recurringTransactions: StateFlow<List<RecurringTransaction>> = recurringRepo.recurring
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyList())
 
+    private var lastRecurringCheckDate: LocalDate? = null
+
+    fun processRecurringIfNeeded() {
+        val today = LocalDate.now()
+        if (lastRecurringCheckDate == today) return
+        lastRecurringCheckDate = today
+        viewModelScope.launch {
+            recurringRepo.processRecurring(repo)
+            refreshWidgets()
+        }
+    }
+
     fun addRecurring(rec: RecurringTransaction) = viewModelScope.launch {
         recurringRepo.add(rec)
         // Process immediately so past-dated recurrings generate their transactions right away
         // and nextDueDate is advanced to the correct upcoming date.
         recurringRepo.processRecurring(repo)
+        refreshWidgets()
     }
     fun updateRecurring(rec: RecurringTransaction) = viewModelScope.launch { recurringRepo.update(rec) }
     fun deleteRecurring(id: String)                = viewModelScope.launch { recurringRepo.delete(id) }
@@ -210,28 +283,37 @@ class TransactionViewModel(
 
     init {
         viewModelScope.launch {
-            // Wait for theme prefs and both DB tables to emit their first value
+            // Wait concurrently for theme prefs and both DB tables to emit their first value
             // before releasing the splash screen.
-            prefs.themeMode.first()
-            repo.transactions.first()
-            recurringRepo.recurring.first()
+            combine(prefs.themeMode, repo.transactions, recurringRepo.recurring) { _, _, _ -> Unit }
+                .first()
             _dataLoaded.value = true
         }
-        viewModelScope.launch { recurringRepo.processRecurring(repo) }
+        processRecurringIfNeeded()
     }
 
-    fun addTransaction(t: Transaction)    = viewModelScope.launch { repo.add(t) }
-    fun updateTransaction(t: Transaction) = viewModelScope.launch { repo.update(t) }
-    fun deleteTransaction(id: String)     = viewModelScope.launch { repo.delete(id) }
-
-    fun exportCsv(uri: Uri) = viewModelScope.launch { repo.exportCsv(uri) }
+    fun addTransaction(t: Transaction)    = viewModelScope.launch { repo.add(t); refreshWidgets() }
+    fun updateTransaction(t: Transaction) = viewModelScope.launch { repo.update(t); refreshWidgets() }
+    fun deleteTransaction(id: String)     = viewModelScope.launch { repo.delete(id); refreshWidgets() }
 
     private val _importErrorEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val importErrorEvent: SharedFlow<Unit> = _importErrorEvent.asSharedFlow()
 
+    private val _ioErrorEvent = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val ioErrorEvent: SharedFlow<String> = _ioErrorEvent.asSharedFlow()
+
+    fun exportCsv(uri: Uri) = viewModelScope.launch {
+        runCatching { repo.exportCsv(uri) }
+            .onFailure { _ioErrorEvent.tryEmit("Export failed: ${it.message ?: "unable to write file"}") }
+    }
+
     fun importCsv(uri: Uri) = viewModelScope.launch {
-        val failed = repo.importCsv(uri)
-        if (failed > 0) _importErrorEvent.tryEmit(Unit)
+        runCatching { repo.importCsv(uri) }
+            .onSuccess { failed ->
+                refreshWidgets()
+                if (failed > 0) _importErrorEvent.tryEmit(Unit)
+            }
+            .onFailure { _ioErrorEvent.tryEmit("Import failed: ${it.message ?: "unable to read file"}") }
     }
 
     fun setCardOrder(order: List<String>) =
@@ -247,6 +329,14 @@ class TransactionViewModel(
 
     val categories: StateFlow<List<CategoryItem>> = catRepo.categories
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), DefaultCategories)
+
+    val categoriesByName: StateFlow<Map<String, CategoryItem>> =
+        categories.map { list -> list.associateBy { it.name } }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5_000L),
+                DefaultCategories.associateBy { it.name }
+            )
 
     // Single partition pass instead of two separate filter passes.
     private val partitionedCategories: StateFlow<Pair<List<CategoryItem>, List<CategoryItem>>> =
@@ -286,15 +376,17 @@ class TransactionViewModel(
         combine(transactions, budgets) { txns, bgets ->
             val today = LocalDate.now()
             bgets.associate { b -> b.id to budgetSpentAmount(txns, b, today) }
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyMap())
+        }
+        .flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), emptyMap())
 
-    fun addBudget(budget: Budget)              = viewModelScope.launch { budgetRepo.add(budget) }
-    fun updateBudget(budget: Budget)           = viewModelScope.launch { budgetRepo.update(budget) }
-    fun deleteBudget(id: String)               = viewModelScope.launch { budgetRepo.delete(id) }
-    fun updateBudgetOrder(ordered: List<Budget>) = viewModelScope.launch { budgetRepo.updateOrder(ordered) }
+    fun addBudget(budget: Budget)                = viewModelScope.launch { budgetRepo.add(budget); refreshWidgets() }
+    fun updateBudget(budget: Budget)             = viewModelScope.launch { budgetRepo.update(budget); refreshWidgets() }
+    fun deleteBudget(id: String)                 = viewModelScope.launch { budgetRepo.delete(id); refreshWidgets() }
+    fun updateBudgetOrder(ordered: List<Budget>) = viewModelScope.launch { budgetRepo.updateOrder(ordered); refreshWidgets() }
 
     fun categoryFor(name: String): CategoryItem? =
-        categories.value.firstOrNull { it.name == name }
+        categoriesByName.value[name]
 
     // â"€â"€ Preference setters (delegated) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
@@ -302,7 +394,7 @@ class TransactionViewModel(
     fun setAccentIndex(i: Int)             = prefsState.setAccentIndex(i)
     fun setGlobalColoring(v: Boolean)      = prefsState.setGlobalColoring(v)
     fun setGranularColoring(v: Boolean)    = prefsState.setGranularColoring(v)
-    fun setCurrencyCode(code: String)      = prefsState.setCurrencyCode(code)
+    fun setCurrencyCode(code: String)      { prefsState.setCurrencyCode(code); refreshWidgets() }
     fun setChartGranularity(value: String) = prefsState.setChartGranularity(value)
     fun setAiMode(enabled: Boolean)        = prefsState.setAiMode(enabled)
     fun setCustomAccentHex(hex: String)    = prefsState.setCustomAccentHex(hex)
@@ -348,11 +440,12 @@ class TransactionViewModel(
         private val prefs: PreferencesRepository,
         private val catRepo: CategoryRepository,
         private val recurringRepo: RecurringTransactionRepository,
-        private val budgetRepo: BudgetRepository
+        private val budgetRepo: BudgetRepository,
+        private val appContext: Context? = null
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             @Suppress("UNCHECKED_CAST")
-            return TransactionViewModel(repo, prefs, catRepo, recurringRepo, budgetRepo) as T
+            return TransactionViewModel(repo, prefs, catRepo, recurringRepo, budgetRepo, appContext) as T
         }
     }
 }

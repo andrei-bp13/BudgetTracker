@@ -1,8 +1,11 @@
 package com.pardonmyspending.app
 
+import com.pardonmyspending.app.data.db.BudgetEntity
 import com.pardonmyspending.app.data.db.TransactionEntity
+import com.pardonmyspending.app.data.db.toBudget
 import com.pardonmyspending.app.data.db.toEntity
 import com.pardonmyspending.app.data.db.toTransaction
+import com.pardonmyspending.app.data.model.BudgetPeriod
 import com.pardonmyspending.app.data.model.PaymentType
 import com.pardonmyspending.app.data.model.Transaction
 import com.pardonmyspending.app.data.model.TransactionType
@@ -73,5 +76,20 @@ class TransactionEntityTest {
         val e1 = sample.toEntity()
         val e2 = sample.toEntity()
         assertEquals(e1, e2)
+    }
+
+    @Test fun `toTransaction clamps out-of-range timeSecondOfDay`() {
+        val negative = sample.toEntity().copy(timeSecondOfDay = -50)
+        val overflow = sample.toEntity().copy(timeSecondOfDay = 99_999)
+        assertEquals(LocalTime.of(0, 0, 0), negative.toTransaction().time)
+        assertEquals(LocalTime.of(23, 59, 59), overflow.toTransaction().time)
+    }
+
+    @Test fun `BudgetEntity defaults unknown period to MONTHLY`() {
+        val entity = BudgetEntity(
+            id = "b1", title = "Food", categoryName = "Food",
+            amount = 200.0, period = "INVALID", createdEpochDay = 20000L, sortOrder = 0
+        )
+        assertEquals(BudgetPeriod.MONTHLY, entity.toBudget().period)
     }
 }

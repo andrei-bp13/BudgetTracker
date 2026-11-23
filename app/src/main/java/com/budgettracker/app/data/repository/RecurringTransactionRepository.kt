@@ -54,7 +54,8 @@ class RecurringTransactionRepository(
             var newStatus = rec.status
             val generated = mutableListOf<Transaction>()
 
-            while (!nextDue.isAfter(today)) {
+            var iterations = 0
+            while (!nextDue.isAfter(today) && iterations < 10_000) {
                 if (rec.endCondition == EndCondition.DATE &&
                     rec.endDate != null && nextDue.isAfter(rec.endDate)) {
                     newStatus = RecurringStatus.FINISHED
@@ -77,7 +78,10 @@ class RecurringTransactionRepository(
                     time        = LocalTime.MIDNIGHT
                 )
                 count++
-                nextDue = rec.advanceDate(nextDue)
+                iterations++
+                val advanced = rec.advanceDate(nextDue)
+                if (!advanced.isAfter(nextDue)) break
+                nextDue = advanced
             }
 
             allGenerated += generated

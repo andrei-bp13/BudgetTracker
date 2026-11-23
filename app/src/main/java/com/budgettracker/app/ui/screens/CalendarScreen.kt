@@ -54,12 +54,13 @@ fun CalendarScreen(
     val allTransactions   by viewModel.transactions.collectAsState()
     val recurringList     by viewModel.recurringTransactions.collectAsState()
     val categories        by viewModel.categories.collectAsState()
+    val categoriesByName  by viewModel.categoriesByName.collectAsState()
     val globalColoring    by viewModel.globalColoring.collectAsState()
     val currencySymbol    = LocalCurrencySymbol.current
     val accent            = MaterialTheme.colorScheme.primary
     val today             = LocalDate.now()
-    val resolveColor: (String) -> Color = remember(globalColoring, accent) {
-        { name -> if (globalColoring) accent else viewModel.categoryFor(name)?.color ?: accent }
+    val resolveColor: (String) -> Color = remember(globalColoring, accent, categoriesByName) {
+        { name -> if (globalColoring) accent else categoriesByName[name]?.color ?: accent }
     }
 
     var selectedDate        by remember { mutableStateOf(today) }
@@ -102,7 +103,7 @@ fun CalendarScreen(
         }
     }
 
-    val headerFmt = DateTimeFormatter.ofPattern("EEEE, MMMM d", Locale.getDefault())
+    val headerFmt = remember { DateTimeFormatter.ofPattern("EEEE, MMMM d", Locale.getDefault()) }
 
     // Overlay state
     var overlayTransaction by remember { mutableStateOf<Transaction?>(null) }

@@ -21,6 +21,7 @@ import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
+import androidx.glance.appwidget.updateAll
 import androidx.glance.background
 import androidx.glance.color.ColorProvider
 import androidx.glance.layout.Alignment
@@ -385,8 +386,8 @@ class BudgetProgressWidget : GlanceAppWidget() {
                         Text("No active budget", style = TextStyle(color = clr.subtext, fontSize = 13.sp))
                     } else {
                         val (spent, limit, budgetTitle) = progress
-                        val fraction   = (spent / limit).coerceIn(0.0, 1.0).toFloat()
-                        val overBudget = spent > limit
+                        val fraction   = if (limit > 0.0) (spent / limit).coerceIn(0.0, 1.0).toFloat() else 0f
+                        val overBudget = limit > 0.0 && spent > limit
                         val fillColor  = if (overBudget || fraction > 0.85f) clr.error else clr.primary
 
                         Spacer(GlanceModifier.height(8.dp))
@@ -662,4 +663,24 @@ class CalendarWidget : GlanceAppWidget() {
 
 class CalendarReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = CalendarWidget()
+}
+
+object WidgetUpdater {
+    private val allWidgets: List<GlanceAppWidget> = listOf(
+        TotalSpentWidget(),
+        TotalEarnedWidget(),
+        TotalSavingsWidget(),
+        HighestExpenseWidget(),
+        HighestIncomeWidget(),
+        BudgetProgressWidget(),
+        MonthSummaryWidget(),
+        CalendarWidget()
+    )
+
+    suspend fun updateAllWidgets(context: Context) {
+        val appCtx = context.applicationContext
+        for (widget in allWidgets) {
+            runCatching { widget.updateAll(appCtx) }
+        }
+    }
 }

@@ -43,5 +43,5 @@ fun TransactionEntity.toTransaction() = Transaction(
     date        = LocalDate.ofEpochDay(dateEpochDay),
     note        = note,
     paymentType = runCatching { PaymentType.valueOf(paymentType) }.getOrDefault(PaymentType.DEBIT),
-    time        = LocalTime.ofSecondOfDay(timeSecondOfDay.toLong())
+    time        = LocalTime.ofSecondOfDay(timeSecondOfDay.toLong().coerceIn(0L, 86_399L))
 )

@@ -21,9 +21,8 @@ class DriveBackupRepository {
 
     suspend fun upload(json: String, token: String): Boolean = withContext(Dispatchers.IO) {
         val existingId = findFileId(token)
-        if (existingId != null) deleteFile(existingId, token)
 
-        val boundary = "PMS_DriveBackup_Boundary"
+        val boundary = "PMS_DriveBackup_${java.util.UUID.randomUUID()}"
         val metadata = """{"name":"$FILE_NAME","parents":["appDataFolder"]}"""
         val body = "--$boundary\r\n" +
                    "Content-Type: application/json; charset=UTF-8\r\n\r\n" +
@@ -37,35 +36,50 @@ class DriveBackupRepository {
             setRequestProperty("Content-Type", "multipart/related; boundary=$boundary")
             doOutput = true
         }
-        OutputStreamWriter(conn.outputStream, "UTF-8").use { it.write(body) }
-        val code = conn.responseCode
-        conn.disconnect()
-        code in 200..299
+        val ok = try {
+            OutputStreamWriter(conn.outputStream, "UTF-8").use { it.write(body) }
+            conn.responseCode in 200..299
+        } finally {
+            conn.disconnect()
+        }
+        // Only delete the previous backup after the new upload succeeds.
+        if (ok && existingId != null) {
+            runCatching { deleteFile(existingId, token) }
+        }
+        ok
     }
 
     suspend fun downloadLatest(token: String): String? = withContext(Dispatchers.IO) {
         val fileId = findFileId(token) ?: return@withContext null
         val conn = openConn("$FILES_URL/$fileId?alt=media", "GET", token)
-        if (conn.responseCode !in 200..299) { conn.disconnect(); return@withContext null }
-        val text = BufferedReader(InputStreamReader(conn.inputStream)).use { it.readText() }
-        conn.disconnect()
-        text
+        try {
+            if (conn.responseCode !in 200..299) return@withContext null
+            BufferedReader(InputStreamReader(conn.inputStream)).use { it.readText() }
+        } finally {
+            conn.disconnect()
+        }
     }
 
     private fun findFileId(token: String): String? {
-        val q   = java.net.URLEncoder.encode("name='$FILE_NAME'", "UTF-8")
-        val conn = openConn("$FILES_URL?spaces=appDataFolder&fields=files(id)&q=$q", "GET", token)
-        if (conn.responseCode !in 200..299) { conn.disconnect(); return null }
-        val body = BufferedReader(InputStreamReader(conn.inputStream)).use { it.readText() }
-        conn.disconnect()
+        val q = java.net.URLEncoder.encode("name='$FILE_NAME'", "UTF-8")
+        val conn = openConn("$FILES_URL?spaces=appDataFolder&fields=files(id)&orderBy=modifiedTime%20desc&q=$q", "GET", token)
+        val body = try {
+            if (conn.responseCode !in 200..299) return null
+            BufferedReader(InputStreamReader(conn.inputStream)).use { it.readText() }
+        } finally {
+            conn.disconnect()
+        }
         val files = JSONObject(body).getJSONArray("files")
         return if (files.length() > 0) files.getJSONObject(0).getString("id") else null
     }
 
     private fun deleteFile(fileId: String, token: String) {
         val conn = openConn("$FILES_URL/$fileId", "DELETE", token)
-        conn.responseCode
-        conn.disconnect()
+        try {
+            conn.responseCode
+        } finally {
+            conn.disconnect()
+        }
     }
 
     private fun openConn(url: String, method: String, token: String): HttpURLConnection =

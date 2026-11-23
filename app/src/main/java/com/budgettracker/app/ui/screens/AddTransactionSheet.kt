@@ -87,11 +87,13 @@ fun AddTransactionSheet(
         val titleVal  = title.trim()
         val amountVal = amount.toDoubleOrNull() ?: return@save
         if (titleVal.isBlank()) return@save
-        if (initialTransaction != null) {
+        val editingTarget = if (isEditing) initialTransaction else null
+        if (editingTarget != null) {
             viewModel.updateTransaction(
-                initialTransaction.copy(
+                editingTarget.copy(
                     title       = titleVal,
                     amount      = amountVal,
+                    type        = transactionType,
                     category    = selectedCat,
                     note        = note.trim(),
                     paymentType = paymentType,

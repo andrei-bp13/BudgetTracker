@@ -154,22 +154,27 @@ class AiRepository {
             put("response_format", JSONObject().put("type", "json_object"))
         }.toString()
 
-        conn.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
+        try {
+            conn.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
 
-        val code = conn.responseCode
-        if (code != 200) {
-            val errBody = runCatching { conn.errorStream?.bufferedReader()?.readText() }.getOrNull() ?: ""
-            val msg = runCatching { JSONObject(errBody).getString("message") }.getOrDefault("HTTP $code")
-            throw RuntimeException(msg)
+            val code = conn.responseCode
+            if (code != 200) {
+                val errBody = runCatching { conn.errorStream?.bufferedReader()?.use { it.readText() } }.getOrNull() ?: ""
+                val msg = runCatching { JSONObject(errBody).getString("message") }.getOrDefault("HTTP $code")
+                throw RuntimeException(msg)
+            }
+
+            val responseBody = conn.inputStream.bufferedReader().use { it.readText() }
+            val text = JSONObject(responseBody)
+                .getJSONArray("choices")
+                .getJSONObject(0)
+                .getJSONObject("message")
+                .getString("content")
+                .trim()
+
+            return JSONObject(text)
+        } finally {
+            conn.disconnect()
         }
-
-        val text = JSONObject(conn.inputStream.bufferedReader().readText())
-            .getJSONArray("choices")
-            .getJSONObject(0)
-            .getJSONObject("message")
-            .getString("content")
-            .trim()
-
-        return JSONObject(text)
     }
 }

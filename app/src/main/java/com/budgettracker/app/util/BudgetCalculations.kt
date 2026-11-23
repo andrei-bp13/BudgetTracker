@@ -48,15 +48,19 @@ fun computeMonthlyBars(
     transactions: List<Transaction>,
     year: Int,
     type: TransactionType = TransactionType.EXPENSE
-): List<ChartBar> =
-    (1..12).map { m ->
+): List<ChartBar> {
+    val totalsByMonth = DoubleArray(13)
+    for (t in transactions) {
+        if (t.type == type && t.date.year == year) {
+            totalsByMonth[t.date.monthValue] += t.amount
+        }
+    }
+    return (1..12).map { m ->
         val ym    = YearMonth.of(year, m)
         val label = ym.month.getDisplayName(TextStyle.SHORT, Locale.getDefault())
-        val total = transactions.filter {
-            it.type == type && YearMonth.from(it.date) == ym
-        }.sumOf { it.amount }
-        ChartBar(label, "$label $year", total, ym.atDay(1), ym.atEndOfMonth())
+        ChartBar(label, "$label $year", totalsByMonth[m], ym.atDay(1), ym.atEndOfMonth())
     }
+}
 
 fun computeWeeklyBars(
     transactions: List<Transaction>,
@@ -64,12 +68,18 @@ fun computeWeeklyBars(
     month: Int,
     type: TransactionType = TransactionType.EXPENSE
 ): List<ChartBar> {
-    val abbr = YearMonth.of(year, month).month.getDisplayName(TextStyle.SHORT, Locale.getDefault())
-    return weekWindows(year, month).map { (label, start, end) ->
-        val total = transactions.filter {
-            it.type == type && !it.date.isBefore(start) && !it.date.isAfter(end)
-        }.sumOf { it.amount }
-        ChartBar(label, "$abbr $label $year", total, start, end)
+    val ym      = YearMonth.of(year, month)
+    val abbr    = ym.month.getDisplayName(TextStyle.SHORT, Locale.getDefault())
+    val windows = weekWindows(year, month)
+    val totals  = DoubleArray(windows.size)
+    for (t in transactions) {
+        if (t.type == type && t.date.year == year && t.date.monthValue == month) {
+            val bucket = (t.date.dayOfMonth - 1) / 7
+            if (bucket in totals.indices) totals[bucket] += t.amount
+        }
+    }
+    return windows.mapIndexed { idx, (label, start, end) ->
+        ChartBar(label, "$abbr $label $year", totals[idx], start, end)
     }
 }
 
@@ -77,13 +87,18 @@ fun computeYearlyBars(
     transactions: List<Transaction>,
     today: LocalDate = LocalDate.now(),
     type: TransactionType = TransactionType.EXPENSE
-): List<ChartBar> =
-    yearRange(transactions, today).map { y ->
-        val total = transactions.filter {
-            it.type == type && it.date.year == y
-        }.sumOf { it.amount }
-        ChartBar("$y", "$y", total, LocalDate.of(y, 1, 1), LocalDate.of(y, 12, 31))
+): List<ChartBar> {
+    val range = yearRange(transactions, today)
+    val totalsByYear = HashMap<Int, Double>()
+    for (t in transactions) {
+        if (t.type == type) {
+            totalsByYear[t.date.year] = (totalsByYear[t.date.year] ?: 0.0) + t.amount
+        }
     }
+    return range.map { y ->
+        ChartBar("$y", "$y", totalsByYear[y] ?: 0.0, LocalDate.of(y, 1, 1), LocalDate.of(y, 12, 31))
+    }
+}
 
 // â"€â"€ Category-card period helpers â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
@@ -157,12 +172,22 @@ fun topCats(
 fun monthlyExpensesLast6(
     list: List<Transaction>,
     now: YearMonth = YearMonth.now()
-): List<Pair<String, Double>> =
-    (5 downTo 0).map { offset ->
-        val month = now.minusMonths(offset.toLong())
-        val label = "${month.month.name.take(3)} ${month.year}"
-        label to monthTotal(list, month, TransactionType.EXPENSE)
+): List<Pair<String, Double>> {
+    val months = (5 downTo 0).map { offset -> now.minusMonths(offset.toLong()) }
+    val monthToIndex = HashMap<YearMonth, Int>(8).apply {
+        months.forEachIndexed { i, ym -> put(ym, i) }
     }
+    val totals = DoubleArray(6)
+    for (t in list) {
+        if (t.type == TransactionType.EXPENSE) {
+            val idx = monthToIndex[YearMonth.from(t.date)]
+            if (idx != null) totals[idx] += t.amount
+        }
+    }
+    return months.mapIndexed { i, month ->
+        "${month.month.name.take(3)} ${month.year}" to totals[i]
+    }
+}
 
 fun monthlyExpensesForYear(list: List<Transaction>, year: Int): List<ChartBar> =
     computeMonthlyBars(list, year, TransactionType.EXPENSE)

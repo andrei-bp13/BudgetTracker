@@ -21,7 +21,7 @@ fun BudgetEntity.toBudget() = Budget(
     title           = title,
     categoryName    = categoryName,
     amount          = amount,
-    period          = BudgetPeriod.valueOf(period),
+    period          = runCatching { BudgetPeriod.valueOf(period) }.getOrDefault(BudgetPeriod.MONTHLY),
     createdEpochDay = createdEpochDay,
     sortOrder       = sortOrder
 )

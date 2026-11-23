@@ -8,6 +8,9 @@ interface BudgetDao {
     @Query("SELECT * FROM budgets ORDER BY sortOrder ASC")
     fun observeAll(): Flow<List<BudgetEntity>>
 
+    @Query("SELECT * FROM budgets ORDER BY sortOrder ASC LIMIT 1")
+    suspend fun getFirst(): BudgetEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(entity: BudgetEntity)
 

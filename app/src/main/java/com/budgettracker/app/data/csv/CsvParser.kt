@@ -45,7 +45,7 @@ fun splitCsvLine(line: String): List<String> {
 }
 
 fun escapeCsv(value: String): String =
-    if (value.contains(',') || value.contains('"'))
+    if (value.contains(',') || value.contains('"') || value.contains('\n') || value.contains('\r'))
         "\"${value.replace("\"", "\"\"")}\"" else value
 
 fun parseCsvLine(line: String): Transaction? = runCatching {

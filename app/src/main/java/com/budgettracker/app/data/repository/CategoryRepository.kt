@@ -9,6 +9,8 @@ import com.pardonmyspending.app.data.model.CategoryType
 import com.pardonmyspending.app.data.model.DefaultCategories
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import org.json.JSONArray
+import org.json.JSONObject
 
 private val Context.categoryDataStore by preferencesDataStore(name = "categories")
 
@@ -40,14 +42,44 @@ class CategoryRepository(private val context: Context) {
 
     // â"€â"€ Serialization â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
-    private fun List<CategoryItem>.serialize(): String =
-        joinToString(RECORD_SEP) {
-            "${it.id}${FIELD_SEP}${it.name}${FIELD_SEP}${it.iconId}${FIELD_SEP}${it.colorHex}${FIELD_SEP}${it.isDefault}${FIELD_SEP}${it.type.name}"
+    private fun List<CategoryItem>.serialize(): String {
+        val arr = JSONArray()
+        forEach { item ->
+            arr.put(JSONObject().apply {
+                put("id", item.id)
+                put("name", item.name)
+                put("iconId", item.iconId)
+                put("colorHex", item.colorHex)
+                put("isDefault", item.isDefault)
+                put("type", item.type.name)
+            })
         }
+        return arr.toString()
+    }
 
-    private fun String.deserialize(): List<CategoryItem> =
-        if (isBlank()) emptyList()
-        else split(RECORD_SEP).mapNotNull { record ->
+    private fun String.deserialize(): List<CategoryItem> {
+        if (isBlank()) return emptyList()
+        val trimmed = trimStart()
+        if (trimmed.startsWith("[")) {
+            return runCatching {
+                val arr = JSONArray(trimmed)
+                (0 until arr.length()).mapNotNull { i ->
+                    val o = arr.optJSONObject(i) ?: return@mapNotNull null
+                    val id = o.optString("id", "").ifBlank { return@mapNotNull null }
+                    CategoryItem(
+                        id        = id,
+                        name      = o.optString("name", ""),
+                        iconId    = o.optString("iconId", "more_horiz"),
+                        colorHex  = o.optString("colorHex", "#757575"),
+                        isDefault = o.optBoolean("isDefault", true),
+                        type      = runCatching { CategoryType.valueOf(o.optString("type", "EXPENSE")) }
+                            .getOrDefault(CategoryType.EXPENSE)
+                    )
+                }
+            }.getOrDefault(emptyList())
+        }
+        // Legacy ";;;" / "~~" format fallback for existing installs
+        return split(RECORD_SEP).mapNotNull { record ->
             val f = record.split(FIELD_SEP)
             if (f.size < 5) null
             else CategoryItem(
@@ -56,11 +88,11 @@ class CategoryRepository(private val context: Context) {
                 iconId    = f[2],
                 colorHex  = f[3],
                 isDefault = f[4].toBooleanStrictOrNull() ?: true,
-                // field 6 added in v2; fall back to EXPENSE for older serialized data
                 type      = if (f.size >= 6) runCatching { CategoryType.valueOf(f[5]) }.getOrDefault(CategoryType.EXPENSE)
                             else CategoryType.EXPENSE
             )
         }
+    }
 
     /** Replaces or appends [item] in [currentList] and persists the result. */
     suspend fun upsertCategory(currentList: List<CategoryItem>, item: CategoryItem) {

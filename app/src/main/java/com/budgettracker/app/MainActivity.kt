@@ -22,6 +22,8 @@ private data class AppThemeState(
 )
 
 class MainActivity : ComponentActivity() {
+    private var transactionVm: TransactionViewModel? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -32,11 +34,13 @@ class MainActivity : ComponentActivity() {
             app.preferencesRepository,
             app.categoryRepository,
             app.recurringRepository,
-            app.budgetRepository
+            app.budgetRepository,
+            app.applicationContext
         )
 
         // Create VM before setContent so the splash condition can observe it.
         val vm = ViewModelProvider(this, factory)[TransactionViewModel::class.java]
+        transactionVm = vm
 
         val accountFactory = AccountViewModel.Factory(
             app.googleAuthManager,
@@ -45,7 +49,9 @@ class MainActivity : ComponentActivity() {
             app.recurringRepository,
             app.categoryRepository,
             app.budgetRepository,
-            app.preferencesRepository
+            app.preferencesRepository,
+            app.database,
+            app.applicationContext
         )
         val accountVm = ViewModelProvider(this, accountFactory)[AccountViewModel::class.java]
 
@@ -69,5 +75,10 @@ class MainActivity : ComponentActivity() {
                 BudgetTrackerNavGraph(viewModel = vm, accountViewModel = accountVm)
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        transactionVm?.processRecurringIfNeeded()
     }
 }
