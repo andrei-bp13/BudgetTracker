@@ -218,18 +218,25 @@ private fun ExpandableWidgetCard(
 
 @Composable
 private fun WidgetPreview(name: String) {
-    val bg       = MaterialTheme.colorScheme.surface
-    val onBg     = MaterialTheme.colorScheme.onSurface
-    val sub      = MaterialTheme.colorScheme.onSurfaceVariant
-    val primary  = MaterialTheme.colorScheme.primary
-    val error    = MaterialTheme.colorScheme.error
-    val green    = Color(0xFF2E7D32)
-    val track    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+    val bg             = MaterialTheme.colorScheme.surfaceContainerHigh
+    val innerSurface   = MaterialTheme.colorScheme.surface
+    val onBg           = MaterialTheme.colorScheme.onSurface
+    val sub            = MaterialTheme.colorScheme.onSurfaceVariant
+    val primary        = MaterialTheme.colorScheme.primary
+    val primaryCont    = MaterialTheme.colorScheme.primaryContainer
+    val onPrimaryCont  = MaterialTheme.colorScheme.onPrimaryContainer
+    val error          = MaterialTheme.colorScheme.error
+    val errorCont      = MaterialTheme.colorScheme.errorContainer
+    val onErrorCont    = MaterialTheme.colorScheme.onErrorContainer
+    val green          = Color(0xFF18794E)
+    val greenCont      = Color(0xFFDDF7E8)
+    val onGreenCont    = Color(0xFF0E5A36)
+    val track          = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(24.dp))
             .background(bg)
             .padding(16.dp)
     ) {
@@ -238,121 +245,207 @@ private fun WidgetPreview(name: String) {
                 modifier            = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // Top row: Total Spent | Total Income
                 Row(
                     modifier              = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment     = Alignment.Top
+                    verticalAlignment     = Alignment.CenterVertically
                 ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                        Text("Total spent this month", fontSize = 10.sp, color = sub, lineHeight = 13.sp)
-                        Text("$ 0.00", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = error)
-                    }
-                    Column(
-                        horizontalAlignment = Alignment.End,
-                        verticalArrangement = Arrangement.spacedBy(3.dp)
-                    ) {
-                        Text("Total income this month", fontSize = 10.sp, color = sub, lineHeight = 13.sp)
-                        Text("$ 0.00", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = green)
-                    }
+                    Text(
+                        java.time.LocalDate.now().month.getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.getDefault()),
+                        fontSize = 14.sp, fontWeight = FontWeight.Bold, color = onBg
+                    )
+                    PreviewPill("Net +$1,860", greenCont, onGreenCont)
                 }
-                // Divider
-                Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(track))
-                // Payment type breakdown
                 Row(
                     modifier              = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(errorCont)
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalArrangement = Arrangement.spacedBy(3.dp)
+                    ) {
+                        Text("Spent", fontSize = 10.sp, fontWeight = FontWeight.Medium, color = onErrorCont)
+                        Text("$1,240.50", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = error)
+                    }
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(greenCont)
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalArrangement = Arrangement.spacedBy(3.dp)
+                    ) {
+                        Text("Earned", fontSize = 10.sp, fontWeight = FontWeight.Medium, color = onGreenCont)
+                        Text("$3,100.00", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = green)
+                    }
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(innerSurface)
+                        .padding(horizontal = 8.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.SpaceAround
                 ) {
-                    listOf("Debit", "Credit", "Cash").forEach { label ->
+                    listOf(
+                        Triple("Debit", "$740", "2,400"),
+                        Triple("Credit", "$380", "0"),
+                        Triple("Cash", "$120", "700")
+                    ).forEach { (label, exp, inc) ->
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
-                            Text(label, fontSize = 10.sp, color = sub)
+                            Text(label, fontSize = 10.sp, fontWeight = FontWeight.Medium, color = sub)
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("$0", fontSize = 11.sp, fontWeight = FontWeight.Medium, color = error)
+                                Text(exp, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = error)
                                 Text("/", fontSize = 11.sp, color = sub)
-                                Text("0",  fontSize = 11.sp, fontWeight = FontWeight.Medium, color = green)
+                                Text(inc, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = green)
                             }
                         }
                     }
                 }
             }
-            "Calendar" -> CalendarPreview(primary = primary, sub = sub, onBg = onBg)
+            "Calendar" -> CalendarPreview(primary = primary, primaryCont = primaryCont, onPrimaryCont = onPrimaryCont, surface = innerSurface, sub = sub, onBg = onBg)
             "Total Spent" -> SimpleValuePreview(
-                label    = "Total Spent",
-                value    = "$ 0.00",
-                subtitle = "This month",
+                pillText = "Spent",
+                pillBg   = errorCont,
+                pillFg   = onErrorCont,
+                caption  = "This month",
+                value    = "$1,240.50",
+                trend    = "12% vs last mo",
+                trendBg  = greenCont,
+                trendFg  = onGreenCont,
                 color    = error,
                 sub      = sub
             )
             "Total Earned" -> SimpleValuePreview(
-                label    = "Total Earned",
-                value    = "+ $ 0.00",
-                subtitle = "This month",
+                pillText = "Earned",
+                pillBg   = greenCont,
+                pillFg   = onGreenCont,
+                caption  = "This month",
+                value    = "+$3,100.00",
+                trend    = "8% vs last mo",
+                trendBg  = greenCont,
+                trendFg  = onGreenCont,
                 color    = green,
                 sub      = sub
             )
             "Total Savings" -> SimpleValuePreview(
-                label    = "Total Savings",
-                value    = "$ 0.00",
-                subtitle = "Savings & investments",
+                pillText = "Savings",
+                pillBg   = primaryCont,
+                pillFg   = onPrimaryCont,
+                caption  = "All time",
+                value    = "$8,450.00",
+                trend    = null,
+                trendBg  = primaryCont,
+                trendFg  = onPrimaryCont,
                 color    = primary,
-                sub      = sub
+                sub      = sub,
+                subtitle = "Savings & investments"
             )
             "Highest Expense" -> TwoLineValuePreview(
-                label    = "Highest Expense",
-                title    = "No transactions",
-                value    = "",
+                pillText = "Top Expense",
+                pillBg   = errorCont,
+                pillFg   = onErrorCont,
+                date     = "Nov 14",
+                value    = "-$420.00",
+                subtitle = "Flight tickets · Travel",
                 color    = error,
                 onBg     = onBg,
                 sub      = sub
             )
             "Highest Income" -> TwoLineValuePreview(
-                label    = "Highest Income",
-                title    = "No transactions",
-                value    = "",
+                pillText = "Top Income",
+                pillBg   = greenCont,
+                pillFg   = onGreenCont,
+                date     = "Nov 1",
+                value    = "+$2,800.00",
+                subtitle = "Monthly Salary · Salary",
                 color    = green,
                 onBg     = onBg,
                 sub      = sub
             )
             "Budget Progress" -> BudgetProgressPreview(
-                primary = primary,
-                onBg    = onBg,
-                sub     = sub,
-                track   = track
+                primary       = primary,
+                primaryCont   = primaryCont,
+                onPrimaryCont = onPrimaryCont,
+                greenCont     = greenCont,
+                onGreenCont   = onGreenCont,
+                onBg          = onBg,
+                sub           = sub,
+                track         = track
             )
         }
     }
 }
 
 @Composable
+private fun PreviewPill(text: String, bg: Color, fg: Color) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(bg)
+            .padding(horizontal = 9.dp, vertical = 4.dp)
+    ) {
+        Text(text, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = fg)
+    }
+}
+
+@Composable
 private fun SimpleValuePreview(
-    label: String, value: String, subtitle: String,
-    color: Color, sub: Color
+    pillText: String, pillBg: Color, pillFg: Color,
+    caption: String, value: String,
+    trend: String?, trendBg: Color, trendFg: Color,
+    color: Color, sub: Color, subtitle: String? = null
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-        Text(label,   fontSize = 11.sp, color = sub)
-        Text(value,   fontSize = 22.sp, fontWeight = FontWeight.Bold, color = color)
-        Text(subtitle, fontSize = 11.sp, color = sub)
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            modifier              = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment     = Alignment.CenterVertically
+        ) {
+            PreviewPill(pillText, pillBg, pillFg)
+            Text(caption, fontSize = 10.sp, color = sub)
+        }
+        Text(value, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = color)
+        if (trend != null) {
+            PreviewPill(trend, trendBg, trendFg)
+        } else if (subtitle != null) {
+            Text(subtitle, fontSize = 11.sp, color = sub)
+        }
     }
 }
 
 @Composable
 private fun TwoLineValuePreview(
-    label: String, title: String, value: String,
+    pillText: String, pillBg: Color, pillFg: Color,
+    date: String, value: String, subtitle: String,
     color: Color, onBg: Color, sub: Color
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-        Text(label, fontSize = 11.sp, color = sub)
-        Text(title, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = onBg)
-        if (value.isNotEmpty())
-            Text(value, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = color)
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            modifier              = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment     = Alignment.CenterVertically
+        ) {
+            PreviewPill(pillText, pillBg, pillFg)
+            Text(date, fontSize = 10.sp, color = sub)
+        }
+        Text(value, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = color)
+        Text(subtitle, fontSize = 11.sp, fontWeight = FontWeight.Medium, color = onBg)
     }
 }
 
 @Composable
-private fun CalendarPreview(primary: Color, sub: Color, onBg: Color) {
+private fun CalendarPreview(
+    primary: Color, primaryCont: Color, onPrimaryCont: Color,
+    surface: Color, sub: Color, onBg: Color
+) {
     val today = java.time.LocalDate.now()
     val ym    = java.time.YearMonth.now()
     val firstDayOffset = ym.atDay(1).dayOfWeek.value - 1
@@ -360,18 +453,18 @@ private fun CalendarPreview(primary: Color, sub: Color, onBg: Color) {
     val rows           = ((firstDayOffset + daysInMonth) + 6) / 7
     val mockDots       = setOf(3, 7, 12, 15, 20, 24)
 
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(
-            "${ym.month.getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.getDefault())} ${ym.year}",
-            fontSize = 13.sp, fontWeight = FontWeight.Bold, color = onBg
-        )
-        Spacer(Modifier.height(2.dp))
+    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            PreviewPill(
+                "${ym.month.getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.getDefault())} ${ym.year}",
+                primaryCont, onPrimaryCont
+            )
+        }
         Row(modifier = Modifier.fillMaxWidth()) {
             listOf("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su").forEach { d ->
-                Text(d, modifier = Modifier.weight(1f), textAlign = androidx.compose.ui.text.style.TextAlign.Center, fontSize = 9.sp, color = sub)
+                Text(d, modifier = Modifier.weight(1f), textAlign = androidx.compose.ui.text.style.TextAlign.Center, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = sub)
             }
         }
-        Spacer(Modifier.height(2.dp))
         repeat(rows) { row ->
             Row(modifier = Modifier.fillMaxWidth()) {
                 repeat(7) { col ->
@@ -385,21 +478,28 @@ private fun CalendarPreview(primary: Color, sub: Color, onBg: Color) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Box(
                                     modifier = Modifier
-                                        .size(22.dp)
+                                        .size(24.dp)
                                         .clip(androidx.compose.foundation.shape.CircleShape)
-                                        .background(if (isToday) primary else Color.Transparent),
+                                        .background(
+                                            when {
+                                                isToday -> primary
+                                                hasDot  -> surface
+                                                else    -> Color.Transparent
+                                            }
+                                        ),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
                                         dayNum.toString(),
-                                        fontSize = 9.sp,
-                                        fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
-                                        color = if (isToday) Color.White else onBg
+                                        fontSize   = 10.sp,
+                                        fontWeight = if (isToday || hasDot) FontWeight.Bold else FontWeight.Normal,
+                                        color      = if (isToday) Color.White else onBg
                                     )
                                 }
+                                Spacer(Modifier.height(1.dp))
                                 Box(
                                     modifier = Modifier
-                                        .size(3.dp)
+                                        .size(3.5.dp)
                                         .clip(androidx.compose.foundation.shape.CircleShape)
                                         .background(if (hasDot) primary else Color.Transparent)
                                 )
@@ -408,35 +508,41 @@ private fun CalendarPreview(primary: Color, sub: Color, onBg: Color) {
                     }
                 }
             }
-            Spacer(Modifier.height(2.dp))
         }
     }
 }
 
 @Composable
 private fun BudgetProgressPreview(
-    primary: Color, onBg: Color, sub: Color, track: Color
+    primary: Color, primaryCont: Color, onPrimaryCont: Color,
+    greenCont: Color, onGreenCont: Color,
+    onBg: Color, sub: Color, track: Color
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-        Text("Budget Progress", fontSize = 11.sp, color = sub)
-        Text("No active budget", fontSize = 13.sp, fontWeight = FontWeight.Medium, color = onBg)
-        // progress bar
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(8.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .background(track)
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(
+            modifier              = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment     = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(0.35f)
-                    .fillMaxHeight()
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(primary)
-            )
+            PreviewPill("Groceries", primaryCont, onPrimaryCont)
+            PreviewPill("$180 left", greenCont, onGreenCont)
         }
-        Text("$ 0 / $ 0  (0%)", fontSize = 11.sp, color = onBg)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.size(54.dp)) {
+                CircularProgressIndicator(
+                    progress   = { 0.64f },
+                    modifier   = Modifier.fillMaxSize(),
+                    color      = primary,
+                    trackColor = track,
+                    strokeWidth = 6.dp
+                )
+                Text("64%", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = onBg)
+            }
+            Column {
+                Text("$320", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = onBg)
+                Text("of $500", fontSize = 11.sp, color = sub)
+            }
+        }
     }
 }
 

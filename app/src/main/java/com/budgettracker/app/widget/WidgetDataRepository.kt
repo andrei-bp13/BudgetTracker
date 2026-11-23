@@ -1,6 +1,7 @@
 package com.pardonmyspending.app.widget
 
 import android.content.Context
+import androidx.compose.ui.graphics.Color
 import com.pardonmyspending.app.data.db.AppDatabase
 import com.pardonmyspending.app.data.db.toBudget
 import com.pardonmyspending.app.data.db.toTransaction
@@ -9,6 +10,7 @@ import com.pardonmyspending.app.data.model.PaymentType
 import com.pardonmyspending.app.data.model.Transaction
 import com.pardonmyspending.app.data.model.TransactionType
 import com.pardonmyspending.app.data.repository.PreferencesRepository
+import com.pardonmyspending.app.ui.theme.AccentColors
 import com.pardonmyspending.app.viewmodel.TransactionViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -26,10 +28,13 @@ data class PaymentTypeRow(val label: String, val expense: Double, val income: Do
 data class TrendValue(val current: Double, val changePercent: Double?)
 
 data class MonthSummaryData(
+    val monthLabel: String,
     val spentTrend: TrendValue,
     val earnedTrend: TrendValue,
     val paymentRows: List<PaymentTypeRow>
-)
+) {
+    val net: Double get() = earnedTrend.current - spentTrend.current
+}
 
 data class CalendarWidgetData(
     val monthName: String,
@@ -49,6 +54,16 @@ class WidgetDataRepository(context: Context) {
     suspend fun currencySymbol(): String {
         val code = prefs.currencyCode.first()
         return TransactionViewModel.currencyCodeToSymbol[code] ?: "$"
+    }
+
+    suspend fun accentSeedColor(): Color {
+        val idx = prefs.accentColorIndex.first()
+        if (idx == 9) {
+            val hex = prefs.customAccentHex.first().trimStart('#')
+            return runCatching { Color(android.graphics.Color.parseColor("#$hex")) }
+                .getOrDefault(AccentColors[0].seed)
+        }
+        return AccentColors.getOrElse(idx) { AccentColors[0] }.seed
     }
 
     private suspend fun monthTotal(month: YearMonth, type: TransactionType): Double =
@@ -144,6 +159,7 @@ class WidgetDataRepository(context: Context) {
             )
         }
         MonthSummaryData(
+            monthLabel  = now.month.getDisplayName(JavaTextStyle.FULL, Locale.getDefault()),
             spentTrend  = trendOf(TransactionType.EXPENSE),
             earnedTrend = trendOf(TransactionType.INCOME),
             paymentRows = rows

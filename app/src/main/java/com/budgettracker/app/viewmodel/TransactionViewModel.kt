@@ -391,13 +391,13 @@ class TransactionViewModel(
     // â"€â"€ Preference setters (delegated) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
     fun setThemeMode(mode: String)         = prefsState.setThemeMode(mode)
-    fun setAccentIndex(i: Int)             = prefsState.setAccentIndex(i)
+    fun setAccentIndex(i: Int)             { prefsState.setAccentIndex(i); refreshWidgets() }
     fun setGlobalColoring(v: Boolean)      = prefsState.setGlobalColoring(v)
     fun setGranularColoring(v: Boolean)    = prefsState.setGranularColoring(v)
     fun setCurrencyCode(code: String)      { prefsState.setCurrencyCode(code); refreshWidgets() }
     fun setChartGranularity(value: String) = prefsState.setChartGranularity(value)
     fun setAiMode(enabled: Boolean)        = prefsState.setAiMode(enabled)
-    fun setCustomAccentHex(hex: String)    = prefsState.setCustomAccentHex(hex)
+    fun setCustomAccentHex(hex: String)    { prefsState.setCustomAccentHex(hex); refreshWidgets() }
     fun setAiApiKey(key: String)           = prefsState.setAiApiKey(key)
 
     // â"€â"€ Mistral AI â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
