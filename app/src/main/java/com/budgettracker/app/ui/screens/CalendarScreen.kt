@@ -44,6 +44,8 @@ import java.util.Locale
 @Composable
 fun CalendarScreen(
     viewModel: TransactionViewModel,
+    initialDate: LocalDate? = null,
+    onInitialDateConsumed: () -> Unit = {},
     onEditTransaction: (Transaction) -> Unit = {},
     onDeleteTransaction: (Transaction) -> Unit = {},
     onMenuClick: () -> Unit = {},
@@ -63,9 +65,17 @@ fun CalendarScreen(
         { name -> if (globalColoring) accent else categoriesByName[name]?.color ?: accent }
     }
 
-    var selectedDate        by remember { mutableStateOf(today) }
-    var displayedMonth      by remember { mutableStateOf(YearMonth.now()) }
+    var selectedDate        by remember { mutableStateOf(initialDate ?: today) }
+    var displayedMonth      by remember { mutableStateOf(YearMonth.from(initialDate ?: today)) }
     var showYearMonthPicker by remember { mutableStateOf(false) }
+
+    LaunchedEffect(initialDate) {
+        if (initialDate != null) {
+            selectedDate   = initialDate
+            displayedMonth = YearMonth.from(initialDate)
+            onInitialDateConsumed()
+        }
+    }
 
     val transactionsByDate = remember(allTransactions) {
         allTransactions.groupBy { it.date }

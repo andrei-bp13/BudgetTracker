@@ -65,6 +65,9 @@ interface TransactionDao {
     @Query("SELECT DISTINCT dateEpochDay FROM transactions WHERE dateEpochDay BETWEEN :startEpochDay AND :endEpochDay")
     suspend fun getDistinctDateEpochDaysInRange(startEpochDay: Long, endEpochDay: Long): List<Long>
 
+    @Query("SELECT * FROM transactions WHERE dateEpochDay = :epochDay ORDER BY amount DESC")
+    suspend fun getByDateEpochDay(epochDay: Long): List<TransactionEntity>
+
     @Query("SELECT type, paymentType, COALESCE(SUM(amount), 0.0) AS total FROM transactions WHERE dateEpochDay BETWEEN :startEpochDay AND :endEpochDay GROUP BY type, paymentType")
     suspend fun getPaymentTypeTotalsInRange(startEpochDay: Long, endEpochDay: Long): List<PaymentTypeTotalRow>
 }

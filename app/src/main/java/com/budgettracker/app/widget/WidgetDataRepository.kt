@@ -9,6 +9,7 @@ import com.pardonmyspending.app.data.model.BudgetPeriod
 import com.pardonmyspending.app.data.model.PaymentType
 import com.pardonmyspending.app.data.model.Transaction
 import com.pardonmyspending.app.data.model.TransactionType
+import com.pardonmyspending.app.data.repository.CategoryRepository
 import com.pardonmyspending.app.data.repository.PreferencesRepository
 import com.pardonmyspending.app.ui.theme.AccentColors
 import com.pardonmyspending.app.viewmodel.TransactionViewModel
@@ -36,6 +37,17 @@ data class MonthSummaryData(
     val net: Double get() = earnedTrend.current - spentTrend.current
 }
 
+data class CalendarWidgetTransaction(
+    val id: String,
+    val title: String,
+    val amount: Double,
+    val type: TransactionType,
+    val category: String,
+    val paymentType: PaymentType,
+    val categoryIconId: String,
+    val categoryColor: Color
+)
+
 data class CalendarWidgetData(
     val monthName: String,
     val year: Int,
@@ -43,18 +55,23 @@ data class CalendarWidgetData(
     val firstDayOffset: Int,   // 0 = Monday, 6 = Sunday
     val daysInMonth: Int,
     val todayDay: Int,
-    val daysWithTransactions: Set<Int>
+    val todayDate: LocalDate,
+    val daysWithTransactions: Set<Int>,
+    val todayTransactions: List<CalendarWidgetTransaction>
 )
 
 class WidgetDataRepository(context: Context) {
 
-    private val db    = AppDatabase.getInstance(context)
-    private val prefs = PreferencesRepository(context)
+    private val db      = AppDatabase.getInstance(context)
+    private val prefs   = PreferencesRepository(context)
+    private val catRepo = CategoryRepository(context)
 
     suspend fun currencySymbol(): String {
         val code = prefs.currencyCode.first()
         return TransactionViewModel.currencyCodeToSymbol[code] ?: "$"
     }
+
+    suspend fun themeMode(): String = prefs.themeMode.first()
 
     suspend fun accentSeedColor(): Color {
         val idx = prefs.accentColorIndex.first()
@@ -174,6 +191,25 @@ class WidgetDataRepository(context: Context) {
             firstDay.toEpochDay(), now.atEndOfMonth().toEpochDay()
         )
         val daysWithTxns = epochDays.mapTo(HashSet(epochDays.size)) { LocalDate.ofEpochDay(it).dayOfMonth }
+
+        val globalColoring = prefs.globalColoring.first()
+        val accent         = accentSeedColor()
+        val catsByName     = catRepo.categories.first().associateBy { it.name }
+        val todayTxns      = db.transactionDao().getByDateEpochDay(today.toEpochDay()).map { entity ->
+            val t   = entity.toTransaction()
+            val cat = catsByName[t.category]
+            CalendarWidgetTransaction(
+                id             = t.id,
+                title          = t.title,
+                amount         = t.amount,
+                type           = t.type,
+                category       = t.category,
+                paymentType    = t.paymentType,
+                categoryIconId = cat?.iconId ?: "more_horiz",
+                categoryColor  = if (globalColoring) accent else (cat?.color ?: accent)
+            )
+        }
+
         CalendarWidgetData(
             monthName            = now.month.getDisplayName(JavaTextStyle.FULL, Locale.getDefault()),
             year                 = now.year,
@@ -181,7 +217,9 @@ class WidgetDataRepository(context: Context) {
             firstDayOffset       = firstDay.dayOfWeek.value - 1,  // Mon=0 … Sun=6
             daysInMonth          = now.lengthOfMonth(),
             todayDay             = if (YearMonth.from(today) == now) today.dayOfMonth else -1,
-            daysWithTransactions = daysWithTxns
+            todayDate            = today,
+            daysWithTransactions = daysWithTxns,
+            todayTransactions    = todayTxns
         )
     }
 }

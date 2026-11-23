@@ -1,11 +1,13 @@
 ﻿package com.pardonmyspending.app
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.ViewModelProvider
@@ -13,7 +15,9 @@ import com.pardonmyspending.app.ui.navigation.BudgetTrackerNavGraph
 import com.pardonmyspending.app.ui.theme.BudgetTrackerTheme
 import com.pardonmyspending.app.viewmodel.AccountViewModel
 import com.pardonmyspending.app.viewmodel.TransactionViewModel
+import com.pardonmyspending.app.widget.EXTRA_CALENDAR_DATE_NAME
 import kotlinx.coroutines.flow.combine
+import java.time.LocalDate
 
 private data class AppThemeState(
     val themeMode: String,
@@ -23,10 +27,19 @@ private data class AppThemeState(
 
 class MainActivity : ComponentActivity() {
     private var transactionVm: TransactionViewModel? = null
+    private val pendingCalendarDate = mutableStateOf<LocalDate?>(null)
+
+    private fun extractCalendarDate(intent: Intent?) {
+        val raw = intent?.getStringExtra(EXTRA_CALENDAR_DATE_NAME) ?: return
+        runCatching { LocalDate.parse(raw) }.onSuccess { date ->
+            pendingCalendarDate.value = date
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        extractCalendarDate(intent)
 
         val app = application as BudgetTrackerApp
         val factory = TransactionViewModel.Factory(
@@ -72,9 +85,20 @@ class MainActivity : ComponentActivity() {
                 accentIndex     = themeState.accentIndex,
                 customAccentHex = themeState.customAccentHex
             ) {
-                BudgetTrackerNavGraph(viewModel = vm, accountViewModel = accountVm)
+                BudgetTrackerNavGraph(
+                    viewModel             = vm,
+                    accountViewModel      = accountVm,
+                    pendingCalendarDate   = pendingCalendarDate.value,
+                    onCalendarDateConsumed = { pendingCalendarDate.value = null }
+                )
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        extractCalendarDate(intent)
     }
 
     override fun onResume() {

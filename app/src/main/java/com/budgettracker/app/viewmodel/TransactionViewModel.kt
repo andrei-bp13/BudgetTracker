@@ -390,7 +390,7 @@ class TransactionViewModel(
 
     // â"€â"€ Preference setters (delegated) â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
-    fun setThemeMode(mode: String)         = prefsState.setThemeMode(mode)
+    fun setThemeMode(mode: String)         { prefsState.setThemeMode(mode); refreshWidgets() }
     fun setAccentIndex(i: Int)             { prefsState.setAccentIndex(i); refreshWidgets() }
     fun setGlobalColoring(v: Boolean)      = prefsState.setGlobalColoring(v)
     fun setGranularColoring(v: Boolean)    = prefsState.setGranularColoring(v)

@@ -509,6 +509,28 @@ private fun CalendarPreview(
                 }
             }
         }
+        HorizontalDivider(color = sub.copy(alpha = 0.2f), modifier = Modifier.padding(vertical = 4.dp))
+        Text(
+            today.format(java.time.format.DateTimeFormatter.ofPattern("EEEE, MMM d")),
+            fontSize = 11.sp, fontWeight = FontWeight.Bold, color = sub
+        )
+        Row(
+            modifier              = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            verticalAlignment     = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Box(
+                modifier         = Modifier.size(30.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Color(0xFFE53935).copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Rounded.Restaurant, contentDescription = null, tint = Color(0xFFE53935), modifier = Modifier.size(16.dp))
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Lunch", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = onBg)
+                Text("Food & Dining · Debit", fontSize = 10.sp, color = sub)
+            }
+            Text("-$14.50", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+        }
     }
 }
 

@@ -7,7 +7,12 @@ import android.graphics.Paint
 import android.graphics.RectF
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathFillType
+import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.vector.VectorGroup
+import androidx.compose.ui.graphics.vector.VectorPath
+import androidx.compose.ui.graphics.vector.toPath
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.ColorFilter
@@ -16,12 +21,16 @@ import androidx.glance.GlanceModifier
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalSize
+import androidx.glance.action.ActionParameters
+import androidx.glance.action.actionParametersOf
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.cornerRadius
+import androidx.glance.appwidget.lazy.LazyColumn
+import androidx.glance.appwidget.lazy.items
 import androidx.glance.appwidget.provideContent
 import androidx.glance.appwidget.updateAll
 import androidx.glance.background
@@ -44,9 +53,16 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider as GlanceColorProvider
 import com.pardonmyspending.app.MainActivity
 import com.pardonmyspending.app.R
+import com.pardonmyspending.app.data.model.PaymentType
+import com.pardonmyspending.app.data.model.TransactionType
+import com.pardonmyspending.app.ui.icons.iconById
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.abs
+
+const val EXTRA_CALENDAR_DATE_NAME = "open_calendar_date"
+private val EXTRA_CALENDAR_DATE_KEY = ActionParameters.Key<String>(EXTRA_CALENDAR_DATE_NAME)
 
 // ── Dynamic accent colour palette (adapts to user's chosen app accent + day/night) ──
 
@@ -68,7 +84,7 @@ private class WidgetColors(
     val track:               GlanceColorProvider,
 )
 
-private fun blendColor(fg: Color, bg: Color, ratio: Float): Color {
+internal fun blendColor(fg: Color, bg: Color, ratio: Float): Color {
     val r = ratio.coerceIn(0f, 1f)
     return Color(
         red   = fg.red   * r + bg.red   * (1f - r),
@@ -79,7 +95,13 @@ private fun blendColor(fg: Color, bg: Color, ratio: Float): Color {
 }
 
 @Composable
-private fun widgetColors(seed: Color): WidgetColors {
+private fun widgetColors(seed: Color, themeMode: String = "system"): WidgetColors {
+    fun cp(day: Color, night: Color): GlanceColorProvider = when (themeMode) {
+        "light" -> ColorProvider(day = day, night = day)
+        "dark"  -> ColorProvider(day = night, night = night)
+        else    -> ColorProvider(day = day, night = night)
+    }
+
     val lightBg      = blendColor(seed, Color(0xFFFFFFFF), 0.05f)
     val darkBg       = blendColor(seed, Color(0xFF141318), 0.08f)
     val lightSurface = blendColor(seed, Color(0xFFFFFFFF), 0.11f)
@@ -91,33 +113,88 @@ private fun widgetColors(seed: Color): WidgetColors {
     val darkOnCont   = blendColor(Color.White, seed, 0.62f)
 
     return WidgetColors(
-        bg                 = ColorProvider(day = lightBg,            night = darkBg),
-        surface            = ColorProvider(day = lightSurface,       night = darkSurface),
-        onBg               = ColorProvider(day = Color(0xFF18171D),  night = Color(0xFFF1EFF5)),
-        subtext            = ColorProvider(day = Color(0xFF5D5A66),  night = Color(0xFFABA7B6)),
-        primary            = ColorProvider(day = seed,               night = darkPrimary),
-        onPrimary          = ColorProvider(day = Color(0xFFFFFFFF),  night = Color(0xFF141318)),
-        primaryContainer   = ColorProvider(day = lightCont,          night = darkCont),
-        onPrimaryContainer = ColorProvider(day = lightOnCont,        night = darkOnCont),
-        green              = ColorProvider(day = Color(0xFF18794E),  night = Color(0xFF5EE3A1)),
-        greenContainer     = ColorProvider(day = Color(0xFFDDF7E8),  night = Color(0xFF103323)),
-        onGreenContainer   = ColorProvider(day = Color(0xFF0E5A36),  night = Color(0xFF7BEAB2)),
-        error              = ColorProvider(day = Color(0xFFC62828),  night = Color(0xFFFF8A80)),
-        errorContainer     = ColorProvider(day = Color(0xFFFDE7E9),  night = Color(0xFF3C1619)),
-        onErrorContainer   = ColorProvider(day = Color(0xFF8E1B1B),  night = Color(0xFFFFB4AB)),
-        track              = ColorProvider(day = blendColor(seed, Color(0xFFE4E1EC), 0.12f), night = Color(0xFF34313D)),
+        bg                 = cp(day = lightBg,            night = darkBg),
+        surface            = cp(day = lightSurface,       night = darkSurface),
+        onBg               = cp(day = Color(0xFF18171D),  night = Color(0xFFF1EFF5)),
+        subtext            = cp(day = Color(0xFF5D5A66),  night = Color(0xFFABA7B6)),
+        primary            = cp(day = seed,               night = darkPrimary),
+        onPrimary          = cp(day = Color(0xFFFFFFFF),  night = Color(0xFF141318)),
+        primaryContainer   = cp(day = lightCont,          night = darkCont),
+        onPrimaryContainer = cp(day = lightOnCont,        night = darkOnCont),
+        green              = cp(day = Color(0xFF18794E),  night = Color(0xFF5EE3A1)),
+        greenContainer     = cp(day = Color(0xFFDDF7E8),  night = Color(0xFF103323)),
+        onGreenContainer   = cp(day = Color(0xFF0E5A36),  night = Color(0xFF7BEAB2)),
+        error              = cp(day = Color(0xFFC62828),  night = Color(0xFFFF8A80)),
+        errorContainer     = cp(day = Color(0xFFFDE7E9),  night = Color(0xFF3C1619)),
+        onErrorContainer   = cp(day = Color(0xFF8E1B1B),  night = Color(0xFFFFB4AB)),
+        track              = cp(day = blendColor(seed, Color(0xFFE4E1EC), 0.12f), night = Color(0xFF34313D)),
     )
 }
 
-private val shortDate = DateTimeFormatter.ofPattern("MMM d", Locale.getDefault())
+private val shortDate       = DateTimeFormatter.ofPattern("MMM d", Locale.getDefault())
+private val calendarDayHdr  = DateTimeFormatter.ofPattern("EEEE, MMM d", Locale.getDefault())
 
-private fun formatMoney(symbol: String, amount: Double): String =
+/** Renders a circular tinted category icon badge matching CalendarTransactionRow in the app. */
+private fun renderCategoryBadgeBitmap(
+    iconId: String,
+    categoryColor: Color,
+    sizePx: Int = 96
+): Bitmap {
+    val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+
+    // 15% alpha tinted circle background
+    val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+        color = categoryColor.copy(alpha = 0.15f).toArgb()
+    }
+    canvas.drawCircle(sizePx / 2f, sizePx / 2f, sizePx / 2f, bgPaint)
+
+    // Render the exact Material Outlined ImageVector paths centered inside the circle
+    val vector = iconById(iconId)
+    val iconSize = sizePx * 0.54f
+    val offset   = (sizePx - iconSize) / 2f
+    val scaleX   = iconSize / vector.viewportWidth
+    val scaleY   = iconSize / vector.viewportHeight
+
+    val fgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+        color = categoryColor.toArgb()
+    }
+
+    fun drawGroup(group: VectorGroup) {
+        for (node in group) {
+            when (node) {
+                is VectorGroup -> drawGroup(node)
+                is VectorPath -> {
+                    val androidPath = node.pathData.toPath().asAndroidPath()
+                    androidPath.fillType = if (node.pathFillType == PathFillType.EvenOdd) {
+                        android.graphics.Path.FillType.EVEN_ODD
+                    } else {
+                        android.graphics.Path.FillType.WINDING
+                    }
+                    canvas.drawPath(androidPath, fgPaint)
+                }
+            }
+        }
+    }
+
+    canvas.save()
+    canvas.translate(offset, offset)
+    canvas.scale(scaleX, scaleY)
+    drawGroup(vector.root)
+    canvas.restore()
+
+    return bitmap
+}
+
+internal fun formatMoney(symbol: String, amount: Double): String =
     "$symbol${"%,.2f".format(Locale.getDefault(), amount)}"
 
-private fun formatWhole(symbol: String, amount: Double): String =
+internal fun formatWhole(symbol: String, amount: Double): String =
     "$symbol${"%,.0f".format(Locale.getDefault(), amount)}"
 
-private fun formatCompact(symbol: String, amount: Double): String =
+internal fun formatCompact(symbol: String, amount: Double): String =
     if (abs(amount) >= 10_000.0) "$symbol${"%.1f".format(Locale.getDefault(), amount / 1000.0)}k"
     else formatWhole(symbol, amount)
 
@@ -126,15 +203,17 @@ private fun formatCompact(symbol: String, amount: Double): String =
 @Composable
 private fun WidgetShell(
     clr: WidgetColors,
+    tapToOpen: Boolean = true,
     content: @Composable ColumnScope.() -> Unit
 ) {
+    val rootMod = GlanceModifier
+        .fillMaxSize()
+        .background(clr.bg)
+        .cornerRadius(28.dp)
+        .let { if (tapToOpen) it.clickable(actionStartActivity<MainActivity>()) else it }
+        .padding(16.dp)
     Box(
-        modifier = GlanceModifier
-            .fillMaxSize()
-            .background(clr.bg)
-            .cornerRadius(28.dp)
-            .clickable(actionStartActivity<MainActivity>())
-            .padding(16.dp),
+        modifier = rootMod,
         contentAlignment = Alignment.TopStart
     ) {
         Column(modifier = GlanceModifier.fillMaxSize(), content = content)
@@ -248,12 +327,13 @@ private fun renderProgressRing(
 class TotalSpentWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Exact
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val repo   = WidgetDataRepository(context)
-        val seed   = repo.accentSeedColor()
-        val symbol = repo.currencySymbol()
-        val trend  = repo.totalSpentTrend()
+        val repo      = WidgetDataRepository(context)
+        val seed      = repo.accentSeedColor()
+        val themeMode = repo.themeMode()
+        val symbol    = repo.currencySymbol()
+        val trend     = repo.totalSpentTrend()
         provideContent {
-            val clr = widgetColors(seed)
+            val clr = widgetColors(seed, themeMode)
             WidgetShell(clr) {
                 Row(
                     modifier          = GlanceModifier.fillMaxWidth(),
@@ -292,12 +372,13 @@ class TotalSpentReceiver : GlanceAppWidgetReceiver() {
 class TotalEarnedWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Exact
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val repo   = WidgetDataRepository(context)
-        val seed   = repo.accentSeedColor()
-        val symbol = repo.currencySymbol()
-        val trend  = repo.totalEarnedTrend()
+        val repo      = WidgetDataRepository(context)
+        val seed      = repo.accentSeedColor()
+        val themeMode = repo.themeMode()
+        val symbol    = repo.currencySymbol()
+        val trend     = repo.totalEarnedTrend()
         provideContent {
-            val clr = widgetColors(seed)
+            val clr = widgetColors(seed, themeMode)
             WidgetShell(clr) {
                 Row(
                     modifier          = GlanceModifier.fillMaxWidth(),
@@ -336,12 +417,13 @@ class TotalEarnedReceiver : GlanceAppWidgetReceiver() {
 class TotalSavingsWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Exact
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val repo   = WidgetDataRepository(context)
-        val seed   = repo.accentSeedColor()
-        val symbol = repo.currencySymbol()
-        val total  = repo.totalSavings()
+        val repo      = WidgetDataRepository(context)
+        val seed      = repo.accentSeedColor()
+        val themeMode = repo.themeMode()
+        val symbol    = repo.currencySymbol()
+        val total     = repo.totalSavings()
         provideContent {
-            val clr = widgetColors(seed)
+            val clr = widgetColors(seed, themeMode)
             WidgetShell(clr) {
                 Row(
                     modifier          = GlanceModifier.fillMaxWidth(),
@@ -382,12 +464,13 @@ class TotalSavingsReceiver : GlanceAppWidgetReceiver() {
 class HighestExpenseWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Exact
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val repo   = WidgetDataRepository(context)
-        val seed   = repo.accentSeedColor()
-        val symbol = repo.currencySymbol()
-        val txn    = repo.highestExpense()
+        val repo      = WidgetDataRepository(context)
+        val seed      = repo.accentSeedColor()
+        val themeMode = repo.themeMode()
+        val symbol    = repo.currencySymbol()
+        val txn       = repo.highestExpense()
         provideContent {
-            val clr = widgetColors(seed)
+            val clr = widgetColors(seed, themeMode)
             WidgetShell(clr) {
                 Row(
                     modifier          = GlanceModifier.fillMaxWidth(),
@@ -434,12 +517,13 @@ class HighestExpenseReceiver : GlanceAppWidgetReceiver() {
 class HighestIncomeWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Exact
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val repo   = WidgetDataRepository(context)
-        val seed   = repo.accentSeedColor()
-        val symbol = repo.currencySymbol()
-        val txn    = repo.highestIncome()
+        val repo      = WidgetDataRepository(context)
+        val seed      = repo.accentSeedColor()
+        val themeMode = repo.themeMode()
+        val symbol    = repo.currencySymbol()
+        val txn       = repo.highestIncome()
         provideContent {
-            val clr = widgetColors(seed)
+            val clr = widgetColors(seed, themeMode)
             WidgetShell(clr) {
                 Row(
                     modifier          = GlanceModifier.fillMaxWidth(),
@@ -486,12 +570,13 @@ class HighestIncomeReceiver : GlanceAppWidgetReceiver() {
 class BudgetProgressWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Exact
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val repo     = WidgetDataRepository(context)
-        val seed     = repo.accentSeedColor()
-        val symbol   = repo.currencySymbol()
-        val progress = repo.budgetProgress()
+        val repo      = WidgetDataRepository(context)
+        val seed      = repo.accentSeedColor()
+        val themeMode = repo.themeMode()
+        val symbol    = repo.currencySymbol()
+        val progress  = repo.budgetProgress()
         provideContent {
-            val clr = widgetColors(seed)
+            val clr = widgetColors(seed, themeMode)
             WidgetShell(clr) {
                 if (progress == null) {
                     LabelPill(text = "Budget", bg = clr.primaryContainer, fg = clr.onPrimaryContainer)
@@ -578,12 +663,13 @@ class BudgetProgressReceiver : GlanceAppWidgetReceiver() {
 class MonthSummaryWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Exact
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val repo    = WidgetDataRepository(context)
-        val seed    = repo.accentSeedColor()
-        val symbol  = repo.currencySymbol()
-        val summary = repo.monthSummary()
+        val repo      = WidgetDataRepository(context)
+        val seed      = repo.accentSeedColor()
+        val themeMode = repo.themeMode()
+        val symbol    = repo.currencySymbol()
+        val summary   = repo.monthSummary()
         provideContent {
-            val clr = widgetColors(seed)
+            val clr = widgetColors(seed, themeMode)
             val netPositive = summary.net >= 0.0
             val netPrefix   = if (netPositive) "+" else "-"
 
@@ -701,18 +787,32 @@ class MonthSummaryReceiver : GlanceAppWidgetReceiver() {
 class CalendarWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Exact
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val repo = WidgetDataRepository(context)
-        val seed = repo.accentSeedColor()
-        val data = repo.calendarData()
+        val repo      = WidgetDataRepository(context)
+        val seed      = repo.accentSeedColor()
+        val themeMode = repo.themeMode()
+        val symbol    = repo.currencySymbol()
+        val data      = repo.calendarData()
+
+        // Pre-render exact app category icon badges off-composition
+        val badgeBitmaps: Map<String, Bitmap> = data.todayTransactions.associate { txn ->
+            txn.id to renderCategoryBadgeBitmap(txn.categoryIconId, txn.categoryColor)
+        }
+
         provideContent {
-            val clr        = widgetColors(seed)
+            val clr        = widgetColors(seed, themeMode)
             val availWidth = LocalSize.current.width - 32.dp   // 16dp × 2 padding
             val cellWidth  = availWidth / 7
+            val openTodayAction = actionStartActivity<MainActivity>(
+                actionParametersOf(EXTRA_CALENDAR_DATE_KEY to data.todayDate.toString())
+            )
 
-            WidgetShell(clr) {
-                // ── Month / year pill header ─────────────────────────────
+            WidgetShell(clr, tapToOpen = false) {
+                // ── 1. Month / year pill header ──────────────────────────
                 Row(
-                    modifier            = GlanceModifier.fillMaxWidth(),
+                    modifier            = GlanceModifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp)
+                        .clickable(openTodayAction),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     LabelPill(
@@ -722,10 +822,8 @@ class CalendarWidget : GlanceAppWidget() {
                     )
                 }
 
-                Spacer(GlanceModifier.height(10.dp))
-
-                // ── Day-of-week headers ──────────────────────────────────
-                Row(modifier = GlanceModifier.fillMaxWidth()) {
+                // ── 2. Day-of-week headers ───────────────────────────────
+                Row(modifier = GlanceModifier.fillMaxWidth().padding(bottom = 4.dp)) {
                     listOf("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su").forEach { label ->
                         Box(modifier = GlanceModifier.width(cellWidth), contentAlignment = Alignment.Center) {
                             Text(label, style = TextStyle(color = clr.subtext, fontSize = 10.sp, fontWeight = FontWeight.Bold))
@@ -733,58 +831,165 @@ class CalendarWidget : GlanceAppWidget() {
                     }
                 }
 
-                Spacer(GlanceModifier.height(6.dp))
-
-                // ── Day grid ─────────────────────────────────────────────
+                // ── 3. Day grid (max 6 week rows; each day opens Calendar at that date) ──
                 val rows = ((data.firstDayOffset + data.daysInMonth) + 6) / 7
-                repeat(rows) { row ->
-                    Row(modifier = GlanceModifier.fillMaxWidth()) {
-                        repeat(7) { col ->
-                            val cellIndex = row * 7 + col
-                            val dayNum    = cellIndex - data.firstDayOffset + 1
-                            val isValid   = dayNum in 1..data.daysInMonth
-                            val isToday   = isValid && dayNum == data.todayDay
-                            val hasDot    = isValid && dayNum in data.daysWithTransactions
+                Column(modifier = GlanceModifier.fillMaxWidth()) {
+                    repeat(rows) { row ->
+                        Row(modifier = GlanceModifier.fillMaxWidth().padding(bottom = 1.dp)) {
+                            repeat(7) { col ->
+                                val cellIndex = row * 7 + col
+                                val dayNum    = cellIndex - data.firstDayOffset + 1
+                                val isValid   = dayNum in 1..data.daysInMonth
+                                val isToday   = isValid && dayNum == data.todayDay
+                                val hasDot    = isValid && dayNum in data.daysWithTransactions
 
-                            Box(
-                                modifier         = GlanceModifier.width(cellWidth).padding(vertical = 2.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (isValid) {
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        val circleMod = GlanceModifier
-                                            .size(28.dp)
-                                            .cornerRadius(14.dp)
-                                            .let {
-                                                when {
-                                                    isToday -> it.background(clr.primary)
-                                                    hasDot  -> it.background(clr.surface)
-                                                    else    -> it
-                                                }
-                                            }
-                                        Box(modifier = circleMod, contentAlignment = Alignment.Center) {
-                                            Text(
-                                                text  = dayNum.toString(),
-                                                style = TextStyle(
-                                                    color      = if (isToday) clr.onPrimary else clr.onBg,
-                                                    fontSize   = 11.sp,
-                                                    fontWeight = if (isToday || hasDot) FontWeight.Bold else FontWeight.Normal
+                                val cellMod = GlanceModifier
+                                    .width(cellWidth)
+                                    .padding(vertical = 1.dp)
+                                    .let {
+                                        if (isValid) {
+                                            val dateStr = LocalDate.of(data.year, data.month, dayNum).toString()
+                                            it.clickable(
+                                                actionStartActivity<MainActivity>(
+                                                    actionParametersOf(EXTRA_CALENDAR_DATE_KEY to dateStr)
                                                 )
                                             )
+                                        } else it
+                                    }
+
+                                Box(
+                                    modifier         = cellMod,
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (isValid) {
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            val circleMod = GlanceModifier
+                                                .size(26.dp)
+                                                .cornerRadius(13.dp)
+                                                .let {
+                                                    when {
+                                                        isToday -> it.background(clr.primary)
+                                                        hasDot  -> it.background(clr.surface)
+                                                        else    -> it
+                                                    }
+                                                }
+                                            Box(modifier = circleMod, contentAlignment = Alignment.Center) {
+                                                Text(
+                                                    text  = dayNum.toString(),
+                                                    style = TextStyle(
+                                                        color      = if (isToday) clr.onPrimary else clr.onBg,
+                                                        fontSize   = 11.sp,
+                                                        fontWeight = if (isToday || hasDot) FontWeight.Bold else FontWeight.Normal
+                                                    )
+                                                )
+                                            }
+                                            Spacer(GlanceModifier.height(1.dp))
+                                            Box(
+                                                modifier = GlanceModifier
+                                                    .size(4.dp)
+                                                    .cornerRadius(2.dp)
+                                                    .let { if (hasDot) it.background(clr.primary) else it }
+                                            ) {}
                                         }
-                                        Spacer(GlanceModifier.height(2.dp))
-                                        Box(
-                                            modifier = GlanceModifier
-                                                .size(4.dp)
-                                                .cornerRadius(2.dp)
-                                                .let { if (hasDot) it.background(clr.primary) else it }
-                                        ) {}
                                     }
                                 }
                             }
                         }
                     }
-                    Spacer(GlanceModifier.height(2.dp))
+                }
+
+                // ── 4. Divider + Today's date header ─────────────────────
+                Column(
+                    modifier = GlanceModifier
+                        .fillMaxWidth()
+                        .padding(top = 6.dp, bottom = 4.dp)
+                        .clickable(openTodayAction)
+                ) {
+                    Box(modifier = GlanceModifier.fillMaxWidth().height(1.dp).background(clr.track)) {}
+                    Spacer(GlanceModifier.height(6.dp))
+                    Text(
+                        text     = data.todayDate.format(calendarDayHdr),
+                        style    = TextStyle(color = clr.subtext, fontSize = 11.sp, fontWeight = FontWeight.Bold),
+                        maxLines = 1
+                    )
+                }
+
+                // ── 5. Scrollable list of today's transactions ───────────
+                if (data.todayTransactions.isEmpty()) {
+                    Box(
+                        modifier         = GlanceModifier.fillMaxWidth().defaultWeight().clickable(openTodayAction),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text  = "No transactions today",
+                            style = TextStyle(color = clr.subtext, fontSize = 11.sp)
+                        )
+                    }
+                } else {
+                    LazyColumn(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
+                        items(data.todayTransactions, itemId = { it.id.hashCode().toLong() }) { txn ->
+                            val badge      = badgeBitmaps[txn.id]
+                            val payIconRes = if (txn.paymentType == PaymentType.CASH) R.drawable.ic_widget_payments
+                                             else                                     R.drawable.ic_widget_credit_card
+                            val payLabel   = txn.paymentType.name.lowercase().replaceFirstChar { it.titlecase() }
+                            val isExpense  = txn.type == TransactionType.EXPENSE
+                            val amtColor   = if (isExpense) clr.error
+                                             else ColorProvider(day = txn.categoryColor, night = txn.categoryColor)
+
+                            Column(
+                                modifier = GlanceModifier
+                                    .fillMaxWidth()
+                                    .clickable(openTodayAction)
+                            ) {
+                                Row(
+                                    modifier          = GlanceModifier.fillMaxWidth().padding(vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    if (badge != null) {
+                                        Image(
+                                            provider           = ImageProvider(badge),
+                                            contentDescription = txn.category,
+                                            modifier           = GlanceModifier.size(32.dp)
+                                        )
+                                        Spacer(GlanceModifier.width(10.dp))
+                                    }
+                                    Column(modifier = GlanceModifier.defaultWeight()) {
+                                        Text(
+                                            text     = txn.title,
+                                            style    = TextStyle(color = clr.onBg, fontSize = 12.sp, fontWeight = FontWeight.Bold),
+                                            maxLines = 1
+                                        )
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(
+                                                text     = "${txn.category} · ",
+                                                style    = TextStyle(color = clr.subtext, fontSize = 10.sp),
+                                                maxLines = 1
+                                            )
+                                            Image(
+                                                provider           = ImageProvider(payIconRes),
+                                                contentDescription = payLabel,
+                                                modifier           = GlanceModifier.size(11.dp),
+                                                colorFilter        = ColorFilter.tint(clr.subtext)
+                                            )
+                                            Spacer(GlanceModifier.width(3.dp))
+                                            Text(
+                                                text     = payLabel,
+                                                style    = TextStyle(color = clr.subtext, fontSize = 10.sp),
+                                                maxLines = 1
+                                            )
+                                        }
+                                    }
+                                    Spacer(GlanceModifier.width(6.dp))
+                                    Text(
+                                        text     = "${if (isExpense) "-" else "+"}${formatMoney(symbol, txn.amount)}",
+                                        style    = TextStyle(color = amtColor, fontSize = 12.sp, fontWeight = FontWeight.Bold),
+                                        maxLines = 1
+                                    )
+                                }
+                                Box(modifier = GlanceModifier.fillMaxWidth().height(1.dp).background(clr.track)) {}
+                            }
+                        }
+                    }
                 }
             }
         }

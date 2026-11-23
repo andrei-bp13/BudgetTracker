@@ -67,7 +67,12 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BudgetTrackerNavGraph(viewModel: TransactionViewModel, accountViewModel: AccountViewModel) {
+fun BudgetTrackerNavGraph(
+    viewModel: TransactionViewModel,
+    accountViewModel: AccountViewModel,
+    pendingCalendarDate: LocalDate? = null,
+    onCalendarDateConsumed: () -> Unit = {}
+) {
     val navController       = rememberNavController()
     val drawerState         = rememberDrawerState(DrawerValue.Closed)
     var showAddSheet          by remember { mutableStateOf(false) }
@@ -115,6 +120,16 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel, accountViewModel: Acc
     val route = currentEntry?.destination?.route
     val accountInitial = signedInAccount?.displayName?.firstOrNull()?.uppercaseChar() ?: 'A'
     val isSignedIn     = signedInAccount != null
+
+    // Navigate to Calendar when opened from a Calendar widget date tap
+    LaunchedEffect(pendingCalendarDate) {
+        if (pendingCalendarDate != null) {
+            navController.navigate(Screen.Calendar.route) {
+                launchSingleTop = true
+                restoreState = true
+            }
+        }
+    }
 
     // Reset edit modes and FAB when navigating away from their screens
     LaunchedEffect(route) {
@@ -363,13 +378,15 @@ fun BudgetTrackerNavGraph(viewModel: TransactionViewModel, accountViewModel: Acc
                     }
                     composable(Screen.Calendar.route) {
                         CalendarScreen(
-                            viewModel           = viewModel,
-                            onEditTransaction   = { t -> editingTransaction = t },
-                            onDeleteTransaction = { t -> viewModel.deleteTransaction(t.id) },
-                            onMenuClick         = { scope.launch { drawerState.open() } },
-                            onAccountClick      = { showAccountSheet = true },
-                            accountInitial      = accountInitial,
-                            isSignedIn          = isSignedIn
+                            viewModel             = viewModel,
+                            initialDate           = pendingCalendarDate,
+                            onInitialDateConsumed = onCalendarDateConsumed,
+                            onEditTransaction     = { t -> editingTransaction = t },
+                            onDeleteTransaction   = { t -> viewModel.deleteTransaction(t.id) },
+                            onMenuClick           = { scope.launch { drawerState.open() } },
+                            onAccountClick        = { showAccountSheet = true },
+                            accountInitial        = accountInitial,
+                            isSignedIn            = isSignedIn
                         )
                     }
                     composable(
